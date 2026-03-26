@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        button { margin: 10px; padding: 10px 20px; }
+        pre { background: #f5f5f5; padding: 15px; border-radius: 5px; overflow-x: auto; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>API Test Page</h1>
+    
+    <h2>Test Messages API</h2>
+    <button onclick="testMessages()">Test GET /api/messages</button>
+    <div id="messages-result"></div>
+    
+    <h2>Test Views API</h2>
+    <button onclick="testViews()">Test GET /api/views/stats</button>
+    <div id="views-result"></div>
+    
+    <h2>Test Users API</h2>
+    <button onclick="testUsers()">Test GET /api/users</button>
+    <div id="users-result"></div>
+    
+    <h2>Test Bookings API</h2>
+    <button onclick="testBookings()">Test GET /api/bookings</button>
+    <div id="bookings-result"></div>
+    
+    <script>
+        async function testMessages() {
+            const result = document.getElementById('messages-result');
+            result.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch('/api/messages');
+                const data = await response.json();
+                
+                result.innerHTML = `
+                    <p class="success">Status: ${response.status}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                result.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testViews() {
+            const result = document.getElementById('views-result');
+            result.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch('/api/views/stats');
+                const data = await response.json();
+                
+                result.innerHTML = `
+                    <p class="success">Status: ${response.status}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                result.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testUsers() {
+            const result = document.getElementById('users-result');
+            result.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch('/api/users');
+                const data = await response.json();
+                
+                result.innerHTML = `
+                    <p class="success">Status: ${response.status}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                result.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testBookings() {
+            const result = document.getElementById('bookings-result');
+            result.innerHTML = '<p>Loading...</p>';
+            
+            try {
+                const response = await fetch('/api/bookings');
+                const data = await response.json();
+                
+                result.innerHTML = `
+                    <p class="success">Status: ${response.status}</p>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (error) {
+                result.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+[
+  {
+    "id": "1770755956937",
+    "bookerName": "freedom",
+    "bookerContact": "chiazagomonwumere@gmail.com",
+    "checkIn": "2026-02-10",
+    "checkOut": "2026-02-12",
+    "guests": 2,
+    "roomPrice": 1500,
+    "nights": 2,
+    "totalPrice": 3000,
+    "status": "pending",
+    "createdAt": "2026-02-10T20:39:16.937Z"
+  },
+  {
+    "id": "AB302D93C6D4BE9B",
+    "bookerName": "freedom",
+    "bookerContact": "chiazagomonwumere@gmail.com",
+    "checkIn": "2026-02-14",
+    "checkOut": "2026-02-15",
+    "guests": 2,
+    "roomPrice": 1500,
+    "nights": 1,
+    "totalPrice": 1500,
+    "status": "pending",
+    "paymentStatus": "pending",
+    "paymentMethod": null,
+    "paymentReference": null,
+    "clientIP": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+    "createdAt": "2026-02-10T21:30:35.789Z"
+  },
+  {
+    "id": "C0F08D3CAEC6E228",
+    "bookerName": "freedom",
+    "bookerContact": "chiazagomonwumere@gmail.com",
+    "checkIn": "2026-02-14",
+    "checkOut": "2026-02-15",
+    "guests": 1,
+    "roomPrice": 1500,
+    "nights": 1,
+    "totalPrice": 1500,
+    "status": "pending",
+    "paymentStatus": "pending",
+    "paymentMethod": null,
+    "paymentReference": null,
+    "clientIP": "127.0.0.1",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36",
+    "createdAt": "2026-02-10T21:39:52.903Z"
+  }
+]

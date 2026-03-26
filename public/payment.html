@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - Hotel Booking</title>
+    <script src="alert-box.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #008665 0%, #ffffff 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+        
+        .payment-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .payment-header {
+            background: linear-gradient(135deg, #00795a 0%, #ffffff 100%);
+            color: white;
+            text-align: center;
+            padding: 2.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .payment-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .payment-header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .payment-header p {
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .payment-icon {
+            width: 60px;
+            height: 60px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            font-size: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .payment-body {
+            padding: 2rem;
+        }
+        
+        .booking-summary {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .booking-summary h3 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .booking-summary h3::before {
+            content: '📋';
+            font-size: 1.5rem;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid rgba(255,255,255,0.5);
+            color: #555;
+        }
+
+        .summary-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .summary-row strong {
+            color: #333;
+        }
+
+        .total-row {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 2px solid rgba(0,0,0,0.1);
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #667eea !important;
+        }
+        
+        .payment-section {
+            margin-bottom: 2rem;
+        }
+        
+        .payment-section h3 {
+            color: #333;
+            margin-bottom: 1.5rem;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .payment-section h3::before {
+            content: '💳';
+            font-size: 1.5rem;
+        }
+        
+        .payment-methods {
+            display: grid;
+            gap: 1rem;
+        }
+        
+        .payment-method {
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .payment-method::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
+        }
+        
+        .payment-method:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .payment-method:hover::before {
+            transform: scaleY(1);
+        }
+        
+        .payment-method.selected {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f8f9ff 0%, #e8ebff 100%);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .payment-method.selected::before {
+            transform: scaleY(1);
+        }
+
+        .payment-method.selected::after {
+            content: '✓';
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            animation: checkmark 0.3s ease;
+        }
+
+        @keyframes checkmark {
+            from {
+                transform: scale(0) rotate(-180deg);
+            }
+            to {
+                transform: scale(1) rotate(0deg);
+            }
+        }
+        
+        .payment-method-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .payment-method img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        .payment-method-info {
+            flex: 1;
+        }
+
+        .payment-method-info h4 {
+            margin: 0 0 0.25rem 0;
+            color: #333;
+            font-size: 1.1rem;
+        }
+        
+        .payment-method-info p {
+            margin: 0;
+            color: #666;
+            font-size: 0.875rem;
+        }
+        
+        .btn-pay {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1.25rem 2rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-pay::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn-pay:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-pay:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-pay:active {
+            transform: translateY(0);
+        }
+        
+        .btn-pay:disabled {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-pay:disabled:hover {
+            transform: none;
+        }
+        
+        .payment-instructions {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%);
+            border: 2px solid #ffc107;
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            display: none;
+            animation: slideDown 0.4s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                max-height: 1000px;
+            }
+        }
+        
+        .payment-instructions.show {
+            display: block;
+        }
+
+        .payment-instructions h3 {
+            color: #856404;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .payment-instructions h3::before {
+            content: 'ℹ️';
+            font-size: 1.5rem;
+        }
+        
+        .instruction-step {
+            margin-bottom: 0.75rem;
+            padding-left: 2rem;
+            position: relative;
+            color: #856404;
+        }
+        
+        .instruction-step::before {
+            content: counter(step-counter);
+            counter-increment: step-counter;
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        
+        .instructions-list {
+            counter-reset: step-counter;
+        }
+        
+        .bank-details {
+            background: white;
+            padding: 1.25rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border: 2px solid #e9ecef;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .bank-details strong {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-size: 0.95rem;
+        }
+        
+        .copy-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            margin-left: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(102, 126, 234, 0.3);
+        }
+
+        .copy-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.4);
+        }
+
+        .copy-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+
+            .payment-container {
+                border-radius: 15px;
+            }
+
+            .payment-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .payment-body {
+                padding: 1.5rem;
+            }
+
+            .payment-method {
+                padding: 1rem;
+            }
+
+            .payment-method-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.2rem;
+            }
+
+            .btn-pay {
+                padding: 1rem;
+                font-size: 1rem;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="payment-container">
+        <div class="payment-header">
+            <div class="payment-icon">💳</div>
+            <h1>Complete Your Payment</h1>
+            <p>Secure payment for your hotel booking</p>
+        </div>
+
+        <div class="payment-body">
+            <div class="booking-summary">
+                <h3>Booking Summary</h3>
+                <div class="summary-row">
+                    <span>Booking ID:</span>
+                    <strong id="booking-id">--</strong>
+                </div>
+                <div class="summary-row">
+                    <span>Check-in:</span>
+                    <span id="checkin-date">--</span>
+                </div>
+                <div class="summary-row">
+                    <span>Check-out:</span>
+                    <span id="checkout-date">--</span>
+                </div>
+                <div class="summary-row">
+                    <span>Nights:</span>
+                    <span id="nights-count">--</span>
+                </div>
+                <div class="summary-row">
+                    <span>Guests:</span>
+                    <span id="guests-count">--</span>
+                </div>
+                <div class="summary-row total-row">
+                    <span>Total Amount:</span>
+                    <span id="total-amount">₦0</span>
+                </div>
+            </div>
+
+            <div class="payment-section">
+                <h3>Choose Payment Method</h3>
+                
+                <div class="payment-methods">
+                    <!-- Digital Banks -->
+                    <div class="payment-method" data-method="opay">
+                        <div class="payment-method-icon">🏦</div>
+                        <div class="payment-method-info">
+                            <h4>Opay</h4>
+                            <p>Pay instantly with your Opay wallet</p>
+                        </div>
+                    </div>
+
+                    <div class="payment-method" data-method="palmpay">
+                        <div class="payment-method-icon">🌴</div>
+                        <div class="payment-method-info">
+                            <h4>PalmPay</h4>
+                            <p>Quick payment with PalmPay</p>
+                        </div>
+                    </div>
+
+                    <div class="payment-method" data-method="kuda">
+                        <div class="payment-method-icon">💜</div>
+                        <div class="payment-method-info">
+                            <h4>Kuda Bank</h4>
+                            <p>Pay with your Kuda account</p>
+                        </div>
+                    </div>
+
+                    <!-- Card Payment -->
+                    <div class="payment-method" data-method="card">
+                        <div class="payment-method-icon">💳</div>
+                        <div class="payment-method-info">
+                            <h4>Debit/Credit Card</h4>
+                            <p>Pay securely with your card via Paystack</p>
+                        </div>
+                    </div>
+
+                    <!-- Bank Transfer -->
+                    <div class="payment-method" data-method="transfer">
+                        <div class="payment-method-icon">🏛️</div>
+                        <div class="payment-method-info">
+                            <h4>Bank Transfer</h4>
+                            <p>Transfer from any Nigerian bank</p>
+                        </div>
+                    </div>
+
+                    <!-- USSD -->
+                    <div class="payment-method" data-method="ussd">
+                        <div class="payment-method-icon">📱</div>
+                        <div class="payment-method-info">
+                            <h4>USSD Payment</h4>
+                            <p>Pay using *737# or other bank codes</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-pay" id="pay-btn" disabled>
+                Select Payment Method
+            </button>
+
+            <div class="payment-instructions" id="payment-instructions">
+                <!-- Payment instructions will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedMethod = null;
+        let bookingData = null;
+
+        // Load booking data from URL parameters or localStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const bookingId = urlParams.get('booking') || localStorage.getItem('currentBookingId');
+            
+            if (bookingId) {
+                loadBookingData(bookingId);
+            } else {
+                alert('No booking found. Please start a new booking.');
+                window.location.href = '/';
+            }
+
+            setupPaymentMethods();
+        });
+
+        function loadBookingData(bookingId) {
+            // In a real app, fetch from server
+            // For now, use localStorage data
+            const booking = JSON.parse(localStorage.getItem('currentBooking') || '{}');
+            
+            if (booking.id) {
+                bookingData = booking;
+                displayBookingSummary(booking);
+            } else {
+                alertBox.error(
+                    'No Booking Found',
+                    'Please start a new booking from the home page.',
+                    () => {
+                        window.location.href = '/';
+                    }
+                );
+            }
+        }
+
+        function displayBookingSummary(booking) {
+            document.getElementById('booking-id').textContent = booking.id || '--';
+            document.getElementById('checkin-date').textContent = new Date(booking.checkIn).toLocaleDateString();
+            document.getElementById('checkout-date').textContent = new Date(booking.checkOut).toLocaleDateString();
+            document.getElementById('nights-count').textContent = booking.nights || '--';
+            document.getElementById('guests-count').textContent = booking.guests || '--';
+            document.getElementById('total-amount').textContent = `₦${(booking.totalPrice || 0).toLocaleString()}`;
+        }
+
+        function setupPaymentMethods() {
+            const methods = document.querySelectorAll('.payment-method');
+            const payBtn = document.getElementById('pay-btn');
+
+            methods.forEach(method => {
+                method.addEventListener('click', () => {
+                    // Remove previous selection
+                    methods.forEach(m => m.classList.remove('selected'));
+                    
+                    // Select current method
+                    method.classList.add('selected');
+                    selectedMethod = method.dataset.method;
+                    
+                    // Enable pay button
+                    payBtn.disabled = false;
+                    payBtn.textContent = `Pay with ${method.querySelector('h4').textContent}`;
+                });
+            });
+
+            payBtn.addEventListener('click', processPayment);
+        }
+
+        async function processPayment() {
+            if (!selectedMethod || !bookingData) {
+                alertBox.warning('Payment Method Required', 'Please select a payment method to continue.');
+                return;
+            }
+
+            const payBtn = document.getElementById('pay-btn');
+            payBtn.disabled = true;
+            payBtn.innerHTML = '<span class="loading"></span> Processing...';
+
+            try {
+                const response = await fetch('/api/payment/initialize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        bookingId: bookingData.id,
+                        email: bookingData.bookerContact,
+                        amount: bookingData.totalPrice,
+                        paymentMethod: selectedMethod
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    if (result.paymentUrl) {
+                        // Redirect to payment gateway (Paystack)
+                        payBtn.innerHTML = '<span class="loading"></span> Redirecting...';
+                        alertBox.info(
+                            'Redirecting to Payment Gateway',
+                            'You will be redirected to complete your payment securely.',
+                            () => {
+                                window.location.href = result.paymentUrl;
+                            }
+                        );
+                        setTimeout(() => {
+                            window.location.href = result.paymentUrl;
+                        }, 1500);
+                    } else if (result.instructions) {
+                        // Show payment instructions
+                        showPaymentInstructions(result.instructions);
+                        payBtn.innerHTML = `✓ Payment Instructions Shown`;
+                        payBtn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+                    }
+                } else {
+                    alertBox.error('Payment Failed', result.message);
+                    payBtn.disabled = false;
+                    payBtn.innerHTML = `Pay with ${document.querySelector('.payment-method.selected h4').textContent}`;
+                }
+            } catch (error) {
+                console.error('Payment error:', error);
+                alertBox.error('Payment Error', 'Payment initialization failed. Please try again.');
+                payBtn.disabled = false;
+                payBtn.innerHTML = `Pay with ${document.querySelector('.payment-method.selected h4').textContent}`;
+            }
+        }
+
+        function showPaymentInstructions(instructions) {
+            const instructionsDiv = document.getElementById('payment-instructions');
+            
+            let html = `<h3>${instructions.title}</h3>`;
+            
+            if (instructions.bankDetails) {
+                html += `
+                    <div class="bank-details">
+                        <strong>Account Name: ${instructions.bankDetails.accountName}</strong>
+                        <strong>Account Number: ${instructions.bankDetails.accountNumber} 
+                            <button class="copy-btn" onclick="copyToClipboard('${instructions.bankDetails.accountNumber}')">Copy</button>
+                        </strong>
+                        <strong>Bank: ${instructions.bankDetails.bankName}</strong>
+                        <strong>Amount: ₦${instructions.amount.toLocaleString()}</strong>
+                        <strong>Reference: ${instructions.reference} 
+                            <button class="copy-btn" onclick="copyToClipboard('${instructions.reference}')">Copy</button>
+                        </strong>
+                    </div>
+                `;
+            }
+
+            if (instructions.steps) {
+                html += '<div class="instructions-list">';
+                instructions.steps.forEach(step => {
+                    html += `<div class="instruction-step">${step}</div>`;
+                });
+                html += '</div>';
+            }
+
+            if (instructions.codes) {
+                html += '<h4>USSD Codes:</h4>';
+                instructions.codes.forEach(code => {
+                    html += `<div style="margin-bottom: 0.5rem;">
+                        <strong>${code.bank}:</strong> ${code.example}
+                        <button class="copy-btn" onclick="copyToClipboard('${code.example}')">Copy</button>
+                    </div>`;
+                });
+            }
+
+            instructionsDiv.innerHTML = html;
+            instructionsDiv.classList.add('show');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alertBox.success('Copied!', 'Text copied to clipboard successfully.');
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alertBox.success('Copied!', 'Text copied to clipboard successfully.');
+            });
+        }
+    </script>
+</body>
+</html>

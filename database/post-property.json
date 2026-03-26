@@ -1,0 +1,40 @@
+[
+  {
+    "agentId": "AGENT_1772657067562_vqq6bfqug",
+    "id": "1774326177603_uork",
+    "title": "Face me house",
+    "type": "house",
+    "category": "rent",
+    "price": "16000",
+    "location": "Kenneth Road",
+    "beds": "1",
+    "baths": "1",
+    "area": "100",
+    "description": "Feel free to live",
+    "features": "",
+    "imageNames": [
+      "AGENT_1772657067562_vqq6bfqug_1774326177564.jpg",
+      "AGENT_1772657067562_vqq6bfqug_1774326177572.jpg",
+      "AGENT_1772657067562_vqq6bfqug_1774326177580.jpg"
+    ],
+    "date": 1774326177603
+  },
+  {
+    "agentId": "AGENT_1772657067562_vqq6bfqug",
+    "id": "1773870283560_jwm0",
+    "title": "face me",
+    "type": "house",
+    "category": "rent",
+    "price": "10000",
+    "location": "Kenneth",
+    "beds": "1",
+    "baths": "1",
+    "area": "22",
+    "description": "good house",
+    "features": "",
+    "imageNames": [
+      "AGENT_1772657067562_vqq6bfqug_1773870283522.jpg"
+    ],
+    "date": 1773870283560
+  }
+]
