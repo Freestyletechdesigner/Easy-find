@@ -4,10 +4,11 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
-// Security packages - install with: npm install helmet express-rate-limit
-// const helmet = require('helmet');
-// const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
+
 // API
+const connectDB = require('./db.js');
+connectDB()
 const login = require('./routes/login.js');
 const sectionImageChanger = require('./routes/section-image-changer.js');
 const uploadnewP = require('./routes/upload-property');
@@ -20,35 +21,9 @@ const agent = require('./routes/agent.js');
 const agentProfileUpload = require('./routes/agent-profile-upload.js');
 const profileUpload = require('./routes/profile-upload.js');
 const AGENT_POST = require('./routes/agent-upload.js');
+const VIEW_POST = require('./routes/view-post.js');
 
-// Security middleware (uncomment after installing packages)
-/*
-app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "https:"],
-        },
-    },
-}));
 
-// Trust proxy for rate limiting
-app.set('trust proxy', 1);
-
-// Global rate limiting
-const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
-    message: {
-        success: false,
-        message: 'Too many requests from this IP, please try again later.'
-    }
-});
-
-app.use(globalLimiter);
-*/
 
 app.use(express.json());
 
@@ -135,8 +110,6 @@ app.get('/api/views/stats', (req, res) => {
     }
 });
 
-//agent account page
-const AGENT_LOG = path.join(__dirname, './agent-loged');
 
 // Ensure required folders exist on startup
 const uploadPropertyDir = path.join(__dirname, 'agent-loged', 'upload-property');
@@ -148,8 +121,11 @@ if (!fs.existsSync(databaseDir)) fs.mkdirSync(databaseDir, { recursive: true });
 app.use(express.static('public'));
 app.use('/admin', express.static('admin'));
 app.use('/agent-loged', express.static('agent-loged'));
-app.use('/agent-loged', express.static(AGENT_LOG));
 app.use('/agent-profiles', express.static('agent-profiles'));
+app.use('/property', express.static('public/property'));
+app.use('/login-agent', express.static('public/login-agent.html'));
+app.use('/signup-agent', express.static('public/signup-agent.html'));
+app.use('/agent-profile', express.static('public/agent-profile'));
 
 login(app);
 sectionImageChanger(app);
@@ -162,7 +138,8 @@ message(app);
 agent(app);
 agentProfileUpload(app);
 profileUpload(app);
-AGENT_POST(app)
+AGENT_POST(app);
+VIEW_POST(app);
 
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));

@@ -1,7 +1,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const multer = require('multer');
-
+const AgentUser = require('../model/AgentUser.js');
 const ROOT = path.join(__dirname, '..');
 
 // Configure multer for profile picture uploads
@@ -42,12 +42,11 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 20 * 1024 * 1024 // 5MB max file size
+        fileSize: 20 * 1024 * 1024 // 20MB max file size
     }
 });
 
 const agentProfileUpload = (app) => {
-    const AGENTS_FILE = path.join(ROOT, 'database', 'agents.json');
 
     // Middleware to require agent authentication
     function requireAgent(req, res, next) {
@@ -72,24 +71,21 @@ const agentProfileUpload = (app) => {
 
             const agentId = req.session.agent.id;
             const profilePicturePath = `/agent-profiles/${req.file.filename}`;
-
-            // Read agents file
-            const data = await fs.readFile(AGENTS_FILE, 'utf8');
-            const agents = JSON.parse(data);
+           
 
             // Find agent and update profile picture
-            const agentIndex = agents.findIndex(agent => agent.id === agentId);
-
-            if (agentIndex === -1) {
+            const agent = await AgentUser.findById(agentId)
+            if (!agent) {
                 return res.status(404).json({
                     success: false,
                     message: 'Agent not found'
                 });
             }
 
+            
             // Delete old profile picture if exists
-            if (agents[agentIndex].profilePicture) {
-                const oldPicturePath = path.join(ROOT, agents[agentIndex].profilePicture);
+            if (agent.profilePicture) {
+                const oldPicturePath = path.join(ROOT, agent.profilePicture);
                 try {
                     await fs.unlink(oldPicturePath);
                 } catch (error) {
@@ -98,11 +94,8 @@ const agentProfileUpload = (app) => {
             }
 
             // Update agent profile picture
-            agents[agentIndex].profilePicture = profilePicturePath;
-            agents[agentIndex].updatedAt = new Date().toISOString();
-
-            // Save to file
-            await fs.writeFile(AGENTS_FILE, JSON.stringify(agents, null, 2));
+            agent.profilePicture = profilePicturePath;
+            await agent.save();
 
             res.json({
                 success: true,
@@ -123,12 +116,8 @@ const agentProfileUpload = (app) => {
         try {
             const agentId = req.session.agent.id;
 
-            // Read agents file
-            const data = await fs.readFile(AGENTS_FILE, 'utf8');
-            const agents = JSON.parse(data);
-
             // Find agent
-            const agent = agents.find(agent => agent.id === agentId);
+            const agent = await AgentUser.findById(agentId)
 
             if (!agent) {
                 return res.status(404).json({
@@ -155,14 +144,10 @@ const agentProfileUpload = (app) => {
         try {
             const agentId = req.session.agent.id;
 
-            // Read agents file
-            const data = await fs.readFile(AGENTS_FILE, 'utf8');
-            const agents = JSON.parse(data);
-
             // Find agent
-            const agentIndex = agents.findIndex(agent => agent.id === agentId);
+            const agent = await AgentUser.findById(agentId);
 
-            if (agentIndex === -1) {
+            if (!agent) {
                 return res.status(404).json({
                     success: false,
                     message: 'Agent not found'
@@ -170,8 +155,8 @@ const agentProfileUpload = (app) => {
             }
 
             // Delete profile picture file
-            if (agents[agentIndex].profilePicture) {
-                const picturePath = path.join(ROOT, agents[agentIndex].profilePicture);
+            if (agent.profilePicture) {
+                const picturePath = path.join(ROOT, agent.profilePicture);
                 try {
                     await fs.unlink(picturePath);
                 } catch (error) {
@@ -180,11 +165,8 @@ const agentProfileUpload = (app) => {
             }
 
             // Remove profile picture from agent data
-            agents[agentIndex].profilePicture = null;
-            agents[agentIndex].updatedAt = new Date().toISOString();
-
-            // Save to file
-            await fs.writeFile(AGENTS_FILE, JSON.stringify(agents, null, 2));
+            agent.profilePicture = null;
+            await agent.save();
 
             res.json({
                 success: true,

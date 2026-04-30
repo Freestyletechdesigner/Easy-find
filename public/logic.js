@@ -71,7 +71,7 @@
             }
         } catch (err) {
             console.error(err);
-            grid.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Failed to load properties.</p>';
+            grid.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Network error failed to load properties.</p>';
         }
     }
         // set the card function up 
@@ -99,17 +99,51 @@
                         <span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>
                         <span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0} sqft</span>
                     </div>
-                    <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date}</div>
+                    <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
                 </div>
                 <div class="card-footer">
-                    <a href="/property.html?id=${p.id}" class="btn-view-details">
+                    <a href="/property?id=${p.id}" class="btn-view-details">
                         View Details <i class="fas fa-arrow-right"></i>
                     </a>
+                    <button class="btn-share-card" onclick="shareCard('${p.id}')">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
                 </div>
             </div>
         `;
     }
 
+
+    window.shareCard = function(id) {
+        const url = `${window.location.origin}/property?id=${id}`;
+        if (navigator.share) {
+            navigator.share({ title: 'Check out this property on Easy Find', url })
+                .catch(() => copyLink(url));
+        } else {
+            copyLink(url);
+        }
+    };
+
+    function copyLink(url) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url)
+                .then(() => alertBox.success('Copied', 'Property link copied to clipboard'))
+                .catch(() => fallbackCopy(url));
+        } else {
+            fallbackCopy(url);
+        }
+    }
+
+    function fallbackCopy(url) {
+        const el = document.createElement('textarea');
+        el.value = url;
+        el.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        alertBox.success('Copied', 'Property link copied to clipboard');
+    }
 
     //type of search
     const propertyBtn = document.querySelector('.property-btn');
@@ -462,7 +496,6 @@
     });
 
     //  input Validation
-
     const contactAlertBox = document.getElementById('alert');
 
     const submitBtn = document.getElementById('submit');
@@ -602,6 +635,7 @@
     //LOGIN
     const loginPage = document.querySelector('.login');
     const loginBtn = document.getElementById('login-btn');
+    const cancelIcon = document.getElementById('cancel-login-icon');
     const userLog = document.getElementById('user-log');
     const loginEye = document.getElementById('login-eye');
     const signupEye = document.getElementById('signup-eye');
@@ -628,32 +662,39 @@
         
     });
 
-    // Check if user is already logged in
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
+    // Check if user is already logged in via session cookie
+    async function isAuth() {
         try {
-            const user = JSON.parse(storedUser);
-            if (user && user.name) {
+            const res = await fetch('/api/user/profile', { credentials: 'include' });
+            const data = await res.json();
+
+            if (data.success && data.user) {
                 loginNav.style.display = 'none';
                 logoutBtn.style.display = 'flex';
                 userLog.style.display = 'flex';
-                userLog.textContent = user.name[0];
+                userLog.textContent = data.user.name[0].toUpperCase();
             }
-        } catch (e) {
-            console.error('Error parsing stored user:', e);
-            localStorage.removeItem('user');
+
+        } catch (error) {
+            console.error('Auth check failed:', error);
         }
     }
+    isAuth();
 
-    // Add logout functionality to user-log
+    // Logout
     if (userLog) {
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('user');
-            userLog.style.display = 'none';
-            loginNav.style.display = 'flex';
-            userLog.textContent = '';
-            showLoginAlert('Logged out successfully', 'success');
-            logoutBtn.style.display = 'none'
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                userLog.style.display = 'none';
+                logoutBtn.style.display = 'none';
+                loginNav.style.display = 'flex';
+                userLog.textContent = '';
+                showLoginAlert('Logged out successfully', 'success');
+            } catch (error) {
+                console.error('Logout error:', error);
+                showLoginAlert('Something went wrong, try again later', 'error');
+            }
         });
     }
 
@@ -661,7 +702,7 @@
     if (loginPassword && loginEye) {
         console.log('Login eye icon found:', loginEye);
         loginPassword.type = 'password';
-        loginEye.style.display = 'inline-block'; // Force display
+        loginEye.style.display = 'inline-block';
         loginEye.addEventListener('click', () => {
             console.log('Login eye clicked');
             if (loginPassword.type === 'password') {
@@ -826,6 +867,12 @@
             loginPage.classList.toggle('log');
         });
     }
+    if (cancelIcon) {
+        cancelIcon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            loginPage.classList.toggle('log');
+        });
+    }
 
     // Close login modal when clicking outside
     window.addEventListener('click', (e) => {
@@ -871,33 +918,27 @@
             console.log('Password:', formData.get('password') ? '***' : 'MISSING');
 
             try {
-                // Send login request - backend will determine if admin or user
-                console.log('Sending login request...');
-                const res = await fetch("/submit-form", {
+                const res = await fetch("/api/login", {
                     method: "POST",
-                    body: formData
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email: formData.get('email'),
+                        password: formData.get('password')
+                    })
                 });
                 
                 const data = await res.json();
-                console.log('Login response:', data);
                 
                 if (data.success) {
                     showLoginAlert('Login successful!', 'success');
                     
-                    // Check if admin or regular user
                     if (data.role === 'admin') {
-                        console.log('Admin login - redirecting to dashboard...');
-                        // Redirect to admin dashboard
-                        setTimeout(() => {
-                            window.location.href = '/admin';
-                        }, 1000);
+                        setTimeout(() => { window.location.href = '/admin'; }, 1000);
                     } else {
-                        console.log('User login - updating UI...');
-                        // Regular user - update UI
-                        localStorage.setItem('user', JSON.stringify(data.user));
                         userLog.textContent = data.user.name[0];
                         loginNav.style.display = 'none';
-                        holdLogin.style.right = '-10rem'
+                        holdLogin.style.right = '-10rem';
                         userLog.style.display = 'flex';
                         logoutBtn.style.display = 'flex';
                         loginPage.classList.remove('log');

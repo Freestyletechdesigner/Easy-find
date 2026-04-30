@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Property Details – Easy Find</title>
+    <link rel="stylesheet" type="text/css" href="property.css">
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+<body>
+
+<header>
+    <a href="/" class="logo"><span>E</span>asy Find</a>
+    <nav class="links">
+        <a href="/">Home</a>
+        <a href="/#search-bar">Search</a>
+        <a href="/#about">About</a>
+        <a href="/#available-home">Available Homes</a>
+        <a href="/#agents">Our Agents</a>
+        <a href="/#contact">Contact</a>
+    </nav>
+    <div class="nav2" id="nav2">
+        <a href="/"><i class="fa-solid fa-house"></i> Home</a>
+        <a href="/#search-bar"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+        <a href="/#about"><i class="fa-regular fa-address-card"></i> About</a>
+        <a href="/#available-home"><i class="fa-solid fa-building"></i> Available Homes</a>
+        <a href="/#agents"><i class="fa-solid fa-user-tie"></i> Our Agents</a>
+        <a href="/#contact"><i class="fa-solid fa-envelope"></i> Contact</a>
+    </div>
+    <div class="hamburger" id="hamburger">
+        <div class="hand"></div>
+        <div class="hand"></div>
+        <div class="hand"></div>
+    </div>
+</header>
+
+<main>
+    <a class="back-page" href="javascript:history.back()">
+        <i class="fa-solid fa-arrow-left"></i> Back
+    </a>
+
+    <!-- IMAGE SLIDER -->
+    <section class="hero" id="heroSlider">
+        <div class="carousel">
+            <div class="carousel-track" id="holdImg">
+                <!-- slides injected by JS -->
+            </div>
+            <button class="prev" id="back">❮</button>
+            <button class="next" id="next">❯</button>
+        </div>
+        <div class="img-counter" id="imgCounter"></div>
+    </section>
+
+    <!-- PROPERTY INFO -->
+    <div class="property-layout">
+
+        <!-- LEFT COLUMN -->
+        <div class="prop-left">
+
+            <!-- Title & badges -->
+            <div class="prop-title-block section">
+                <div class="prop-badges">
+                    <span class="badge-category" id="badgeCategory"></span>
+                    <span class="badge-type" id="badgeType"></span>
+                </div>
+                <h1 id="propTitle">Loading...</h1>
+                <p class="prop-location" id="propLocation">
+                    <i class="fa-solid fa-location-dot"></i> —
+                </p>
+                <p class="prop-date" id="propDate">
+                    <i class="fa-regular fa-calendar"></i> —
+                </p>
+            </div>
+
+            <!-- Stats bar -->
+            <div class="prop-stats section">
+                <div class="stat-item">
+                    <i class="fa-solid fa-bed"></i>
+                    <span id="statBeds">—</span>
+                    <small>Bedrooms</small>
+                </div>
+                <div class="stat-item">
+                    <i class="fa-solid fa-bath"></i>
+                    <span id="statBaths">—</span>
+                    <small>Bathrooms</small>
+                </div>
+                <div class="stat-item">
+                    <i class="fa-solid fa-ruler-combined"></i>
+                    <span id="statArea">—</span>
+                    <small>sqft</small>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="prop-section section">
+                <h2><i class="fa-solid fa-align-left"></i> Description</h2>
+                <p id="propDescription" class="prop-desc-text">—</p>
+            </div>
+
+            <!-- Features -->
+            <div class="prop-section section" id="featuresSection">
+                <h2><i class="fa-solid fa-star"></i> Features & Amenities</h2>
+                <div class="features-grid" id="featuresList"></div>
+            </div>
+
+            <!-- Map -->
+            <div class="prop-section section">
+                <h2><i class="fa-solid fa-map-location-dot"></i> Location on Map</h2>
+                <div class="hold-map">
+                    <iframe id="mapFrame" width="100%" height="100%"
+                        style="border:0;" loading="lazy" allowfullscreen
+                        referrerpolicy="no-referrer-when-downgrade"
+                        src="about:blank">
+                    </iframe>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="prop-right">
+
+            <!-- Price card -->
+            <div class="price-card section">
+                <p class="price-label">Listing Price</p>
+                <p class="price-value" id="propPrice">—</p>
+                <p class="price-sub" id="propPriceSub"></p>
+                <button class="btn-contact" id="btnContact">
+                    <i class="fas fa-phone"></i> Contact Agent
+                </button>
+                <button class="btn-share" id="sharePop">
+                    <i class="fa-solid fa-share-nodes"></i> Share Property
+                </button>
+            </div>
+
+            <!-- Agent card -->
+            <div class="agent-card section" id="agentCard">
+                <h3>Listed By</h3>
+                <div class="agent-info">
+                    <div class="agent-avatar" id="agentAvatar">
+                        <i class="fa-solid fa-user-tie"></i>
+                    </div>
+                    <div>
+                        <p class="agent-name" id="agentName">—</p>
+                        <p class="agent-role">Verified Agent</p>
+                    </div>
+                    <div>
+                        <button id="agent-profile">View Profile</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick details -->
+            <div class="quick-details section">
+                <h3>Quick Details</h3>
+                <ul id="quickDetailsList">
+                    <li><span>Type</span><strong id="qdType">—</strong></li>
+                    <li><span>Category</span><strong id="qdCategory">—</strong></li>
+                    <li><span>Bedrooms</span><strong id="qdBeds">—</strong></li>
+                    <li><span>Bathrooms</span><strong id="qdBaths">—</strong></li>
+                    <li><span>Area</span><strong id="qdArea">—</strong></li>
+                    <li><span>Location</span><strong id="qdLocation">—</strong></li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- CONTACT POPUP -->
+    <div class="contact-popup" id="contactPopup">
+        <div class="contact-popup-inner">
+            <button class="popup-close" id="popupClose"><i class="fa-solid fa-xmark"></i></button>
+            <h3>Contact Agent</h3>
+            <p>Reach out via any of the options below</p>
+            <div class="contact-options">
+                <a href="#" id="contactWhatsapp" class="contact-opt whatsapp">
+                    <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                </a>
+                <a href="#" id="contactEmail" class="contact-opt email">
+                    <i class="fa-regular fa-envelope"></i> Email
+                </a>
+                <a href="#" id="contactCall" class="contact-opt call">
+                    <i class="fas fa-phone"></i> Direct Call
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- SHARE POPUP -->
+    <div class="hold-popshare" id="holdPopshare">
+        <div class="popshare">
+            <h3>Share Property</h3>
+            <div class="hold-share-btn">
+                <button class="share-btn" id="shareBtn">
+                    <i class="fa-solid fa-share-nodes"></i> Share Link
+                </button>
+                <button class="copy-btn" id="copyBtn">
+                    <i class="fa-regular fa-copy"></i> Copy Link
+                </button>
+            </div>
+            <button class="cancel-pop" id="cancelPop">Cancel</button>
+        </div>
+    </div>
+
+</main>
+
+<footer>
+    <p>&copy; 2026 <a href="/" class="footer-link">Easy Find</a>. All rights reserved.</p>
+</footer>
+
+<script src="/alert-box.js"></script>
+<script src="property.js"></script>
+</body>
+</html>

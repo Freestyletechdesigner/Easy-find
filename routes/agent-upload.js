@@ -59,8 +59,8 @@ const AGENT_POST = (app) => {
         check('category').notEmpty().isIn(['sale', 'rent', 'shortlet']).withMessage('Invalid category'),
         check('price'),
         check('location').notEmpty().trim().escape(),
-        check('beds').isNumeric().trim().escape(),
-        check('baths').isNumeric().trim().escape(),
+        check('beds').optional({ checkFalsy: true }).isNumeric().trim().escape(),
+        check('baths').optional({ checkFalsy: true }).isNumeric().trim().escape(),
         check('area'),
         check('description'),
         check('features')
@@ -74,17 +74,12 @@ const AGENT_POST = (app) => {
             });
         };
 
-        const {title, type, category, price, location, beds, baths, area, description, features} = req.body;
-        //image name 
+        const { title, type, category, price, location, beds, baths, area, description, features } = req.body;
+        const isLand = type === 'land';
         const imageName = req.files.map(file => file.filename);
-
-        //agent id
         const agentId = req.session.agent.id;
-        
-        //read json file
         const data = JSON.parse(fs.readFileSync(POST_PROPERTY, 'utf8'));
 
-        //put post in order
         const newPost = {
             agentId,
             id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -93,13 +88,14 @@ const AGENT_POST = (app) => {
             category,
             price,
             location,
-            beds,
-            baths,
+            beds:  isLand ? null : (beds  || null),
+            baths: isLand ? null : (baths || null),
             area,
             description,
             features,
             imageNames: imageName,
-            date: Date.now()
+            date: Date.now(),
+            view: 0
         }
         //add to array
         data.unshift(newPost);
@@ -183,7 +179,13 @@ const AGENT_POST = (app) => {
         }
     });
 
-    //view for more details
+    //total view for post
+    app.get('/api/agent/views', requireAgent, (req, res) => {
+        const data       = JSON.parse(fs.readFileSync(POST_PROPERTY, 'utf8'));
+        const agentPosts = data.filter(p => p.agentId === req.session.agent.id);
+        const totalViews = agentPosts.reduce((sum, p) => sum + (p.view || 0), 0);
+        res.json({ success: true, totalViews });
+    });
 }
 
 module.exports = AGENT_POST;

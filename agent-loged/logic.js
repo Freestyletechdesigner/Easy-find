@@ -34,9 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/agent/logout', { method: 'POST' });
             const data = await response.json();
-            if (data.success) window.location.href = '/login-agent.html';
+            if (data.success) window.location.href = '/login-agent';
         } catch (error) {
-            window.location.href = '/login-agent.html';
+            window.location.href = '/login-agent';
         }
     };
 
@@ -57,11 +57,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // ── Type toggle (Land hides beds/baths, shows plot) ──────
+    const typeSelect = document.getElementById('typeSelect');
+    const groupBeds  = document.getElementById('groupBeds');
+    const groupBaths = document.getElementById('groupBaths');
+
+    function handleTypeChange() {
+        const isLand = typeSelect.value === 'land';
+        groupBeds.style.display  = isLand ? 'none' : '';
+        groupBaths.style.display = isLand ? 'none' : '';
+        if (isLand) {
+            propertyForm.querySelector('[name="beds"]').value  = '';
+            propertyForm.querySelector('[name="baths"]').value = '';
+        }
+    }
+
+    typeSelect.addEventListener('change', handleTypeChange);
+
     // ── Modal ─────────────────────────────────────────────
     window.openModal = function () {
         document.getElementById('modalOverlay').classList.add('active');
         document.body.style.overflow = 'hidden';
         initializeFeatures();
+        handleTypeChange();
     };
 
     window.closeModal = function () {
@@ -295,16 +313,41 @@ document.addEventListener('DOMContentLoaded', () => {
         );
     };
 
-    window.shareProperty = function(id) {
-        const url = `${window.location.origin}/property.html?id=${id}`;
+    window.shareProperty = async function(id) {
+        const url = `${window.location.origin}/property?id=${id}`;
+        
         if (navigator.share) {
-            navigator.share({ title: 'Check out this property', url });
+            try {
+            await navigator.share({ title: 'Check out this property', url })
+            } catch (err) {
+              copyToClipboard(url)
+            }
         } else {
-            navigator.clipboard.writeText(url).then(() => {
-                alertBox.success('Link Copied', 'Property link copied to clipboard');
-            });
+            copyToClipboard(url);
         }
     };
+
+    function copyToClipboard(url) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url)
+                .then(() => alertBox.success('Link Copied', 'Property link copied to clipboard'))
+                .catch(() => fallbackCopy(url));
+        } else {
+            fallbackCopy(url);
+        }
+    }
+
+    function fallbackCopy(url) {
+        const el = document.createElement('textarea');
+        el.value = url;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        alertBox.success('Link Copied', 'Property link copied to clipboard');
+    }
 
     // ── Properties Grid ───────────────────────────────────
     window.loadProperties = async function () {
@@ -387,10 +430,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>
                         <span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0} sqft</span>
                     </div>
-                    <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views</div>
+                    <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
                 </div>
                 <div class="card-footer">
-                    <a href="/property.html?id=${p.id}" class="btn-view-details">
+                    <a href="/property?id=${p.id}" class="btn-view-details">
                         View Details <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>
@@ -398,8 +441,88 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    // ── Init ──────────────────────────────────────────────
+    //total views
+    async function loadTotalViews() {
+        const res  = await fetch('/api/agent/views');
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('total-views').innerHTML = `Views <i class="fas fa-eye"></i> <span>${data.totalViews}</span>`;
+        }
+    }
+
+ 
+    // Bio
+    const bioText     = document.getElementById('bioText');
+    const bioEditForm = document.getElementById('bioEditForm');
+    const bioInput    = document.getElementById('bioInput');
+    const bioCharCount = document.getElementById('bioCharCount');
+
+    // char counter
+    bioInput.addEventListener('input', () => {
+        bioCharCount.textContent = bioInput.value.length;
+    });
+
+    async function Bio() {
+        try {
+            const res  = await fetch('/api/get/bio');
+            const data = await res.json();
+            if (data.success) {
+                bioText.textContent = data.bio || 'No bio added yet.';
+                bioText.classList.toggle('empty', !data.bio);
+            }
+        } catch (error) {
+            console.error(error);
+            bioText.textContent = 'No bio added yet.';
+        }
+    }
+
+    window.toggleBioEdit = function () {
+        const open = bioEditForm.style.display !== 'none';
+        bioEditForm.style.display = open ? 'none' : 'block';
+        if (!open) {
+            bioInput.value = bioText.textContent === 'No bio added yet.' ? '' : bioText.textContent;
+            bioCharCount.textContent = bioInput.value.length;
+            bioInput.focus();
+        }
+    };
+
+    window.cancelBioEdit = function () {
+        bioEditForm.style.display = 'none';
+        bioInput.value = '';
+        bioCharCount.textContent = '0';
+    };
+
+    window.saveBio = async function () {
+        const bioSpinner = document.getElementById('bioSpinner');
+        const bio = bioInput.value.trim();
+        bioSpinner.style.display = 'inline-block';
+        try {
+            const res  = await fetch('/api/update/bio', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ bio })
+            });
+            const data = await res.json();
+            if (data.success) {
+                bioText.textContent = data.bio || 'No bio added yet.';
+                bioText.classList.toggle('empty', !data.bio);
+                cancelBioEdit();
+                alertBox.success('Saved', 'Bio updated successfully');
+            } else {
+                alertBox.error('Error', data.message || 'Failed to save bio');
+            }
+        } catch (error) {
+            console.error(error);
+            alertBox.error('Error', 'Something went wrong. Please try again.');
+        } finally {
+            bioSpinner.style.display = 'none';
+        }
+    };
+
+    // Init
     checkAuth();
     loadProperties();
+    loadTotalViews();
+    Bio()
 
 }); // end DOMContentLoaded

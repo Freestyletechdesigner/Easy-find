@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <title>easy find</title>
 </head>
@@ -32,6 +33,12 @@
              <a href="#agents">Our Agents</a>
              <a href="#contact">Contact us</a>
          </nav>
+            <div class="hamburger" id="hamburger">
+             <div id="hand" class="hand"></div>
+             <div id="hand" class="hand"></div>
+             <div id="hand" class="hand"></div>
+             </div>
+    </header>
              <div class="nav2" id="nav2">
              <a href="#top"><i class="fa-solid fa-house"></i> Home</a>
              <a href="#search"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
@@ -40,16 +47,24 @@
              <a href="#agents"><i class="fa-solid fa-user-tie"></i> Our Agents</a>
              <a href="#contact"><i class="fa-solid fa-envelope"></i> Contact us</a>
              </div>
-            <div class="hamburger" id="hamburger">
-             <div id="hand" class="hand"></div>
-             <div id="hand" class="hand"></div>
-             <div id="hand" class="hand"></div>
-             </div>
-    </header>
 
     <div id="alert"></div>
 
 <section class="hero">
+<div id="login-nav">Login</div>
+<div class="hold-login">
+    <div id="login-btn">as client</div>
+    <a href="/login-agent" id="login-agent-btn">as Agent</a>
+</div>
+
+<div id="user-log"></div>
+<a href="/" class="btn-logout" title="Logout">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+    </svg>
+</a>
     <div class="hold-hero-text">
         <p>Welcome to</p>
         <h1><span>E</span>asy find</h1>
@@ -588,6 +603,9 @@
 </section>
 
 <section class="login">
+    <button class="login-cancel" id="cancel-login-icon" title="Close">
+        <i class="fa-solid fa-xmark"></i>
+    </button>
     <h1>Login</h1>
         <form id="login-form">
             <input type="email" name="email" placeholder="Email Address" required>
@@ -613,20 +631,7 @@
 
 <div id="log-alert"></div>
 
-<div id="login-nav">Login</div>
-<div class="hold-login">
-    <div id="login-btn">as client</div>
-    <a href="/login-agent.html" id="login-agent-btn">as Agent</a>
-</div>
 
-<div id="user-log"></div>
-<a href="/" class="btn-logout" title="Logout">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-        <polyline points="16 17 21 12 16 7"/>
-        <line x1="21" y1="12" x2="9" y2="12"/>
-    </svg>
-</a>
 
 <section class="feeling">
     <h3>How was your experience?</h3>

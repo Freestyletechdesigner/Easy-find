@@ -182,12 +182,13 @@ header {
 
 .hold-hero-text {
     opacity: 1;
-    animation: hero-move 1.4s 1;
+    animation: hero-move 1.7s infinite alternate;
 }
 @keyframes hero-move {
     from {
-        transform: translateY(50px);
-        opacity: 0;
+        transform: translateY(-10px);
+    } to {
+        transform: translateY(10px);
     }
 }
 
@@ -756,10 +757,52 @@ header {
     margin-bottom: 24px;
 }
 
+.properties-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.views-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: #0d7068;
+    background: #e8fffe;
+    border: 1px solid #66eae3;
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    width: fit-content;
+}
+
+.properties-header h2:nth-child(1) {
+    font-size: 1.2rem;
+    font-weight: 100;
+    color: #000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.properties-header h2 p {
+    display: flex;
+    flex-direction: column;
+}
+
+.properties-header h2 i:nth-child(1) {
+    font-size: 1rem;
+    font-weight: 100;
+    color: #000000;
+    font-weight: 700;
+}
+
 .properties-header h2 {
     font-size: 1.6rem;
     font-weight: 700;
-    color: #1a1a1a;
+    color: #000000;
 }
 
 .properties-header h2 span {
@@ -770,7 +813,7 @@ header {
     padding: 2px 10px;
     border-radius: 20px;
     font-weight: 600;
-    margin-left: 8px;
+    margin-left: 2px;
     vertical-align: middle;
 }
 
@@ -1129,3 +1172,149 @@ header {
          grid-template-columns: repeat(3, 1fr);
      }
 }
+
+/* ── Bio Strip ───────────────────────────────────────── */
+.bio-strip {
+    width: 90%;
+    margin: -10px auto 24px;
+    background: rgba(255,255,255,0.75);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    border: 1px solid rgba(102,234,227,0.3);
+    padding: 10px 16px;
+    box-shadow: 0 2px 10px rgba(13,112,104,0.07);
+    animation: bio-fade-in 0.6s ease both;
+}
+
+@keyframes bio-fade-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.bio-strip-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.bio-strip-icon {
+    color: #66eae3;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.bio-strip-text {
+    flex: 1;
+    font-size: 0.82rem;
+    color: #555;
+    line-height: 1.4;
+    font-style: italic;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.3s;
+}
+
+.bio-strip-text.empty { color: #bbb; }
+
+.bio-strip-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1.5px solid #66eae3;
+    background: #e8fffe;
+    color: #0d7068;
+    font-size: 0.72rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.25s;
+    opacity: 0.6;
+}
+
+.bio-strip:hover .bio-strip-btn { opacity: 1; }
+
+.bio-strip-btn:hover {
+    background: #0d7068;
+    color: #fff;
+    border-color: #0d7068;
+    transform: rotate(15deg) scale(1.1);
+}
+
+.bio-strip-form {
+    display: none;
+    margin-top: 10px;
+    animation: bio-slide-down 0.25s ease both;
+}
+
+@keyframes bio-slide-down {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.bio-strip-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: none;
+    height: 72px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    color: #333;
+}
+
+.bio-strip-textarea:focus {
+    outline: none;
+    border-color: #66eae3;
+    box-shadow: 0 0 0 3px rgba(102,234,227,0.15);
+}
+
+.bio-strip-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.bio-char-count {
+    font-size: 0.75rem;
+    color: #bbb;
+    margin-right: auto;
+}
+
+.bio-char-count span { color: #0d7068; font-weight: 700; }
+
+.bio-cancel-btn {
+    padding: 5px 12px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    color: #888;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bio-cancel-btn:hover { border-color: #ccc; color: #555; }
+
+.bio-save-btn {
+    padding: 5px 14px;
+    border: none;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #66eae3 0%, #0d7068 100%);
+    color: white;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s;
+}
+
+.bio-save-btn:hover { opacity: 0.88; }
