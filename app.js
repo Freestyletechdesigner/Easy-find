@@ -119,6 +119,24 @@ if (!fs.existsSync(uploadPropertyDir)) fs.mkdirSync(uploadPropertyDir, { recursi
 const databaseDir = path.join(__dirname, 'database');
 if (!fs.existsSync(databaseDir)) fs.mkdirSync(databaseDir, { recursive: true });
 
+// Ensure database JSON files exist
+const dbFiles = {
+    'views.json':        { ips: [], count: 0, lastUpdated: new Date().toISOString() },
+    'post-property.json': [],
+    'messages.json':     [],
+    'bookings.json':     [],
+    'HLS.json':          [],
+    'admin.json':        [],
+    'agents.json':       [],
+    'users.json':        []
+};
+Object.entries(dbFiles).forEach(([file, defaultVal]) => {
+    const filePath = path.join(databaseDir, file);
+    if (!fs.existsSync(filePath)) {
+        fs.writeFileSync(filePath, JSON.stringify(defaultVal, null, 2));
+    }
+});
+
 app.use(express.static('public'));
 app.use('/admin', express.static('admin'));
 app.use('/agent-loged', express.static('agent-loged'));
@@ -146,4 +164,4 @@ app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));
 });
 
-app.listen(9000,'0.0.0.0', () => console.log('server running'))
+app.listen(process.env.PORT || 9000, '0.0.0.0', () => console.log('server running on port', process.env.PORT || 9000))
