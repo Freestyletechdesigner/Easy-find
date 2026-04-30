@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const app = express();
 const cookieParser = require('cookie-parser');
@@ -34,7 +35,7 @@ app.use(express.urlencoded({
 app.use(cookieParser());
 
 app.use(session({
-    secret: 'fsDGUHArou##$4de',
+    secret: process.env.SESSION_SECRET || 'fsDGUHArou##$4de',
     resave: false,
     saveUninitialized: false,
     cookie: {
