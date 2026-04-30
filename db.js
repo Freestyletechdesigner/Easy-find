@@ -2,6 +2,7 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
+    console.log('MONGO_URI:', process.env.MONGO_URI ? 'SET' : 'NOT SET');
     try {
         await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/easyfind');
         console.log('MongoDB Connected');
