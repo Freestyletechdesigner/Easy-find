@@ -118,7 +118,7 @@ module.exports = function(app) {
             res.json({ success: true, message: 'User status updated successfully' });
 
         } catch (error) {
-            console.error('Error updating user:', error);
+            console.error('Error updating user hi:', error);
             res.status(500).json({ success: false, message: 'Error updating user' });
         }
     });
