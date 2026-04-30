@@ -1,8 +1,10 @@
 require('dotenv').config();
+require('dotenv').config({ path: '/etc/secrets/.env' });
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-    console.log('MONGO_URI:', process.env.MONGO_URI ? 'SET' : 'NOT SET');
+    const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/easyfind';
+    console.log('Connecting to:', uri.includes('127.0.0.1') ? 'LOCAL (MONGO_URI not set!)' : 'Atlas');
     try {
         await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/easyfind');
         console.log('MongoDB Connected');
