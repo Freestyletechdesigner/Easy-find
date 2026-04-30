@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - Hotel Booking</title>
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <link rel="stylesheet" href="style.css">
+    <script src="alert-box.js"></script>
+    <style>
+        .success-container {
+            max-width: 600px;
+            margin: 4rem auto;
+            padding: 3rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background: #28a745;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 2rem;
+            color: white;
+            font-size: 2rem;
+        }
+        
+        .success-title {
+            color: #28a745;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        
+        .booking-details {
+            background: #f8f9fa;
+            padding: 2rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+            text-align: left;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .detail-row:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+        
+        .receipt-info {
+            background: #e8f5e8;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin: 2rem 0;
+        }
+        
+        .receipt-info h3 {
+            color: #155724;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="success-container">
+        <div class="success-icon">✓</div>
+        
+        <h1 class="success-title">Payment Successful!</h1>
+        <p>Thank you for your booking. Your payment has been processed successfully.</p>
+        
+        <div class="booking-details">
+            <h3>Booking Confirmation</h3>
+            <div class="detail-row">
+                <span>Booking ID:</span>
+                <strong id="booking-id">--</strong>
+            </div>
+            <div class="detail-row">
+                <span>Payment Reference:</span>
+                <strong id="payment-ref">--</strong>
+            </div>
+            <div class="detail-row">
+                <span>Check-in Date:</span>
+                <span id="checkin-date">--</span>
+            </div>
+            <div class="detail-row">
+                <span>Check-out Date:</span>
+                <span id="checkout-date">--</span>
+            </div>
+            <div class="detail-row">
+                <span>Number of Nights:</span>
+                <span id="nights-count">--</span>
+            </div>
+            <div class="detail-row">
+                <span>Number of Guests:</span>
+                <span id="guests-count">--</span>
+            </div>
+            <div class="detail-row">
+                <span>Total Amount Paid:</span>
+                <span id="total-amount">₦0</span>
+            </div>
+        </div>
+        
+        <div class="receipt-info">
+            <h3>Important Information</h3>
+            <ul style="text-align: left; margin: 0;">
+                <li>A confirmation email will be sent to your registered email address</li>
+                <li>Please arrive at the hotel with a valid ID for check-in</li>
+                <li>Check-in time: 2:00 PM | Check-out time: 12:00 PM</li>
+                <li>For any inquiries, contact us with your booking ID</li>
+            </ul>
+        </div>
+        
+        <div class="btn-group">
+            <a href="/?payment=success&booking=" class="btn btn-primary" id="home-btn">Return to Home</a>
+            <button class="btn btn-secondary" onclick="window.print()">Print Receipt</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const reference = urlParams.get('reference');
+            
+            if (reference) {
+                verifyPayment(reference);
+            } else {
+                // Load from localStorage if no reference in URL
+                loadBookingFromStorage();
+            }
+        });
+
+        async function verifyPayment(reference) {
+            try {
+                const response = await fetch(`/api/payment/verify/${reference}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayPaymentSuccess(result.data);
+                } else {
+                    alertBox.error(
+                        'Payment Verification Failed',
+                        'Please contact support with your payment reference.',
+                        () => {
+                            window.location.href = '/';
+                        }
+                    );
+                }
+            } catch (error) {
+                console.error('Payment verification error:', error);
+                loadBookingFromStorage(); // Fallback to localStorage
+            }
+        }
+
+        function loadBookingFromStorage() {
+            const booking = JSON.parse(localStorage.getItem('currentBooking') || '{}');
+            if (booking.id) {
+                displayBookingDetails(booking);
+            }
+        }
+
+        function displayPaymentSuccess(paymentData) {
+            // Display payment-specific data
+            document.getElementById('payment-ref').textContent = paymentData.reference || '--';
+            
+            // If booking data is in payment metadata
+            if (paymentData.metadata && paymentData.metadata.booking_id) {
+                document.getElementById('booking-id').textContent = paymentData.metadata.booking_id;
+            }
+            
+            // Display amount from payment
+            if (paymentData.amount) {
+                document.getElementById('total-amount').textContent = `₦${(paymentData.amount / 100).toLocaleString()}`;
+            }
+            
+            // Load additional booking details from localStorage
+            loadBookingFromStorage();
+        }
+
+        function displayBookingDetails(booking) {
+            document.getElementById('booking-id').textContent = booking.id || '--';
+            
+            // Update home button with booking ID
+            const homeBtn = document.getElementById('home-btn');
+            if (homeBtn && booking.id) {
+                homeBtn.href = `/?payment=success&booking=${booking.id}`;
+            }
+            
+            if (booking.checkIn) {
+                document.getElementById('checkin-date').textContent = new Date(booking.checkIn).toLocaleDateString();
+            }
+            
+            if (booking.checkOut) {
+                document.getElementById('checkout-date').textContent = new Date(booking.checkOut).toLocaleDateString();
+            }
+            
+            document.getElementById('nights-count').textContent = booking.nights || '--';
+            document.getElementById('guests-count').textContent = booking.guests || '--';
+            
+            if (booking.totalPrice && !document.getElementById('total-amount').textContent.includes('₦')) {
+                document.getElementById('total-amount').textContent = `₦${booking.totalPrice.toLocaleString()}`;
+            }
+        }
+
+        // Clear booking data from localStorage after successful display
+        setTimeout(() => {
+            localStorage.removeItem('currentBooking');
+            localStorage.removeItem('currentBookingId');
+        }, 5000);
+    </script>
+</body>
+</html>

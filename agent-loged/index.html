@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <title>Agent Dashboard</title>
+</head>
+<body>
+
+    <header>
+        <a href="/" class="logo"><span>E</span>asy Find</a>
+
+        <div class="profile">
+            <img src="profile.png" alt="Profile" id="profile-picture" onclick="window.location.href='upload-image.html'" title="Click to change profile picture">
+            <p id="agent-name">Loading...</p>
+        </div>
+        
+         <nav class="links">
+             <a href="/">Back to Home</a>
+             <a href="#search-bar">Search</a>
+             <a href="#about">Setting</a>
+            <button class="logout-btn" onclick="logout()" title="Logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+         </nav>
+             <div class="nav2" id="nav2">
+             <a href="/"><i class="fa-solid fa-house"></i> Back to Home</a>
+             <a href="#search"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+             <a href="#about"><i class="fa-solid fa-gear"></i> Setting</a>
+            <button class="logout-btn" onclick="logout()" title="Logout">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+             </div>
+            <div class="hamburger" id="hamburger">
+             <div id="hand" class="hand"></div>
+             <div id="hand" class="hand"></div>
+             <div id="hand" class="hand"></div>
+             </div>
+
+    </header>
+
+    <section class="hero">
+        <div class="hold-hero-text">
+            <p>Welcome to your</p>
+            <h1>PORTFOLIO</h1>
+            <a onclick="openModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                Upload properties
+            </a>
+        </div>
+    
+        <!-- RESPONSIVE BRAND SHAPE -->
+        <div class="hero-brand"></div>
+    </section>
+
+    <!-- Modal -->
+    <section class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">List New Property</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            
+            <div class="modal-body">
+                <form enctype="multipart/form-data" id="propertyForm">
+                    <!-- Image Upload -->
+                    <div class="form-group">
+                        <label>Property Images</label>
+                        <div class="upload-preview" id="imagePreviewContainer"></div>
+                        <div class="image-upload-zone" onclick="document.getElementById('fileInput').click()">
+                            <input type="file" name="file" id="fileInput" class="upload-input" accept="image/*" multiple>
+                            <div class="upload-icon"><i class="fa-regular fa-cloud"></i></div>
+                            <div class="upload-text">Click to upload images</div>
+                            <div class="upload-hint">PNG, JPG, GIF up to 10MB</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Property Title *</label>
+                            <input type="text" name="title" required placeholder="e.g., Flats or Duplex, etc">
+                        </div>
+                        <div class="form-group">
+                            <label>Price ($) *</label>
+                            <input type="text" name="price" required min="0" placeholder="500000">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Property Type</label>
+                            <select name="type" id="typeSelect">
+                                <option value="house">House</option>
+                                <option value="apartment">Apartment</option>
+                                <option value="land">Land</option>
+                                <option value="villa">Villa</option>
+                                <option value="commercial">Commercial</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Listing Category *</label>
+                            <select name="category" required>
+                                <option value="" disabled selected>Select category</option>
+                                <option value="sale">For Sale</option>
+                                <option value="rent">For Rent</option>
+                                <option value="shortlet">Short-let</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Location *</label>
+                            <input type="text" name="location" required placeholder="Agbani Road">
+                        </div>
+                    </div>
+
+                    <div class="form-row three">
+                        <div class="form-group" id="groupBeds">
+                            <label>Bedrooms</label>
+                            <input type="number" name="beds" min="0" placeholder="0">
+                        </div>
+                        <div class="form-group" id="groupBaths">
+                            <label>Bathrooms</label>
+                            <input type="number" name="baths" min="0" step="0.5" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Area (sqft)</label>
+                            <input type="number" name="area" min="0" placeholder="0">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" rows="3" placeholder="Describe the unique features of this property..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Features (Select all that apply)</label>
+                        <div class="features-container" id="featuresContainer"></div>
+                        <input type="hidden" name="features" id="featuresInput">
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="submit" onclick="submitProperty()">
+                    <span class="spinner"></span>
+                    <span class="btn-text">Publish Listing</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bio Section — compact strip below hero -->
+    <div class="bio-strip" id="bioStrip">
+        <div class="bio-strip-inner">
+            <span class="bio-strip-icon"><i class="fas fa-user-pen"></i></span>
+            <p class="bio-strip-text" id="bioText">No bio added yet.</p>
+            <button class="bio-strip-btn" onclick="toggleBioEdit()" id="bioEditBtn" title="Edit bio">
+                <i class="fas fa-pen"></i>
+            </button>
+        </div>
+        <!-- Edit mode (hidden by default) -->
+        <div class="bio-strip-form" id="bioEditForm">
+            <textarea id="bioInput" name="bio" class="bio-strip-textarea" maxlength="300"
+                placeholder="Tell clients about yourself..."></textarea>
+            <div class="bio-strip-actions">
+                <span class="bio-char-count"><span id="bioCharCount">0</span>/300</span>
+                <button class="bio-cancel-btn" onclick="cancelBioEdit()">Cancel</button>
+                <button class="bio-save-btn" onclick="saveBio()">
+                    <span class="spinner" id="bioSpinner" style="display:none;"></span>
+                    <span>Save</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+<!-- Properties Section -->
+    <section class="properties-section" id="properties">
+        <div class="properties-header">
+            <div class="properties-header-left">
+                <h2>My Listings <span id="property-count"></span></h2>
+                <span class="views-badge" id="total-views"></span>
+            </div>
+            <button class="btn-add" onclick="openModal()">
+                <i class="fas fa-plus"></i> Add New
+            </button>
+        </div>
+
+        <div class="properties-grid" id="propertiesGrid">
+            <!-- Cards injected by JS -->
+        </div>
+
+        <div class="properties-empty" id="propertiesEmpty" style="display:none;">
+            <i class="fas fa-home"></i>
+            <p>No properties listed yet</p>
+            <button class="btn-add" onclick="openModal()">List your first property</button>
+        </div>
+    </section>
+
+    <script src="/alert-box.js"></script>
+    <script src="logic.js"></script>
+    
+</body>
+</html>
