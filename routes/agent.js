@@ -181,7 +181,13 @@ const agent = (app) => {
     });
 
     // Update Bio
-    app.post('/api/update/bio', requireAgent, async (req, res) => {
+    app.post('/api/update/bio', requireAgent,[
+        check('bio')
+             .optional()
+             .trim()
+             .isLength({ max: 300 })
+             .trim()
+    ], async (req, res) => {
         const bio = (req.body.bio || '').trim().slice(0, 300);
         try {
             const agent = await AgentUser.findById(req.session.agent.id);
@@ -205,6 +211,42 @@ const agent = (app) => {
             res.status(500).json({ success: false, message: 'Error fetching bio' });
         }
     });  
+
+    // ── Send OTP ──────────────────────────────────────────
+    app.post('/api/agent/send-otp', async (req, res) => {
+        const { phone } = req.body;
+        if (!phone) return res.status(400).json({ success: false, message: 'Phone number required' });
+
+        const { sendOTP } = require('../utils/sms.js');
+        const result = await sendOTP(phone);
+
+        if (!result.success) {
+            return res.status(500).json({ success: false, message: result.message });
+        }
+
+        req.session.otp = {
+            code:    result.otp,
+            phone,
+            expires: Date.now() + 10 * 60 * 1000
+        };
+
+        res.json({ success: true, message: 'OTP sent successfully' });
+    });
+
+    // ── Verify OTP ────────────────────────────────────────
+    app.post('/api/agent/verify-otp', (req, res) => {
+        const { otp } = req.body;
+        const stored = req.session.otp;
+
+        if (!stored) return res.status(400).json({ success: false, message: 'No OTP requested' });
+        if (Date.now() > stored.expires) return res.status(400).json({ success: false, message: 'OTP expired' });
+        if (otp !== stored.code) return res.status(400).json({ success: false, message: 'Invalid OTP' });
+
+        req.session.otp = null;
+        req.session.phoneVerified = stored.phone;
+
+        res.json({ success: true, message: 'Phone verified successfully' });
+    });
 
     // Get all agents (admin only)
     app.get('/api/agents', requireAdmin, async (req, res) => {

@@ -397,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const date     = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
         return `
-            <div class="property-card" id="card-${p.id}">
+            <div class="property-card" id="card-${p._id}">
                 <div class="card-image">
                     <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
                     <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
@@ -406,17 +406,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     <!-- 3-dot menu -->
                     <div class="card-menu-wrap">
-                        <button class="card-menu-btn" onclick="toggleCardMenu('${p.id}')">
+                        <button class="card-menu-btn" onclick="toggleCardMenu('${p._id}')">
                             <i class="fas fa-ellipsis-v"></i>
                         </button>
-                        <div class="card-menu" id="menu-${p.id}">
-                            <button onclick="deleteProperty('${p.id}')">
+                        <div class="card-menu" id="menu-${p._id}">
+                            <button onclick="deleteProperty('${p._id}')">
                                 <i class="fas fa-trash"></i> Delete
                             </button>
-                            <button onclick="shareProperty('${p.id}')">
+                            <button onclick="shareProperty('${p._id}')">
                                 <i class="fas fa-share-alt"></i> Share
                             </button>
-                            <a href="/property.html?id=${p.id}" target="_blank">
+                            <a href="/property?id=${p._id}" target="_blank">
                                 <i class="fas fa-eye"></i> Preview
                             </a>
                         </div>
@@ -433,7 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
                 </div>
                 <div class="card-footer">
-                    <a href="/property?id=${p.id}" class="btn-view-details">
+                    <a href="/property?id=${p._id}" class="btn-view-details">
                         View Details <i class="fas fa-arrow-right"></i>
                     </a>
                 </div>

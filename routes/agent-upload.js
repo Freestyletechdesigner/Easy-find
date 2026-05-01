@@ -2,6 +2,8 @@ const multer = require('multer');
 const {check, validationResult} = require('express-validator');
 const path = require('path');
 const fs = require('fs');
+const AgentUser = require('../model/AgentUser.js');
+const AgentPost = require('../model/AgentPost.js');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -32,15 +34,11 @@ const upload = multer({
         cb(null, true)
     },
     limits: {
-        fileSize: 10 * 1024 * 1024
+        fileSize: 20 * 1024 * 1024
     }
 })
 
-const POST_PROPERTY = path.join(ROOT, 'database', 'post-property.json');
-
 const AGENT_POST = (app) => {
-
-    const AGENTS_FILE = path.join(ROOT, 'database', 'agents.json');
 
     // Middleware to require agent authentication
     function requireAgent(req, res, next) {
@@ -64,7 +62,7 @@ const AGENT_POST = (app) => {
         check('area'),
         check('description'),
         check('features')
-    ],(req, res) => {
+    ],async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             console.log('Validation errors:', errors.array());
@@ -78,44 +76,47 @@ const AGENT_POST = (app) => {
         const isLand = type === 'land';
         const imageName = req.files.map(file => file.filename);
         const agentId = req.session.agent.id;
-        const data = JSON.parse(fs.readFileSync(POST_PROPERTY, 'utf8'));
 
-        const newPost = {
-            agentId,
-            id: `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            title,
-            type,
-            category,
-            price,
-            location,
-            beds:  isLand ? null : (beds  || null),
-            baths: isLand ? null : (baths || null),
-            area,
-            description,
-            features,
-            imageNames: imageName,
-            date: Date.now(),
-            view: 0
+        try {
+            const newPost = new AgentPost({
+                agentId,
+                title,
+                type,
+                category,
+                price,
+                location,
+                beds:  isLand ? null : (beds  || null),
+                baths: isLand ? null : (baths || null),
+                area,
+                description,
+                features,
+                imageNames: imageName,
+                date: Date.now(),
+                view: 0
+            }); 
+            //save data
+            await newPost.save()
+    
+            //send a res to user
+            res.json({
+                success: true,
+                postID: newPost._id
+            })
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({
+                success: false,
+                message: 'Server Error'
+            })
         }
-        //add to array
-        data.unshift(newPost);
-        //save data
-        fs.writeFileSync(POST_PROPERTY, JSON.stringify(data, null, 2));
-
-        //send a res to user
-        res.json({
-            success: true,
-            postID: newPost.id
-        })
 
     });
 
     //get request for agent only
-    app.get('/api/agent/property', requireAgent, (req, res) => {
+    app.get('/api/agent/property', requireAgent, async (req, res) => {
         try {
             const agentId = req.session.agent.id;
-            const data = JSON.parse(fs.readFileSync(POST_PROPERTY, 'utf8'));
-            const agentPost = data.filter(post => post.agentId === agentId);
+            const agentPost = await AgentPost.find({agentId})
 
             res.json({
                 success: true,
@@ -127,13 +128,19 @@ const AGENT_POST = (app) => {
     });
 
     //get request for all user
-    app.get('/api/post/property', (req, res) => {
+    app.get('/api/post/property', async (req, res) => {
         try {
-            const data = JSON.parse(fs.readFileSync(POST_PROPERTY, 'utf8'));
+            const agentPost = await AgentPost.find().lean()
+
+            // Fisher-Yates shuffle
+            for (let i = agentPost.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [agentPost[i], agentPost[j]] = [agentPost[j], agentPost[i]]
+            }
 
             res.json({
                 success: true,
-                property: data
+                property: agentPost
             });
         } catch(err) {
             res.status(500).json({ success: false, message: 'Error loading properties' });
@@ -141,38 +148,33 @@ const AGENT_POST = (app) => {
     });
 
     //delete post by agent only 
-    app.delete('/api/agent/property/:id', requireAgent, (req, res) => {
+    app.delete('/api/agent/property/:id', requireAgent, async (req, res) => {
         try {
             const agentId    = req.session.agent.id;
             const propertyId = req.params.id;
 
             console.log('[DELETE] propertyId:', propertyId, '| sessionAgentId:', agentId);
 
-            const data    = JSON.parse(fs.readFileSync(POST_PROPERTY, 'utf8'));
-            const post    = data.find(p => p.id === propertyId);
+            const agentPost = await AgentPost.findById(propertyId);
+            const agentUser = await AgentUser.findById(agentId);
 
-            console.log('[DELETE] post found:', post ? `agentId=${post.agentId}` : 'NOT FOUND');
-
-            if (!post) {
+            if (!agentPost) {
                 return res.status(404).json({ success: false, message: 'Property not found' });
             }
 
-            if (post.agentId !== agentId) {
+            if (!agentUser) {
                 console.log('[DELETE] agentId mismatch — post.agentId:', post.agentId, '!== session:', agentId);
                 return res.status(403).json({ success: false, message: 'Not authorised to delete this property' });
             }
 
             // delete image files
-            if (post.imageNames && post.imageNames.length) {
-                post.imageNames.forEach(img => {
+            if (agentPost.imageNames && agentPost.imageNames.length) {
+                agentPost.imageNames.forEach(img => {
                     const imgPath = path.join(ROOT, 'agent-loged', 'upload-property', img);
                     try { fs.unlinkSync(imgPath); } catch (_) {}
                 });
             }
-
-            const updated = data.filter(p => p.id !== propertyId);
-            fs.writeFileSync(POST_PROPERTY, JSON.stringify(updated, null, 2));
-
+            await AgentPost.findByIdAndDelete(propertyId);
             res.json({ success: true, message: 'Property deleted' });
         } catch (err) {
             res.status(500).json({ success: false, message: 'Error deleting property' });
@@ -180,10 +182,11 @@ const AGENT_POST = (app) => {
     });
 
     //total view for post
-    app.get('/api/agent/views', requireAgent, (req, res) => {
-        const data       = JSON.parse(fs.readFileSync(POST_PROPERTY, 'utf8'));
-        const agentPosts = data.filter(p => p.agentId === req.session.agent.id);
-        const totalViews = agentPosts.reduce((sum, p) => sum + (p.view || 0), 0);
+    app.get('/api/agent/views', requireAgent, async (req, res) => {
+        const agentId = req.session.agent.id;
+        const agentPost = await AgentPost.find({ agentId })
+
+        const totalViews = agentPost.reduce((sum, p) => sum + (p.view || 0), 0);
         res.json({ success: true, totalViews });
     });
 }

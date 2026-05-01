@@ -76,6 +76,11 @@
     }
         // set the card function up 
         function propertyCard(p) {
+           // Fisher-Yates shuffle
+           for (let i = p.length - 1; i > 0; i--) {
+               const j = Math.floor(Math.random() * (i + 1));
+               [p[i], p[j]] = [p[j], p[i]]
+           }
         const imgSrc   = p.imageNames && p.imageNames.length
             ? `/agent-loged/upload-property/${p.imageNames[0]}`
             : 'profile.png';
