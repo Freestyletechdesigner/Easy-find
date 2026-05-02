@@ -1,35 +1,53 @@
 const axios = require('axios');
 
-// Generate a 6-digit OTP
+// Set to true for testing without real SMS
+const TEST_MODE = true;
+
 function generateOTP() {
     return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// Send SMS via Termii
 async function sendSMS(phone, message) {
+    // TEST MODE: Just log and return success
+    if (TEST_MODE) {
+        console.log(' [TEST MODE] SMS would be sent to:', phone);
+        console.log(' Message:', message);
+        return { success: true, data: { message: 'Test mode - SMS not actually sent' } };
+    }
+
+    const apiKey = process.env.TERMII_API_KEY;
+    const sender = process.env.TERMII_SENDER || 'Termii';
+
+    // convert 08012345678 → 2348012345678
+    const mobile = phone.startsWith('0') ? '234' + phone.slice(1) : phone;
+
     try {
         const res = await axios.post('https://v3.api.termii.com/api/sms/send', {
-            to:        phone,
-            from:      process.env.TERMII_SENDER_ID || 'Easy Find',
-            sms:       message,
-            type:      'plain',
-            channel:   'generic',
-            api_key:   process.env.TERMII_API_KEY
+            to:      mobile,
+            from:    sender,
+            sms:     message,
+            type:    'plain',
+            channel: 'generic',
+            api_key: apiKey
         });
-        return { success: true, data: res.data };
+        console.log('Termii response:', res.data);
+        if (res.data?.code === 'ok') {
+            return { success: true, data: res.data };
+        }
+        return { success: false, message: res.data?.message || 'SMS failed' };
     } catch (err) {
         console.error('SMS error:', err.response?.data || err.message);
         return { success: false, message: 'Failed to send SMS' };
     }
 }
 
-// Send OTP to phone number
 async function sendOTP(phone) {
-    const otp = generateOTP();
-    const message = `Your Easy Find verification code is: ${otp}. Valid for 10 minutes.`;
-    const result = await sendSMS(phone, message);
+    const otp     = generateOTP();
+    const message = `Your Easy Find login pin is ${otp}. Expires in 10 minutes. Do not share.`;
+    const result  = await sendSMS(phone, message);
     if (result.success) {
-        return { success: true, otp }; // store otp in session to verify later
+        console.log(' [OTP GENERATED]:', otp, '- Use this to test!');
+        return { success: true, otp };
     }
     return { success: false, message: result.message };
 }

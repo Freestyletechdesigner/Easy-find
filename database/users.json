@@ -1,15 +1,1 @@
-[
-  {
-    "id": "USER_91F8C031",
-    "name": "Freestyle",
-    "email": "freedom@email.com",
-    "password": "$2b$12$O8um7U1kJ0u9YnwpNe4XmuB8fLIe0PLoRPvkd2CvCFRTpuNrmcWD6",
-    "number": "07042648065",
-    "status": "active",
-    "registrationDate": "2026-03-05T20:49:30.789Z",
-    "lastLogin": "2026-03-31T20:54:10.692Z",
-    "loginCount": 3,
-    "ipAddress": "127.0.0.1",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.0.0 Safari/537.36"
-  }
-]
+[]

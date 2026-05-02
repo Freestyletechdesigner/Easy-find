@@ -1,6 +1,26 @@
 const multer = require('multer');
 const AgentUser = require('../model/AgentUser.js');
 const { check, validationResult } = require('express-validator');
+const rateLimit = require('express-rate-limit');
+
+// Strict limiter for Login and OTP
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 4, // Limit each IP to 5 requests per windowMs
+    message: {
+        success: false, 
+        message: 'Too many attempts. Please try again after 15 minutes.'
+    },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// General limiter for public profiles/status
+const apiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 60, // 60 requests per minute
+    message: { success: false, message: 'Too many requests.' }
+});
 
 const upload = multer();
 
@@ -79,7 +99,7 @@ const agent = (app) => {
     });
 
     // Login
-    app.post('/api/agent/login', upload.none(), [
+    app.post('/api/agent/login', authLimiter, upload.none(), [
         check('email').isEmail().normalizeEmail().withMessage('Invalid email'),
         check('password').notEmpty().withMessage('Password is required')
     ], async (req, res) => {
@@ -212,30 +232,81 @@ const agent = (app) => {
         }
     });  
 
-    // ── Send OTP ──────────────────────────────────────────
-    app.post('/api/agent/send-otp', async (req, res) => {
-        const { phone } = req.body;
-        if (!phone) return res.status(400).json({ success: false, message: 'Phone number required' });
-
-        const { sendOTP } = require('../utils/sms.js');
-        const result = await sendOTP(phone);
-
-        if (!result.success) {
-            return res.status(500).json({ success: false, message: result.message });
+    // Get all agents (admin only)
+    app.get('/api/agents', requireAdmin, async (req, res) => {
+        try {
+            const agents = await AgentUser.find().select('-password').lean();
+            res.json({ success: true, agents });
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Error fetching agents' });
         }
-
-        req.session.otp = {
-            code:    result.otp,
-            phone,
-            expires: Date.now() + 10 * 60 * 1000
-        };
-
-        res.json({ success: true, message: 'OTP sent successfully' });
     });
 
-    // ── Verify OTP ────────────────────────────────────────
+    // Send code for verification
+    app.post('/api/agent/send-code', authLimiter, async (req, res) => {
+        try {
+            const number = req.body.number;
+
+            if (!number) {
+                return res.status(400).json({ success: false, message: 'Phone number are required' });
+            }
+
+            const user = await AgentUser.findOne({ number });
+            if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+            //send code to SMS
+            const phone = user.number;
+            const { sendOTP } = require('../utils/sms.js');
+            const result = await sendOTP(phone);
+
+            if (!result.success) {
+                return res.status(500).json({ success: false, message: result.message });
+            }
+
+            req.session.otp = {
+                code:    result.otp,
+                phone,
+                expires: Date.now() + 10 * 60 * 1000
+            };
+
+            res.json({ success: true, message: 'Code has been sent to your SMS' });
+
+        } catch (error) {
+            console.error('Password reset error:', error);
+            res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+        }
+    });
+
+    //Password reset
+    app.post('/api/agent/reset-password', async (req, res) => {
+        const { newPassword } = req.body;
+        const phone = req.session.phoneVerified;
+
+        if (!phone) 
+            return res.status(403).json({ success: false, message: 'Not verified. Start over.' });
+        if (!newPassword || newPassword.length < 8)
+            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword))
+            return res.status(400).json({ success: false, message: 'Password must contain uppercase, lowercase, and number' });
+
+        try {
+            const agent = await AgentUser.findOne({ number: phone });
+            if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
+
+            agent.password = newPassword;
+            agent.passwordResetAt = new Date();
+            await agent.save();
+
+            req.session.phoneVerified = null;
+            res.json({ success: true, message: 'Password reset successfully' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    });
+
+    // Verify OTP 
     app.post('/api/agent/verify-otp', (req, res) => {
-        const { otp } = req.body;
+        const otp = req.body.otp;
         const stored = req.session.otp;
 
         if (!stored) return res.status(400).json({ success: false, message: 'No OTP requested' });
@@ -245,17 +316,7 @@ const agent = (app) => {
         req.session.otp = null;
         req.session.phoneVerified = stored.phone;
 
-        res.json({ success: true, message: 'Phone verified successfully' });
-    });
-
-    // Get all agents (admin only)
-    app.get('/api/agents', requireAdmin, async (req, res) => {
-        try {
-            const agents = await AgentUser.find().select('-password').lean();
-            res.json({ success: true, agents });
-        } catch (err) {
-            res.status(500).json({ success: false, message: 'Error fetching agents' });
-        }
+        res.json({ success: true, message: 'Phone number verified successfully' });
     });
 
 };
