@@ -206,6 +206,7 @@ async function loadAgent(agentId) {
         if (!agent) return;
 
         $('agentName').textContent = agent.name || 'Agent';
+        $('agent-stand').textContent = agent.stand || '';
 
         profile.addEventListener('click', () => {
             window.location.href = `/agent-profile?id=${agent.id}`

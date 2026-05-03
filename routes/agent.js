@@ -70,6 +70,7 @@ const agent = (app) => {
                 number: phone,
                 role: 'agent',
                 status: 'active',
+                stand: 'Not verified',
                 bio: bio || '',
                 registrationDate: new Date(),
                 ipAddress: req.ip || req.connection.remoteAddress
@@ -163,7 +164,7 @@ const agent = (app) => {
     app.get('/api/agent/public/:id', async (req, res) => {
         try {
             const agent = await AgentUser.findById(req.params.id)
-                .select('name profilePicture bio registrationDate')
+                .select('name profilePicture bio stand registrationDate')
                 .lean();
             if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
             res.json({
@@ -173,6 +174,7 @@ const agent = (app) => {
                     name: agent.name,
                     profilePicture: agent.profilePicture || null,
                     bio: agent.bio || null,
+                    stand: agent.stand || null,
                     joinedAt: agent.registrationDate || null
                 }
             });
@@ -197,6 +199,32 @@ const agent = (app) => {
             res.json({ success: true, agent });
         } catch (err) {
             res.status(500).json({ success: false, message: 'Error fetching profile' });
+        }
+    });
+
+    // Update agent status
+    app.patch('/api/users/:id', async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { status } = req.body;
+
+            if (!['active', 'inactive', 'suspended'].includes(status)) {
+                return res.status(400).json({ success: false, message: 'Invalid status. Must be: active, inactive, or suspended' });
+            }
+
+            const agent = await AgentUser.findByIdAndUpdate(
+                id,
+                { status, updatedAt: new Date() },
+                { new: true }
+            );
+
+            if (!agent) return res.status(404).json({ success: false, message: 'User not found' });
+
+            res.json({ success: true, message: 'User status updated successfully' });
+
+        } catch (error) {
+            console.error('Error updating user hi:', error);
+            res.status(500).json({ success: false, message: 'Error updating user' });
         }
     });
 

@@ -31,10 +31,12 @@ const agentSchema = new mongoose.Schema({
         trim: true
     },
     profilePicture: {
-        type: String,
-        unique: true
+        type: String
     },
     status: {
+        type: String
+    },
+    stand: {
         type: String
     },
     bio: {
