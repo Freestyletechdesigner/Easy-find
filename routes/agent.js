@@ -347,6 +347,93 @@ const agent = (app) => {
         res.json({ success: true, message: 'Phone number verified successfully' });
     });
 
+    // ADMIN ROUTES - Agent Management
+    // Get all agents (admin only)
+    app.get('/api/admin/agents', requireAdmin, async (req, res) => {
+        try {
+            const AgentPost = require('../model/AgentPost.js');
+            
+            // Get all agents with property count
+            const agents = await AgentUser.find()
+                .select('name email number profilePicture status stand registrationDate lastLogin loginCount')
+                .lean();
+
+            // Get property counts for each agent
+            const agentIds = agents.map(a => a._id.toString());
+            const propertyCounts = await AgentPost.aggregate([
+                { $match: { agentId: { $in: agentIds } } },
+                { $group: { _id: '$agentId', count: { $sum: 1 } } }
+            ]);
+
+            // Map property counts to agents
+            const propertyCountMap = {};
+            propertyCounts.forEach(pc => {
+                propertyCountMap[pc._id] = pc.count;
+            });
+
+            agents.forEach(agent => {
+                agent.propertyCount = propertyCountMap[agent._id.toString()] || 0;
+            });
+
+            // Get total properties
+            const totalProperties = await AgentPost.countDocuments();
+
+            res.json({
+                success: true,
+                agents,
+                totalProperties
+            });
+
+        } catch (err) {
+            console.error('Error fetching agents:', err);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    });
+
+    // Update agent stand and status (admin only)
+    app.patch('/api/admin/agents/:id', requireAdmin, async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { stand, status } = req.body;
+
+            if (status && !['active', 'inactive', 'suspended'].includes(status)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid status. Must be: active, inactive, or suspended'
+                });
+            }
+
+            const updateData = {};
+            if (stand !== undefined) updateData.stand = stand;
+            if (status) updateData.status = status;
+
+            const agent = await AgentUser.findByIdAndUpdate(
+                id,
+                updateData,
+                { new: true }
+            );
+
+            if (!agent) {
+                return res.status(404).json({ success: false, message: 'Agent not found' });
+            }
+
+            res.json({
+                success: true,
+                message: 'Agent updated successfully',
+                agent: {
+                    id: agent._id,
+                    name: agent.name,
+                    stand: agent.stand,
+                    status: agent.status
+                }
+            });
+
+        } catch (err) {
+            console.error('Error updating agent:', err);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    });
+
 };
 
 module.exports = agent;

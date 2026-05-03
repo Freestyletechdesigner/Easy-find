@@ -938,9 +938,12 @@
                 if (data.success) {
                     showLoginAlert('Login successful!', 'success');
                     
-                    if (data.role === 'admin') {
+                    // Check if admin or regular user
+                    if (data.admin) {
+                        // Admin login
                         setTimeout(() => { window.location.href = '/admin'; }, 1000);
-                    } else {
+                    } else if (data.user) {
+                        // Regular user login
                         userLog.textContent = data.user.name[0];
                         loginNav.style.display = 'none';
                         holdLogin.style.right = '-10rem';
