@@ -189,6 +189,32 @@ const AGENT_POST = (app) => {
         const totalViews = agentPost.reduce((sum, p) => sum + (p.view || 0), 0);
         res.json({ success: true, totalViews });
     });
+
+    //find each property by id param
+    app.get('/api/view/property/:id', async (req, res) => {
+        const id = req.params.id;
+        
+        try {
+            const agentPost = await AgentPost.findById(id);
+            console.log('Found property:', agentPost ? 'YES' : 'NO');
+            
+            if (!agentPost) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Property not found'
+                });
+            }
+            
+            res.json({ success: true, property: agentPost });
+        } catch (error) {
+            console.error('Error fetching property:', error.message);
+            res.status(500).json({
+                success: false,
+                message: 'Server error: ' + error.message
+            });
+        }
+    });
+
 }
 
 module.exports = AGENT_POST;

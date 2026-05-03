@@ -23,6 +23,7 @@ function getQueryId() {
 // ── Load Property ─────────────────────────────────────
 async function loadProperty() {
     const id = getQueryId();
+    console.log('🔍 Property ID from URL:', id);
     if (!id) { showError('No property ID provided.'); return; }
 
     //view post
@@ -33,15 +34,18 @@ async function loadProperty() {
     }
 
     try {
-        const res  = await fetch('/api/post/property');
+        const res  = await fetch(`/api/view/property/${id}`);
         const data = await res.json();
+        
         if (!data.success) throw new Error('Failed to load');
 
-        const prop = data.property.find(p => p.id === id);
+        const prop = data.property;
         if (!prop) { showError('Property not found.'); return; }
 
+        console.log('✅ Rendering property:', prop.title);
         renderProperty(prop);
     } catch (e) {
+        console.error('Error loading property:', e);
         showError('Could not load property details.');
     }
 }
@@ -78,7 +82,15 @@ function renderProperty(p) {
         'Elevator': 'fa-elevator', 'Pet Friendly': 'fa-paw', 'Furnished': 'fa-couch',
         'Air Conditioning': 'fa-wind'
     };
-    const features = p.features ? p.features.split(',').map(f => f.trim()).filter(Boolean) : [];
+    // Handle features as array or string
+    let features = [];
+    if (p.features) {
+        if (Array.isArray(p.features)) {
+            features = p.features.filter(Boolean);
+        } else if (typeof p.features === 'string') {
+            features = p.features.split(',').map(f => f.trim()).filter(Boolean);
+        }
+    }
     if (features.length) {
         featuresList.innerHTML = features.map(f =>
             `<div class="feature-chip"><i class="fa-solid ${featureIcons[f] || 'fa-check'}"></i> ${f}</div>`

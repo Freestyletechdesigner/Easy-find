@@ -107,10 +107,10 @@
                     <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
                 </div>
                 <div class="card-footer">
-                    <a href="/property?id=${p.id}" class="btn-view-details">
+                    <a href="/property?id=${p._id}" class="btn-view-details">
                         View Details <i class="fas fa-arrow-right"></i>
                     </a>
-                    <button class="btn-share-card" onclick="shareCard('${p.id}')">
+                    <button class="btn-share-card" onclick="shareCard('${p._id}')">
                         <i class="fas fa-share-alt"></i>
                     </button>
                 </div>
