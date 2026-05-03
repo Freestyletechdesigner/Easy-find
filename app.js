@@ -23,6 +23,7 @@ const agentProfileUpload = require('./routes/agent-profile-upload.js');
 const profileUpload = require('./routes/profile-upload.js');
 const AGENT_POST = require('./routes/agent-upload.js');
 const VIEW_POST = require('./routes/view-post.js');
+const { ADMIN_AUTH, requireAdmin } = require('./routes/admin-auth.js');
 
 
 
@@ -159,6 +160,7 @@ agentProfileUpload(app);
 profileUpload(app);
 AGENT_POST(app);
 VIEW_POST(app);
+ADMIN_AUTH(app);
 
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));

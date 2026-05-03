@@ -1,6 +1,31 @@
 const path = require('path');
+const fs = require('fs');
 const bcrypt = require('bcrypt');
 const User = require('../model/User.js');
+
+//Admin file
+const ADMIN_FILE = path.join(__dirname, '..', 'database', 'admin.json');
+// Helper to read admins
+function getAdmins() {
+    try {
+        const data = fs.readFileSync(ADMIN_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (err) {
+        console.error('Error reading admin.json:', err);
+        return [];
+    }
+}
+
+// Middleware to check if user is admin
+function requireAdmin(req, res, next) {
+    if (!req.session.admin) {
+        return res.status(403).json({
+            success: false,
+            message: 'Admin authentication required'
+        });
+    }
+    next();
+}
 
 module.exports = function(app) {
 
@@ -132,39 +157,91 @@ module.exports = function(app) {
                 return res.status(400).json({ success: false, message: 'Email and password are required' });
             }
             
-            //check if user exists
-            const user = await User.findOne({ email: email.trim().toLowerCase() });
+            //check if user is admin
+            const admins = getAdmins();
+            const admin = admins.find(a => a.email.toLowerCase() === email.toLowerCase());
 
-            if (!user) {
-                return res.status(401).json({ success: false, message: 'Invalid email or password' });
+            if (admin) {
+
+                // Compare password
+                const isMatch = await bcrypt.compare(password, admin.password);
+
+                if (!isMatch) {
+                    return res.status(401).json({
+                        success: false,
+                        message: 'Invalid credentials'
+                    });
+                }
+
+                // Set session
+                req.session.admin = {
+                    id: admin.id,
+                    email: admin.email,
+                    name: admin.name,
+                    role: admin.role
+                };
+    
+                res.json({
+                    success: true,
+                    message: 'Login successful',
+                    admin: {
+                        id: admin.id,
+                        email: admin.email,
+                        name: admin.name,
+                        role: admin.role
+                    }
+                });
+            } else {
+                 //check if user exists
+                 const user = await User.findOne({ email: email.trim().toLowerCase() });
+
+                 if (!user) {
+                     return res.status(401).json({ success: false, message: 'Invalid email or password' });
+                 }
+
+                 if (user.status !== 'active') {
+                     return res.status(401).json({ success: false, message: 'Account is inactive. Please contact support.' });
+                 }
+
+                 const isPasswordValid = await user.comparePassword(password);
+                 if (!isPasswordValid) {
+                     return res.status(401).json({ success: false, message: 'Invalid email or password' });
+                 }
+
+                 //Add Session cookies
+                 req.session.userId = user._id
+
+                 // Update login tracking
+                 user.lastLogin = new Date();
+                 user.loginCount = (user.loginCount || 0) + 1;
+                 await user.save();
+
+                 res.json({
+                     success: true,
+                     message: 'Login successful',
+                     user: { id: user._id, name: user.name, email: user.email }
+                 });
             }
-
-            if (user.status !== 'active') {
-                return res.status(401).json({ success: false, message: 'Account is inactive. Please contact support.' });
-            }
-
-            const isPasswordValid = await user.comparePassword(password);
-            if (!isPasswordValid) {
-                return res.status(401).json({ success: false, message: 'Invalid email or password' });
-            }
-
-            //Add Session cookies
-            req.session.userId = user._id
-
-            // Update login tracking
-            user.lastLogin = new Date();
-            user.loginCount = (user.loginCount || 0) + 1;
-            await user.save();
-
-            res.json({
-                success: true,
-                message: 'Login successful',
-                user: { id: user._id, name: user.name, email: user.email }
-            });
+            
 
         } catch (error) {
             console.error('Login error:', error);
             res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+        }
+    });
+
+    // Check admin session
+    app.get('/api/admin/session', (req, res) => {
+        if (req.session.admin) {
+            res.json({
+                success: true,
+                admin: req.session.admin
+            });
+        } else {
+            res.status(401).json({
+                success: false,
+                message: 'Not authenticated'
+            });
         }
     });
     

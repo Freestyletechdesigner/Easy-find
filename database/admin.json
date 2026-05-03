@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "id": "admin_1777804062820",
+    "email": "admin@easyfind.com",
+    "password": "$2b$10$jSqtG/XADskbxiHB4wTEfeyH6M9TxwKvaXtlF0j8n4tOXInvC2Y.a",
+    "name": "Super Admin",
+    "role": "super_admin",
+    "createdAt": "2026-05-03T10:27:42.820Z"
+  }
+]
