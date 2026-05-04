@@ -8,7 +8,7 @@ const connectDB = async () => {
     
     // Try Atlas first if MONGO_URI is set
     if (atlasUri && !atlasUri.includes('127.0.0.1')) {
-        console.log('🌐 Attempting to connect to MongoDB Atlas...');
+        console.log('Attempting to connect to MongoDB Atlas...');
         try {
             await mongoose.connect(atlasUri, {
                 tlsAllowInvalidCertificates: false,

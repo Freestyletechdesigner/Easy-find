@@ -161,16 +161,12 @@
       <div class="search-text">
           <p>Search by street name, house location, price range, or agent name to quickly find the perfect home.</p>
       </div>
-   <div class="hold-search">
-       <i class="fa-solid fa-magnifying-glass"></i> 
-       <input list="search-list" type="search" id="search" placeholder="Search for houses">
-       <datalist id="search-list">
-        <option value="Kenneth Road"></option>
-        <option value="Lady Alice Nnaona Street"></option>
-        <option value="Meniru Street / Meniru"></option>
-        <option value="Mount Street / Mount Close / Mount Crescent"></option>
-        <option value="Ugo Street"></option>
-       </datalist>
+   <div class="search-row">
+       <div class="hold-search">
+           <i class="fa-solid fa-magnifying-glass"></i> 
+           <input type="text" id="search" placeholder="Search for houses">
+       </div>
+       <div id="search-agent-list"></div>
    </div>
 
 </section>

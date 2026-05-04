@@ -85,8 +85,8 @@
             ? `/agent-loged/upload-property/${p.imageNames[0]}`
             : 'profile.png';
         const imgCount = p.imageNames ? p.imageNames.length : 0;
-        const price    = Number(p.price).toLocaleString();
-        const date     = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const price = Number(p.price).toLocaleString();
+        const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
         return `
             <div class="listing-card section" data-title="${p.title}, ${p.type || 'Property'}" data-location="${p.location || 'N/A'}" data-price="${p.price}" data-room="${p.beds || 0} , ${p.baths || 0}">
@@ -268,6 +268,74 @@
             ) ? '' : 'none';
         });
     });
+
+    //search for agent
+const holdListAgent = document.getElementById('search-agent-list');
+
+async function searchAgent() {
+    try {
+        const res = await fetch('/api/search/agent');
+        const data = await res.json();
+
+        if (!data.success) return;
+
+        const agents = data.agents;
+        const searchInput = document.getElementById('search');
+
+        // Hide dropdown initially
+        holdListAgent.style.display = 'none';
+
+        // Filter on input
+        searchInput.addEventListener('input', () => {
+            const searchValue = searchInput.value.toLowerCase().trim();
+            if (!searchValue) {
+                holdListAgent.style.display = 'none';
+                return;
+            }
+            const filtered = agents.filter(a =>
+                a.name.toLowerCase().includes(searchValue)
+            );
+            renderAgents(filtered);
+        });
+
+        // Hide when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !holdListAgent.contains(e.target)) {
+                holdListAgent.style.display = 'none';
+            }
+        });
+
+    } catch (error) {
+        console.error('Search agent error:', error);
+    }
+}
+
+function renderAgents(agents) {
+    if (agents.length === 0) {
+        holdListAgent.innerHTML = '<div class="agent-search-empty">No agents found</div>';
+        holdListAgent.style.display = 'block';
+        return;
+    }
+    holdListAgent.innerHTML = agents.map(a => `
+        <a href="/agent-profile?id=${a._id}" class="agent-search-item">
+            <div class="agent-search-avatar">
+                ${a.profilePicture
+                    ? `<img src="${a.profilePicture}" alt="${a.name}">`
+                    : `<span>${a.name[0].toUpperCase()}</span>`
+                }
+            </div>
+            <div class="agent-search-info">
+                <p class="agent-search-name">${a.name}</p>
+                <p class="agent-search-stand">${a.stand || 'Agent'}</p>
+            </div>
+        </a>
+    `).join('');
+    holdListAgent.style.display = 'block';
+}
+
+// Call on page load
+searchAgent();
+
 
     //card load
     const btnShow = document.getElementById("loadMoreBtn");

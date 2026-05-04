@@ -5,7 +5,7 @@ const rateLimit = require('express-rate-limit');
 
 // Strict limiter for Login and OTP
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
+    windowMs: 15 * 60 * 1000, 
     max: 4, // Limit each IP to 4 requests per windowMs
     message: {
         success: false, 
