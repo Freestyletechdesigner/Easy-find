@@ -1,14 +1,24 @@
-/* ========================================
-   DayNight Admin - JavaScript
-   ======================================== */
-   
-/*
-
-TemplateMo 608 DayNight Admin
-
-https://templatemo.com/tm-608-daynight-admin
-
-*/
+  // Check authentication first
+  async function checkAuth() {
+    try {
+      const response = await fetch('/api/admin/status');
+      const data = await response.json();
+      
+      if (!data.isAdmin) {
+        console.log('Not authenticated, redirecting to Home...');
+        window.location.href = '/';
+        return false;
+      }
+      
+      console.log('Authenticated as:', data.user);
+      return true;
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      window.location.href = '/';
+      return false;
+    }
+  }
+  checkAuth()
 
 // ===== Theme Toggle =====
 function initTheme() {

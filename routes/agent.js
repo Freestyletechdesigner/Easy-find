@@ -164,7 +164,7 @@ const agent = (app) => {
     app.get('/api/agent/public/:id', async (req, res) => {
         try {
             const agent = await AgentUser.findById(req.params.id)
-                .select('name profilePicture bio stand registrationDate')
+                .select('name profilePicture bio stand registrationDate number')
                 .lean();
             if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
             res.json({
@@ -175,6 +175,7 @@ const agent = (app) => {
                     profilePicture: agent.profilePicture || null,
                     bio: agent.bio || null,
                     stand: agent.stand || null,
+                    phone: agent.number || null,
                     joinedAt: agent.registrationDate || null
                 }
             });
@@ -345,6 +346,29 @@ const agent = (app) => {
         req.session.phoneVerified = stored.phone;
 
         res.json({ success: true, message: 'Phone number verified successfully' });
+    });
+
+    // Get verified agents (public)
+    app.get('/api/agents/verified', async (req, res) => {
+        try {
+            const agents = await AgentUser.find({ stand: 'Verified Agent' })
+                .select('name profilePicture stand bio')
+                .lean();
+
+            res.json({
+                success: true,
+                agents: agents.map(agent => ({
+                    id: agent._id,
+                    name: agent.name,
+                    profilePicture: agent.profilePicture || null,
+                    stand: agent.stand || 'Agent',
+                    bio: agent.bio || null
+                }))
+            });
+        } catch (err) {
+            console.error('Error fetching verified agents:', err);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
     });
 
     // ADMIN ROUTES - Agent Management

@@ -316,82 +316,41 @@
 
 <div class="agents-section">
     <h2 class="agents-title">Our Agents</h2>
-
-    <div class="agents-container">
-
-        <!-- Agent 1 -->
-        <div class="agent-card">
-            <img src="image/Untitled-1 (2).jpg" loading="lazy" alt="Agent">
-            <h3>John Doe</h3>
-            <p>Real Estate Specialist</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 2 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Amara Wilson</h3>
-            <p>Luxury Home Agent</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 3 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Michael Smith</h3>
-            <p>Property Consultant</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 1 -->
-        <div class="agent-card">
-            <img src="image/Untitled-1 (2).jpg" loading="lazy" alt="Agent">
-            <h3>John Doe</h3>
-            <p>Real Estate Specialist</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 2 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Amara Wilson</h3>
-            <p>Luxury Home Agent</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 3 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Michael Smith</h3>
-            <p>Property Consultant</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 1 -->
-        <div class="agent-card">
-            <img src="image/Untitled-1 (2).jpg" loading="lazy" alt="Agent">
-            <h3>John Doe</h3>
-            <p>Real Estate Specialist</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 2 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Amara Wilson</h3>
-            <p>Luxury Home Agent</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 3 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Michael Smith</h3>
-            <p>Property Consultant</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
+    <div class="agents-container" id="agents-container">
+        <p style="text-align: center; color: #666; padding: 2rem;">Loading verified agents...</p>
     </div>
 </div>
+
+<script>
+// Load verified agents
+async function loadVerifiedAgents() {
+    try {
+        const res = await fetch('/api/agents/verified');
+        const data = await res.json();
+        
+        const container = document.getElementById('agents-container');
+        
+        if (data.success && data.agents.length > 0) {
+            container.innerHTML = data.agents.map(agent => `
+                <div class="agent-card">
+                    <img src="${agent.profilePicture || 'https://via.placeholder.com/150'}" loading="lazy" alt="${agent.name}">
+                    <h3>${agent.name}</h3>
+                    <p>${agent.stand || 'Verified Agent'}</p>
+                    <a href="/agent-profile?id=${agent.id}" class="agent-btn">View Profile</a>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">No verified agents available at the moment.</p>';
+        }
+    } catch (err) {
+        console.error('Error loading agents:', err);
+        document.getElementById('agents-container').innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">Failed to load agents.</p>';
+    }
+}
+
+// Load agents when page loads
+loadVerifiedAgents();
+</script>
 
 <div class="join-agent">
     <h1 class=" section2">Join Our Agent Community</h1>

@@ -1115,7 +1115,7 @@ header {
 /* IMAGE */
 .agent-card img {
     width: 220px;
-    height: auto;
+    height: 220px;
     object-fit: cover;
     border-radius: 50%;
     margin-bottom: 10px;

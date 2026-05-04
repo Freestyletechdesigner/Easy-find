@@ -138,6 +138,31 @@ main { padding: 0 5% 60px; max-width: 1200px; margin: 0 auto; }
 .profile-stats { display: flex; gap: 28px; }
 .stat { display: flex; flex-direction: column; align-items: center; }
 .stat span { font-size: 1.6rem; font-weight: 800; color: #66eae3; }
+
+/* WhatsApp Button */
+.whatsapp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 12px 24px;
+    background: #25D366;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(37, 211, 102, 0.3);
+}
+.whatsapp-btn:hover {
+    background: #128C7E;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(37, 211, 102, 0.4);
+}
+.whatsapp-btn i {
+    font-size: 1.3rem;
+}
 .stat small { font-size: 0.75rem; opacity: 0.8; }
 
 /* ── BIO ─────────────────────────────────────────────── */

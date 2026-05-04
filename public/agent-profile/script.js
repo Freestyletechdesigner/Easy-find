@@ -64,6 +64,7 @@ function renderProfile(agent, listingCount, totalViews) {
     document.title = `${agent.name} – Easy Find`;
 
     document.getElementById('agentName').textContent = agent.name || 'Agent';
+    document.getElementById('agent-stand').textContent = agent.stand;
     document.getElementById('statListings').textContent = listingCount;
     document.getElementById('statViews').textContent = totalViews.toLocaleString();
 
@@ -82,6 +83,16 @@ function renderProfile(agent, listingCount, totalViews) {
     if (agent.bio) {
         document.getElementById('agentBio').textContent = agent.bio;
         document.getElementById('bioSection').style.display = 'block';
+    }
+
+    // WhatsApp button
+    if (agent.phone) {
+        const whatsappBtn = document.getElementById('whatsappBtn');
+        const phone = agent.phone.replace(/\D/g, ''); // Remove non-digits
+        const formattedPhone = phone.startsWith('0') ? '234' + phone.slice(1) : phone;
+        const message = encodeURIComponent(`Hi ${agent.name}, I found your profile on Easy Find and I'm interested in your properties.`);
+        whatsappBtn.href = `https://wa.me/${formattedPhone}?text=${message}`;
+        whatsappBtn.style.display = 'inline-flex';
     }
 }
 
@@ -126,7 +137,7 @@ function renderListings(posts) {
                     </div>
                 </div>
                 <div class="prop-card-footer">
-                    <a href="/property?id=${p.id}" class="btn-view">
+                    <a href="/property?id=${p._id}" class="btn-view">
                         View Details <i class="fa-solid fa-arrow-right"></i>
                     </a>
                 </div>
