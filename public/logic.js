@@ -500,7 +500,7 @@
             if (timeCount) runCount()
     });
 
-    //  input Validation
+    // Message input Validation
     const contactAlertBox = document.getElementById('alert');
 
     const submitBtn = document.getElementById('submit');
