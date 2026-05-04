@@ -294,9 +294,9 @@ https://templatemo.com/tm-608-daynight-admin
                     <div class="stat-change positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Real-time data</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Unique Visitors</div>
+                    <div class="stat-label">Total Agents</div>
                     <div class="stat-value" id="unique-visitors">Loading...</div>
-                    <div class="stat-change positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Tracked by IP</div>
+                    <div class="stat-change positive"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Registered accounts</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">Total Users</div>
@@ -622,7 +622,6 @@ https://templatemo.com/tm-608-daynight-admin
       
       if (viewsData.success) {
         document.getElementById('total-views').textContent = viewsData.totalViews.toLocaleString();
-        document.getElementById('unique-visitors').textContent = viewsData.uniqueVisitors.toLocaleString();
       }
       
       // Fetch user count
@@ -1129,6 +1128,7 @@ https://templatemo.com/tm-608-daynight-admin
 
         if (data.success) {
           agentLogs.textContent = data.agents.length;
+          document.getElementById('unique-visitors').textContent = data.agents.length;
         } else if (data.success === false) {
         hlsResult.textContent = data.error
       } 

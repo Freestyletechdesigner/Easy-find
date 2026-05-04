@@ -3,22 +3,39 @@ require('dotenv').config({ path: '/etc/secrets/.env' });
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-    const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/easyfind';
-    console.log('Connecting to:', uri.includes('127.0.0.1') ? 'LOCAL (MONGO_URI not set!)' : 'Atlas');
+    const atlasUri = process.env.MONGO_URI;
+    const localUri = 'mongodb://127.0.0.1:27017/easyfind';
+    
+    // Try Atlas first if MONGO_URI is set
+    if (atlasUri && !atlasUri.includes('127.0.0.1')) {
+        console.log('🌐 Attempting to connect to MongoDB Atlas...');
+        try {
+            await mongoose.connect(atlasUri, {
+                tlsAllowInvalidCertificates: false,
+                serverSelectionTimeoutMS: 10000, // 10 seconds
+                socketTimeoutMS: 45000,
+                retryWrites: true,
+                retryReads: true,
+                maxPoolSize: 10,
+                minPoolSize: 2
+            });
+            console.log('✅ MongoDB Atlas Connected');
+            return;
+        } catch (err) {
+            console.warn('Atlas connection failed:', err.message);
+            console.log('Falling back to local MongoDB...');
+        }
+    }
+    
+    // Fallback to local MongoDB
     try {
-        await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/easyfind', {
-            tlsAllowInvalidCertificates: false,
-            serverSelectionTimeoutMS: 10 * 60 * 10000, // Increased to 10 minute 
-            socketTimeoutMS: 45000,
-            retryWrites: true,
-            retryReads: true,
-            maxPoolSize: 10,
-            minPoolSize: 2
+        console.log('Connecting to local MongoDB...');
+        await mongoose.connect(localUri, {
+            serverSelectionTimeoutMS: 5000
         });
-        console.log('MongoDB Connected');
+        console.log('Local MongoDB Connected');
     } catch (err) {
         console.error('MongoDB Connection Error:', err.message);
-        console.error('Ask Freedom to Add your current IP or use local mongoDB server');
         process.exit(1);
     }
 };
