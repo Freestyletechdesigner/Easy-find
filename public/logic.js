@@ -89,7 +89,7 @@
         const date     = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
         return `
-            <div class="listing-card section" data-title="${p.title}, ${p.type || 'Property'}" data-location="${p.location || 'N/A'}" data-price="12000" data-room="${p.beds || 0} , ${p.baths || 0}">
+            <div class="listing-card section" data-title="${p.title}, ${p.type || 'Property'}" data-location="${p.location || 'N/A'}" data-price="${p.price}" data-room="${p.beds || 0} , ${p.baths || 0}">
                 <div class="card-image">
                     <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
                     <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
