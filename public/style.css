@@ -118,15 +118,6 @@ header {
     font-size: 1rem;
     text-decoration: none;
     color: #000;
-    animation: logo-motion 1s linear infinite alternate;
-}
-@keyframes logo-motion {
-    from{
-        font-size: 1.09rem;
-    }
-    to {
-        font-size: 1rem;
-    }
 }
 
 .logo span {
@@ -2232,9 +2223,9 @@ header {
 
 /*user login*/
 #user-log {
-    position: fixed;
-    top: 5rem;
-    right: 1.5rem;
+    position: absolute;
+    top: 1rem;
+    right: 2rem;
     padding: 0.75rem 1.5rem;
     border-radius: 25px;
     font-size: 0.95rem;
@@ -2257,8 +2248,8 @@ header {
 
 /* Logout Button */
 .btn-logout {
-    position: fixed;
-    top: 8.6rem;
+    position: absolute;
+    top: 4rem;
     right: 2.5rem;
     display: flex;
     align-items: center;

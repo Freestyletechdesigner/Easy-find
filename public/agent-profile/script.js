@@ -9,6 +9,7 @@ function closeLightbox() {
     document.getElementById('lightbox').classList.remove('open');
 }
 
+
 // ── Nav ───────────────────────────────────────────────
 const nav2      = document.getElementById('nav2');
 const hamburger = document.getElementById('hamburger');

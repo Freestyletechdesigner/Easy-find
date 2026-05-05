@@ -755,20 +755,17 @@ searchAgent();
                 logoutBtn.style.display = 'flex';
                 userLog.style.display = 'flex';
                 if (dataAgent.agent.profilePicture) {
-                    userLog.innerHTML = `<img src="${dataAgent.agent.profilePicture}" alt="${dataAgent.agent.name}" id="profile-D" style="width:40px;height:40px;object-fit:cover;border-radius:50%;">`;
+                    userLog.innerHTML = `<img src="${dataAgent.agent.profilePicture}" alt="${dataAgent.agent.name}" style="width:40px;height:40px;object-fit:cover;border-radius:50%;">`;
                     userLog.style.background = 'transparent';
                     userLog.style.right = '2.1rem';
                     userLog.style.padding = '0';
                     userLog.style.border = '3px solid #0b6a6dff';
-                    document.getElementById('profile-D').addEventListener('click', () => {
-                        window.location.href = '/agent-loged'
-                    });
                 } else {
                     userLog.textContent = dataAgent.agent.name[0].toUpperCase();
-                    userLog.addEventListener('click', () => {
-                        window.location.href = '/agent-loged'
-                    });
                 }
+                userLog.addEventListener('click', () => {
+                    window.location.href = '/agent-loged'
+                });
             }
 
         } catch (error) {
