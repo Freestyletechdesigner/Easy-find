@@ -9,7 +9,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = '/login-agent.html';
                 return false;
             }
-            document.getElementById('agent-name').textContent = data.agent.name;
+            document.getElementById('agent-name').textContent = data.agent.name.length > 8 
+            ? data.agent.name.slice(0, 8) + '...' 
+            : data.agent.name;
             loadProfilePicture();
             return true;
         } catch (error) {
@@ -261,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     closeModal();
                     loadProperties();
                 });
+               document.getElementById('propertiesEmpty').style.display = 'none';
             } else {
                 alertBox.error('Failed', data.message || 'Failed to post property');
             }

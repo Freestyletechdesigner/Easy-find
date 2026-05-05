@@ -130,10 +130,11 @@ const agent = (app) => {
             await agent.save();
 
             req.session.agent = {
-                id:    agent._id,
-                name:  agent.name,
-                email: agent.email,
-                role:  agent.role
+                id:             agent._id,
+                name:           agent.name,
+                email:          agent.email,
+                role:           agent.role,
+                profilePicture: agent.profilePicture || null
             };
 
             res.status(200).json({
@@ -151,9 +152,10 @@ const agent = (app) => {
     app.get('/api/agent/status', (req, res) => {
         if (req.session.agent) {
             res.json({ success: true, isAgent: true, agent: {
-                name:  req.session.agent.name,
-                email: req.session.agent.email,
-                role:  req.session.agent.role
+                name:           req.session.agent.name,
+                email:          req.session.agent.email,
+                role:           req.session.agent.role,
+                profilePicture: req.session.agent.profilePicture || null
             }});
         } else {
             res.json({ success: true, isAgent: false });
@@ -410,6 +412,56 @@ const agent = (app) => {
 
         } catch (err) {
             console.error('Error fetching agents:', err);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    });
+
+    // Update agent name (settings)
+    app.patch('/api/agent/settings/name', requireAgent, async (req, res) => {
+        const { name } = req.body;
+        if (!name || name.trim().length < 2)
+            return res.status(400).json({ success: false, message: 'Name must be at least 2 characters' });
+        try {
+            await AgentUser.findByIdAndUpdate(req.session.agent.id, { name: name.trim() });
+            req.session.agent.name = name.trim();
+            res.json({ success: true, message: 'Name updated successfully' });
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    });
+
+    // Change agent password (settings)
+    app.patch('/api/agent/settings/password', requireAgent, async (req, res) => {
+        const { currentPassword, newPassword } = req.body;
+        if (!currentPassword || !newPassword)
+            return res.status(400).json({ success: false, message: 'All fields are required' });
+        if (newPassword.length < 8)
+            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword))
+            return res.status(400).json({ success: false, message: 'Password must contain uppercase, lowercase, and number' });
+        try {
+            const agent = await AgentUser.findById(req.session.agent.id);
+            const isMatch = await agent.comparePassword(currentPassword);
+            if (!isMatch)
+                return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+            agent.password = newPassword;
+            await agent.save();
+            res.json({ success: true, message: 'Password changed successfully' });
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    });
+
+    // Delete agent account (settings)
+    app.delete('/api/agent/settings/delete', requireAgent, async (req, res) => {
+        try {
+            const agentId = req.session.agent.id;
+            const AgentPost = require('../model/AgentPost.js');
+            await AgentPost.deleteMany({ agentId: agentId.toString() });
+            await AgentUser.findByIdAndDelete(agentId);
+            req.session.destroy();
+            res.json({ success: true, message: 'Account deleted successfully' });
+        } catch (err) {
             res.status(500).json({ success: false, message: 'Server error' });
         }
     });

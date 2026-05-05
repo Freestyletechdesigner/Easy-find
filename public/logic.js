@@ -738,14 +738,37 @@ searchAgent();
     // Check if user is already logged in via session cookie
     async function isAuth() {
         try {
+            // for normal user
             const res = await fetch('/api/user/profile', { credentials: 'include' });
             const data = await res.json();
+            // for agent
+            const resAgent = await fetch('/api/agent/profile', { credentials: 'include' });
+            const dataAgent = await resAgent.json();
 
-            if (data.success && data.user) {
+            if (data.success) {
                 loginNav.style.display = 'none';
                 logoutBtn.style.display = 'flex';
                 userLog.style.display = 'flex';
                 userLog.textContent = data.user.name[0].toUpperCase();
+            } else if (dataAgent.success) {
+                loginNav.style.display = 'none';
+                logoutBtn.style.display = 'flex';
+                userLog.style.display = 'flex';
+                if (dataAgent.agent.profilePicture) {
+                    userLog.innerHTML = `<img src="${dataAgent.agent.profilePicture}" alt="${dataAgent.agent.name}" id="profile-D" style="width:40px;height:40px;object-fit:cover;border-radius:50%;">`;
+                    userLog.style.background = 'transparent';
+                    userLog.style.right = '2.1rem';
+                    userLog.style.padding = '0';
+                    userLog.style.border = '3px solid #0b6a6dff';
+                    document.getElementById('profile-D').addEventListener('click', () => {
+                        window.location.href = '/agent-loged'
+                    });
+                } else {
+                    userLog.textContent = dataAgent.agent.name[0].toUpperCase();
+                    userLog.addEventListener('click', () => {
+                        window.location.href = '/agent-loged'
+                    });
+                }
             }
 
         } catch (error) {
