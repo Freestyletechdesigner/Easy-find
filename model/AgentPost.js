@@ -34,10 +34,10 @@ const postSchema = new mongoose.Schema({
     },
     baths: {
         type: Number,
-        default: 0
+        trim: true
     },
     area: {
-        type: Number,
+        type: String,
         default: 0
     },
     description: {

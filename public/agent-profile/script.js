@@ -118,6 +118,7 @@ function renderListings(posts) {
         const imgCount = p.imageNames ? p.imageNames.length : 0;
         const price = Number(p.price).toLocaleString();
         const date  = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const isLand = (p.type || '').toLowerCase() === 'land';
 
         return `
             <div class="listing-card" data-title="${p.title || ''}, ${p.type || 'Property'}" data-location="${p.location || 'N/A'}" data-price="${p.price}" data-room="${p.beds || 0} , ${p.baths || 0}">
@@ -131,9 +132,9 @@ function renderListings(posts) {
                     <div class="card-price">₦${price}</div>
                     <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
                     <div class="card-stats">
-                        <span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>
-                        <span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>
-                        <span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0} sqft</span>
+                        ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
+                        ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
+                        <span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>
                     </div>
                     <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
                 </div>

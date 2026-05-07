@@ -66,10 +66,23 @@ function renderProperty(p) {
     $('propLocation').innerHTML   = `<i class="fa-solid fa-location-dot"></i> ${p.location || 'Location not specified'}`;
     $('propDate').innerHTML       = `<i class="fa-regular fa-calendar"></i> Listed ${new Date(p.date).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })}`;
 
+
+    //make some change if is land
+    const quickDetailsList = document.getElementById('quickDetailsList');
+    const propStats = document.querySelector('.prop-stats');
+
+    if (p.type.toLowerCase() === 'land') {
+        quickDetailsList.children[2].style.display = 'none'
+        quickDetailsList.children[3].style.display = 'none'
+        propStats.children[0].style.display = 'none'
+        propStats.children[1].style.display = 'none'
+    }
+
+
     // Stats
     $('statBeds').textContent  = p.beds  || '0';
     $('statBaths').textContent = p.baths || '0';
-    $('statArea').textContent  = p.area  ? Number(p.area).toLocaleString() : '0';
+    $('statArea').textContent  = p.area  ? p.area.toLowerCase() : '--';
 
     // Description
     $('propDescription').textContent = p.description || 'No description provided.';
@@ -109,12 +122,12 @@ function renderProperty(p) {
     $('qdCategory').textContent = cat === 'shortlet' ? 'Short-let' : cat === 'rent' ? 'For Rent' : cat === 'sale' ? 'For Sale' : '—';
     $('qdBeds').textContent     = p.beds  ? `${p.beds} Bedroom${p.beds > 1 ? 's' : ''}` : '—';
     $('qdBaths').textContent    = p.baths ? `${p.baths} Bathroom${p.baths > 1 ? 's' : ''}` : '—';
-    $('qdArea').textContent     = p.area  ? `${Number(p.area).toLocaleString()} sqft` : '—';
+    $('qdArea').textContent     = p.area  ? `${p.area.toUpperCase()}` : '—';
     $('qdLocation').textContent = p.location || '—';
 
     // Map
     if (p.location) {
-        const encoded = encodeURIComponent(p.location + ', Nigeria');
+        const encoded = encodeURIComponent(p.location + ',Enugu State' + ', Nigeria');
         $('mapFrame').src = `https://maps.google.com/maps?q=${encoded}&output=embed`;
     }
 

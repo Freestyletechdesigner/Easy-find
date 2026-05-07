@@ -63,6 +63,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const typeSelect = document.getElementById('typeSelect');
     const groupBeds  = document.getElementById('groupBeds');
     const groupBaths = document.getElementById('groupBaths');
+    const landPlot = document.getElementById('groupLand');
+    landPlot.style.display = 'none'
 
     function handleTypeChange() {
         const isLand = typeSelect.value === 'land';
@@ -71,6 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isLand) {
             propertyForm.querySelector('[name="beds"]').value  = '';
             propertyForm.querySelector('[name="baths"]').value = '';
+            landPlot.style.display = ''
+        } else {
+            landPlot.style.display = 'none'
         }
     }
 
@@ -241,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (emojiOrSymbol.test(location) || !textOnly.test(location)) { alertBox.error('Invalid Location', 'Location must not contain emojis or special symbols'); return; }
         if (beds  && !numbersOnly.test(beds))                    { alertBox.error('Invalid Bedrooms', 'Bedrooms must be a number only'); return; }
         if (baths && !numbersOnly.test(baths))                   { alertBox.error('Invalid Bathrooms', 'Bathrooms must be a number only'); return; }
-        if (area  && !numbersOnly.test(area))                    { alertBox.error('Invalid Area', 'Area must be a number only'); return; }
+        if (area  && emojiOrSymbol.test(area))                    { alertBox.error('Invalid Area', 'Area must not contain emojis or special symbols'); return; }
         if (desc  && emojiOrSymbol.test(desc))                   { alertBox.error('Invalid Description', 'Description must not contain emojis or special symbols'); return; }
 
         // Build FormData
@@ -396,8 +401,9 @@ document.addEventListener('DOMContentLoaded', () => {
             ? `/agent-loged/upload-property/${p.imageNames[0]}`
             : 'profile.png';
         const imgCount = p.imageNames ? p.imageNames.length : 0;
-        const price    = Number(p.price).toLocaleString();
-        const date     = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const price = Number(p.price).toLocaleString();
+        const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const isLand = (p.type || '').toLowerCase() === 'land';
 
         return `
             <div class="property-card" id="card-${p._id}">
@@ -429,9 +435,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="card-price">₦${price}</div>
                     <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
                     <div class="card-stats">
-                        <span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>
-                        <span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>
-                        <span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0} sqft</span>
+                        ${isLand? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
+                        ${isLand? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
+                        <span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>
                     </div>
                     <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
                 </div>

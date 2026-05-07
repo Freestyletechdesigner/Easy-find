@@ -215,6 +215,32 @@ const AGENT_POST = (app) => {
         }
     });
 
+    //Edit property post
+    app.post('/api/edit/post', requireAgent, upload.array('file'), [
+        check('title').notEmpty().trim().escape(),
+        check('type').notEmpty().trim().escape(),
+        check('category').notEmpty().isIn(['sale', 'rent', 'shortlet']).withMessage('Invalid category'),
+        check('price'),
+        check('location').notEmpty().trim().escape(),
+        check('beds').optional({ checkFalsy: true }).isNumeric().trim().escape(),
+        check('baths').optional({ checkFalsy: true }).isNumeric().trim().escape(),
+        check('area'),
+        check('description'),
+        check('features')
+    ], async (req, res) => {
+        //validation 
+        const error = validationResult(req);
+        if (!error.isEmpty()) {
+            console.err('Validation errors:', errors.array());
+            return res.status(403).json({
+                success: false,
+                message: 'Validation failed'
+            });
+        }
+
+        const { title, type, category, price, location, beds, baths, area, description, features } = req.body;
+    });
+
 }
 
 module.exports = AGENT_POST;
