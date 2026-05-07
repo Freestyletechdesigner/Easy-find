@@ -118,7 +118,7 @@
         `;
     }
 
-
+    //share link
     window.shareCard = function(id) {
         const url = `${window.location.origin}/property?id=${id}`;
         if (navigator.share) {
@@ -128,7 +128,7 @@
             copyLink(url);
         }
     };
-
+    //copy link
     function copyLink(url) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url)

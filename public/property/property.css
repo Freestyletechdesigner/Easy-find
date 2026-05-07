@@ -215,8 +215,7 @@ main { padding: 0 5% 40px; max-width: 1400px; margin: 0 auto; }
     grid-template-columns: 1fr 340px;
     gap: 24px;
     margin-top: 24px;
-    padding: 20px;
-    align-items: start;
+    padding: 0px;
 }
 
 /* ── LEFT COLUMN ─────────────────────────────────────── */

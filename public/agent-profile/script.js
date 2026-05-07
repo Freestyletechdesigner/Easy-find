@@ -112,40 +112,63 @@ function renderListings(posts) {
     }
 
     grid.innerHTML = posts.map(p => {
-        const imgSrc = p.imageNames && p.imageNames.length
+        const imgSrc   = p.imageNames && p.imageNames.length
             ? `/agent-loged/upload-property/${p.imageNames[0]}`
             : '/icon/home icon.png';
+        const imgCount = p.imageNames ? p.imageNames.length : 0;
         const price = Number(p.price).toLocaleString();
-        const cat   = p.category || '';
-        const catLabel = cat === 'shortlet' ? 'Short-let' : cat === 'rent' ? 'For Rent' : 'For Sale';
+        const date  = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
         return `
-            <div class="prop-card">
-                <div class="prop-card-img">
-                    <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy"
-                         onerror="this.src='/icon/home icon.png'">
-                    ${cat ? `<span class="badge-cat ${cat}">${catLabel}</span>` : ''}
+            <div class="listing-card" data-title="${p.title || ''}, ${p.type || 'Property'}" data-location="${p.location || 'N/A'}" data-price="${p.price}" data-room="${p.beds || 0} , ${p.baths || 0}">
+                <div class="card-image">
+                    <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy" onerror="this.src='/icon/home icon.png'">
+                    <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
+                    ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
+                    ${imgCount > 1 ? `<span class="card-image-count"><i class="fas fa-images"></i> ${imgCount}</span>` : ''}
                 </div>
-                <div class="prop-card-body">
-                    <div class="prop-card-price">₦${price}</div>
-                    <div class="prop-card-location">
-                        <i class="fa-solid fa-location-dot"></i> ${p.location || 'N/A'}
+                <div class="card-body">
+                    <div class="card-price">₦${price}</div>
+                    <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
+                    <div class="card-stats">
+                        <span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>
+                        <span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>
+                        <span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0} sqft</span>
                     </div>
-                    <div class="prop-card-stats">
-                        ${p.beds  ? `<span><i class="fa-solid fa-bed"></i> ${p.beds} Beds</span>` : ''}
-                        ${p.baths ? `<span><i class="fa-solid fa-bath"></i> ${p.baths} Baths</span>` : ''}
-                        ${p.area  ? `<span><i class="fa-solid fa-ruler-combined"></i> ${p.area} sqft</span>` : ''}
-                    </div>
+                    <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
                 </div>
-                <div class="prop-card-footer">
-                    <a href="/property?id=${p._id}" class="btn-view">
-                        View Details <i class="fa-solid fa-arrow-right"></i>
+                <div class="card-footer">
+                    <a href="/property?id=${p._id}" class="btn-view-details">
+                        View Details <i class="fas fa-arrow-right"></i>
                     </a>
+                    <button class="btn-share-card" onclick="shareCard('${p._id}')">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
                 </div>
             </div>
         `;
     }).join('');
 }
+     //share link
+    window.shareCard = function(id) {
+        const url = `${window.location.origin}/property?id=${id}`;
+        if (navigator.share) {
+            navigator.share({ title: 'Check out this property on Easy Find', url })
+                .catch(() => copyLink(url));
+        } else {
+            copyLink(url);
+        }
+    };
+    //copy link
+    function copyLink(url) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url)
+                .then(() => alertBox.success('Copied', 'Property link copied to clipboard'))
+                .catch(() => fallbackCopy(url));
+        } else {
+            fallbackCopy(url);
+        }
+    }
 
 // ── Scroll animation ──────────────────────────────────
 function triggerScrollAnim() {
