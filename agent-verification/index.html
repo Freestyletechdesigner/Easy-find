@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Verification | Easy Find</title>
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        @font-face {
+            font-family: "HyperTrack";
+            src: url("/agent-loged/fonts/Hyper-Track-BF6923fcf16dfa7.otf") format("opentype");
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #e8f5f5;
+            font-family: Arial, sans-serif;
+            color: #111;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* ── HEADER ─────────────────────────── */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 92%;
+            margin: 12px auto;
+            padding: 10px 24px;
+            border-radius: 14px;
+            background: #ffffffd5;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+        }
+
+        .logo {
+            font-family: "HyperTrack", cursive;
+            font-size: 1.1rem;
+            text-decoration: none;
+            color: #000;
+        }
+        .logo span {
+            color: #fff;
+            background: #050;
+            padding: 2px 8px;
+            margin-right: 4px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 2rem;
+        }
+
+        header nav a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 600;
+            padding: 8px 14px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        header nav a:hover { background: #eee; }
+
+        /* ── PAGE ANIMATIONS ────────────────── */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes slideInLeft {
+            from { opacity: 0; transform: translateX(-20px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.5; }
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── MAIN CONTAINER ─────────────────── */
+        .page-wrap {
+            max-width: 780px;
+            margin: 30px auto 60px;
+            padding: 0 16px;
+            animation: fadeInUp 0.7s ease-out;
+        }
+
+        /* ── HERO BADGE ─────────────────────── */
+        .hero-badge {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+        .badge-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #e6f4ea;
+            color: #055;
+            font-weight: 700;
+            font-size: 0.78rem;
+            padding: 8px 18px;
+            border-radius: 50px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            animation: pulse 2.5s infinite;
+            border: 1px solid #b2d8b2;
+        }
+        .hero-badge h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #050;
+            margin: 12px 0 6px;
+        }
+        .hero-badge p {
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        /* ── CARD ───────────────────────────── */
+        .card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            margin-bottom: 20px;
+            animation: slideInLeft 0.5s ease-out;
+        }
+
+        /* ── STEP TITLE ─────────────────────── */
+        .step-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .step-num {
+            width: 32px;
+            height: 32px;
+            background: #050;
+            color: #fff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+        .step-title h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #050;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ── AGENT TYPE TOGGLE ──────────────── */
+        .type-toggle {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .type-option {
+            flex: 1;
+            min-width: 140px;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 14px 18px;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            color: #555;
+        }
+        .type-option input { display: none; }
+        .type-option i { font-size: 1.2rem; color: #aaa; transition: color 0.2s; }
+        .type-option.selected {
+            border-color: #050;
+            background: #f0faf0;
+            color: #050;
+        }
+        .type-option.selected i { color: #050; }
+
+        /* ── FORM FIELDS ────────────────────── */
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-group.full { grid-column: 1 / -1; }
+
+        label {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #444;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        input[type="text"],
+        input[type="tel"],
+        input[type="email"],
+        textarea,
+        select {
+            padding: 11px 14px;
+            border: 1.5px solid #ddd;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            background: #fafafa;
+            color: #222;
+            transition: border 0.2s, box-shadow 0.2s;
+            outline: none;
+            width: 100%;
+            font-family: Arial, sans-serif;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: #050;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(0, 80, 0, 0.08);
+        }
+        textarea { resize: vertical; min-height: 90px; }
+
+        /* ── CAMERA BOX ─────────────────────── */
+        .camera-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+        .camera-box {
+            width: 100%;
+            max-width: 320px;
+            height: 240px;
+            background: #0f172a;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            border: 3px solid #050;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        .camera-box video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .camera-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.5);
+            color: #fff;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 16px;
+        }
+        .cam-status {
+            font-size: 0.82rem;
+            color: #666;
+            text-align: center;
+        }
+
+        /* ── VERIFY BUTTON ──────────────────── */
+        .btn-verify-id {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 24px;
+            background: #fff;
+            border: 2px solid #050;
+            color: #050;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.25s;
+        }
+        .btn-verify-id:hover {
+            background: #050;
+            color: #fff;
+        }
+        .btn-verify-id.verified {
+            background: #e6f4ea;
+            border-color: #2e7d32;
+            color: #2e7d32;
+            cursor: default;
+        }
+
+        /* ── TERMS ──────────────────────────── */
+        .terms-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 0.875rem;
+            color: #555;
+        }
+        .terms-row input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            accent-color: #050;
+        }
+
+        /* ── SUBMIT BUTTON ──────────────────── */
+        .btn-submit {
+            width: 100%;
+            padding: 15px;
+            background: #050;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            letter-spacing: 0.5px;
+        }
+        .btn-submit:hover {
+            background: #033;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,80,0,0.25);
+        }
+        .btn-submit:active { transform: translateY(0); }
+        .btn-submit:disabled { background: #aaa; cursor: not-allowed; transform: none; }
+        .btn-submit .spinner {
+            width: 18px; height: 18px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+
+        /* ── RESPONSIVE ─────────────────────── */
+        @media (max-width: 600px) {
+            .form-row { grid-template-columns: 1fr; }
+            .card { padding: 20px; }
+            .hero-badge h1 { font-size: 1.4rem; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <a href="/" class="logo"><span>E</span>asy Find</a>
+    <nav>
+        <a href="/agent-loged"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+    </nav>
+</header>
+
+<div class="page-wrap">
+
+    <!-- Hero -->
+    <div class="hero-badge">
+        <div class="badge-pill">
+            <i class="fa-solid fa-shield-halved"></i> Secure Identity Verification
+        </div>
+        <h1>Agent Verification</h1>
+        <p>Join the Easy Find network by completing your identity verification below.</p>
+    </div>
+
+    <form id="registrationForm" action="/api/v1/register-agent" method="POST" enctype="multipart/form-data">
+
+        <!-- Step 1: Account Type -->
+        <div class="card">
+            <div class="step-title">
+                <div class="step-num">1</div>
+                <h3>Account Profile</h3>
+            </div>
+            <div class="type-toggle">
+                <label class="type-option selected" id="label-ind">
+                    <input type="radio" name="agent_type" value="individual" checked>
+                    <i class="fa-solid fa-user"></i> Personal Agent
+                </label>
+                <label class="type-option" id="label-corp">
+                    <input type="radio" name="agent_type" value="company">
+                    <i class="fa-solid fa-building"></i> Corporate Agency
+                </label>
+            </div>
+        </div>
+
+        <!-- Step 2: Contact Details -->
+        <div class="card">
+            <div class="step-title">
+                <div class="step-num">2</div>
+                <h3>Contact Details</h3>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Full Legal Name</label>
+                    <input type="text" name="fullname" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp Number</label>
+                    <input type="tel" name="phone" placeholder="08030000000" required>
+                </div>
+                <div class="form-group full" id="cac_section" style="display:none;">
+                    <label>Business RC Number (CAC)</label>
+                    <input type="text" name="cac_number" placeholder="RC-123456">
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 3: Biometric Verification -->
+        <div class="card">
+            <div class="step-title">
+                <div class="step-num">3</div>
+                <h3>Biometric Verification</h3>
+            </div>
+            <div class="camera-wrap">
+                <div class="camera-box">
+                    <video id="video" autoplay muted playsinline></video>
+                    <div class="camera-overlay" id="cam-overlay">
+                        <span><i class="fa-solid fa-camera" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Camera will activate on verification</span>
+                    </div>
+                </div>
+                <p class="cam-status" id="cam-status">Ensure your face is clearly visible in the frame</p>
+                <button type="button" id="start-verification" class="btn-verify-id">
+                    <i class="fa-solid fa-fingerprint"></i> Verify NIN & Face ID
+                </button>
+            </div>
+            <input type="hidden" name="dojah_reference" id="dojah_reference">
+            <input type="hidden" name="selfie_data" id="selfie_data">
+        </div>
+
+        <!-- Step 4: Office Address -->
+        <div class="card">
+            <div class="step-title">
+                <div class="step-num">4</div>
+                <h3>Office Address</h3>
+            </div>
+            <div class="form-group">
+                <label>Full Address</label>
+                <textarea name="address" placeholder="Full street address, City, and State..." required></textarea>
+            </div>
+        </div>
+
+        <!-- Terms & Submit -->
+        <div class="card">
+            <div class="terms-row" style="margin-bottom: 20px;">
+                <input type="checkbox" id="terms" required>
+                <label for="terms" style="text-transform:none;letter-spacing:0;font-weight:400;">
+                    I agree to the Easy Find <a href="#" style="color:#050;font-weight:700;">Terms of Service</a> and data privacy policies.
+                </label>
+            </div>
+            <button type="submit" id="submitBtn" class="btn-submit">
+                <span class="spinner" id="submitSpinner"></span>
+                <i class="fa-solid fa-paper-plane" id="submitIcon"></i>
+                Submit Registration
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<script src="https://widget.dojah.io/widget.js"></script>
+<script>
+    // Agent type toggle
+    const labelInd  = document.getElementById('label-ind');
+    const labelCorp = document.getElementById('label-corp');
+    const cacSection = document.getElementById('cac_section');
+
+    document.querySelectorAll('input[name="agent_type"]').forEach(radio => {
+        radio.addEventListener('change', () => {
+            labelInd.classList.toggle('selected', radio.value === 'individual' && radio.checked);
+            labelCorp.classList.toggle('selected', radio.value === 'company' && radio.checked);
+            cacSection.style.display = radio.value === 'company' ? 'block' : 'none';
+        });
+    });
+
+    // Camera preview
+    async function initCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('video').srcObject = stream;
+            document.getElementById('cam-overlay').style.display = 'none';
+        } catch (err) {
+            console.log('Camera unavailable');
+        }
+    }
+
+    // Dojah verification
+    document.getElementById('start-verification').addEventListener('click', function () {
+        initCamera();
+        const options = {
+            app_id: "YOUR_APP_ID",
+            p_key: "YOUR_PUBLIC_KEY",
+            type: "verification",
+            config: {
+                identity: { type: 'vin' },
+                liveness: true,
+                selfie: true
+            },
+            onSuccess: function (response) {
+                const btn = document.getElementById('start-verification');
+                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Identity Verified';
+                btn.classList.add('verified');
+                document.getElementById('cam-status').textContent = 'Security check complete.';
+                document.getElementById('dojah_reference').value = response.reference;
+            },
+            onError: function (err) {
+                alert('Verification Error: ' + err);
+            }
+        };
+        const connect = new Dojah(options);
+        connect.open();
+    });
+
+    // Submit loading state
+    document.getElementById('registrationForm').addEventListener('submit', function () {
+        const btn = document.getElementById('submitBtn');
+        const spinner = document.getElementById('submitSpinner');
+        const icon = document.getElementById('submitIcon');
+        btn.disabled = true;
+        spinner.style.display = 'block';
+        icon.style.display = 'none';
+        btn.childNodes[btn.childNodes.length - 1].textContent = ' Submitting...';
+    });
+</script>
+
+</body>
+</html>

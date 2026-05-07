@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ── Nav ───────────────────────────────────────────────
-    const nav2      = document.getElementById('nav2');
+    const nav2 = document.getElementById('nav2');
     const hamburger = document.getElementById('hamburger');
 
     hamburger.addEventListener('click', (e) => {

@@ -55,6 +55,35 @@ const agentSchema = new mongoose.Schema({
     },
     ipAddress: {
         type: String,
+    },
+    // VERIFICATION FIELDS
+    isVerified: { 
+        type: Boolean, 
+        default: false 
+    },
+
+    // The data returned from Dojah/NIMC after Face ID & NIN check
+    verificationData: {
+        firstName: { type: String },
+        lastName: { type: String },
+        dob: { type: String },
+        vNIN: { type: String }, // Virtual NIN provided
+        gender: { type: String },
+        
+        // Photos for scam protection
+        nimcPhoto: { type: String },   // The official government photo
+        selfiePhoto: { type: String }, // The "moving face" photo from the live session
+        
+        // Audit trail
+        referenceId: { type: String, unique: true, sparse: true },
+        livenessScore: { type: Number },
+        verifiedAt: { type: Date }
+    },
+
+    // Security flags for managing potential scammers
+    isBlacklisted: { 
+        type: Boolean, 
+        default: false 
     }
 });
 

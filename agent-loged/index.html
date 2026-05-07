@@ -14,24 +14,18 @@
         <a href="/" class="logo"><span>E</span>asy Find</a>
 
         <div class="profile">
-            <img src="profile.png" alt="Profile" id="profile-picture" onclick="window.location.href='upload-image.html'" title="Click to change profile picture">
+            <img src="profile.png" alt="Profile" id="profile-picture" onclick="window.location.href='/agent-loged/upload-profilepicture'" title="Click to change profile picture">
             <p id="agent-name">Loading...</p>
         </div>
         
          <nav class="links">
              <a href="/">Back to Home</a>
-             <a href="/agent-loged/setting.html">Setting</a>
+             <a href="/agent-loged/setting">Setting</a>
+             <a href="/agent-verification">Verification</a>
             <button class="logout-btn" onclick="logout()" title="Logout">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
          </nav>
-             <div class="nav2" id="nav2">
-             <a href="/"><i class="fa-solid fa-house"></i> Back to Home</a>
-             <a href="/agent-loged/setting.html"><i class="fa-solid fa-gear"></i> Setting</a>
-            <button class="logout-btn" onclick="logout()" title="Logout">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
-             </div>
             <div class="hamburger" id="hamburger">
              <div id="hand" class="hand"></div>
              <div id="hand" class="hand"></div>
@@ -54,7 +48,16 @@
     
         <!-- RESPONSIVE BRAND SHAPE -->
         <div class="hero-brand"></div>
+
     </section>
+             <div class="nav2" id="nav2">
+                <a href="/"><i class="fa-solid fa-house"></i> Back to Home</a>
+                <a href="/agent-loged/setting"><i class="fa-solid fa-gear"></i> Setting</a>
+                <a href="/agent-loged/agent-verification"><i class="fa-solid fa-user-tie"></i> Verification</a>
+                <button class="logout-btn" onclick="logout()" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+             </div>
 
     <!-- Modal -->
     <section class="modal-overlay" id="modalOverlay">

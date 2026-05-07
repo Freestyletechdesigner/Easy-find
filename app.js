@@ -122,14 +122,7 @@ if (!fs.existsSync(databaseDir)) fs.mkdirSync(databaseDir, { recursive: true });
 
 // Ensure database JSON files exist
 const dbFiles = {
-    'views.json':        { ips: [], count: 0, lastUpdated: new Date().toISOString() },
-    'post-property.json': [],
-    'messages.json':     [],
-    'bookings.json':     [],
-    'HLS.json':          [],
-    'admin.json':        [],
-    'agents.json':       [],
-    'users.json':        []
+    'admin.json': []
 };
 Object.entries(dbFiles).forEach(([file, defaultVal]) => {
     const filePath = path.join(databaseDir, file);
@@ -138,6 +131,7 @@ Object.entries(dbFiles).forEach(([file, defaultVal]) => {
     }
 });
 
+//Direct URL
 app.use(express.static('public'));
 app.use('/admin', express.static('admin'));
 app.use('/agent-loged', express.static('agent-loged'));
@@ -146,6 +140,9 @@ app.use('/property', express.static('public/property'));
 app.use('/login-agent', express.static('public/login-agent.html'));
 app.use('/signup-agent', express.static('public/signup-agent.html'));
 app.use('/agent-profile', express.static('public/agent-profile'));
+app.use('/agent-loged/upload-profilepicture', express.static('agent-loged/upload-image.html'));
+app.use('/agent-loged/setting', express.static('agent-loged/setting.html'));
+app.use('/agent-verification', express.static('agent-verification'));
 
 login(app);
 sectionImageChanger(app);
