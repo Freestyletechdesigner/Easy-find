@@ -1181,6 +1181,22 @@ header {
     margin-bottom: 10px;
 }
 
+#avatar {
+    width: 220px; 
+    height: 220px;
+    border-radius: 50%;
+    background: rgba(0, 39, 37, 0.726);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 5rem;
+    color: #ffffff;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 3px solid #66eae3;
+}
+
 /* TEXT */
 .agent-card h3 {
     margin: 10px 0 5px;
@@ -1190,7 +1206,7 @@ header {
 
 .agent-card p {
     font-size: 14px;
-    color: #555;
+    color: #00463a;
     margin-bottom: 15px;
 }
 

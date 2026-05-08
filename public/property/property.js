@@ -23,7 +23,7 @@ function getQueryId() {
 // ── Load Property ─────────────────────────────────────
 async function loadProperty() {
     const id = getQueryId();
-    console.log('🔍 Property ID from URL:', id);
+    console.log(' Property ID from URL:', id);
     if (!id) { showError('No property ID provided.'); return; }
 
     //view post
@@ -217,8 +217,11 @@ async function loadAgent(agentId) {
         if (!data.success) return;
         const agent = data.agent;
         if (!agent) return;
-
-        $('agentName').textContent = agent.name || 'Agent';
+        
+        const agent_name = agent.name.length > 8?
+                                 agent.name.slice(0, 8) + '...' :
+                                 agent.name
+        $('agentName').textContent = agent_name || 'Agent';
         $('agent-stand').textContent = agent.stand || '';
 
         profile.addEventListener('click', () => {

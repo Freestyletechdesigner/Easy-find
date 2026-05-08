@@ -64,8 +64,10 @@ async function loadProfile() {
 function renderProfile(agent, listingCount, totalViews) {
     document.title = `${agent.name} – Easy Find`;
 
+    const agentStand = agent.stand.toLowerCase() === 'verified agent'? `<i class="fa-solid fa-circle-check"></i> ${agent.stand}` : `${agent.stand}`;
+
     document.getElementById('agentName').textContent = agent.name || 'Agent';
-    document.getElementById('agent-stand').textContent = agent.stand;
+    document.getElementById('agent-stand').innerHTML = agentStand;
     document.getElementById('statListings').textContent = listingCount;
     document.getElementById('statViews').textContent = totalViews.toLocaleString();
 

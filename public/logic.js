@@ -327,7 +327,7 @@ function renderAgents(agents) {
             </div>
             <div class="agent-search-info">
                 <p class="agent-search-name">${a.name}</p>
-                <p class="agent-search-stand">${a.stand || 'Agent'}</p>
+                <p class="agent-search-stand">${a.stand.toLowerCase() === 'verified agent'? `<i class="fa-solid fa-circle-check"></i> ${a.stand}` : `${a.stand}`}</p>
             </div>
         </a>
     `).join('');
@@ -568,6 +568,39 @@ searchAgent();
         if (rect.top < window.innerHeight)
             if (timeCount) runCount()
     });
+
+    // Load verified agents
+    async function loadVerifiedAgents() {
+        try {
+            const res = await fetch('/api/agents/verified');
+            const data = await res.json();
+            
+            const container = document.getElementById('agents-container');
+            
+            if (data.success && data.agents.length > 0) {
+                container.innerHTML = data.agents.map(agent => `
+                <div class="agent-card">
+                    ${agent.profilePicture? 
+                       `<img src="${agent.profilePicture || 'https://via.placeholder.com/150'}" loading="lazy" alt="${agent.name}">`
+                       : `<i class="fa-solid fa-user-tie" id="avatar"></i>`
+                    }
+                    
+                    <h3>${agent.name}</h3>
+                    <p><i class="fa-solid fa-circle-check"></i> ${agent.stand || 'Verified Agent'}</p>
+                    <a href="/agent-profile?id=${agent.id}" class="agent-btn">View Profile</a>
+                </div>
+                `).join('');
+            } else {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">No verified agents available at the moment.</p>';
+            }
+        } catch (err) {
+            console.error('Error loading agents:', err);
+            document.getElementById('agents-container').innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">Failed to load agents.</p>';
+        }
+    }
+
+    // Load agents when page loads
+    loadVerifiedAgents();
 
     // Message input Validation
     const contactAlertBox = document.getElementById('alert');
