@@ -216,7 +216,7 @@ const AGENT_POST = (app) => {
     });
 
     //Edit property post
-    app.post('/api/edit/post', requireAgent, upload.array('file'), [
+    app.patch('/api/edit/post/:id', requireAgent, upload.array('file'), [
         check('title').notEmpty().trim().escape(),
         check('type').notEmpty().trim().escape(),
         check('category').notEmpty().isIn(['sale', 'rent', 'shortlet']).withMessage('Invalid category'),
@@ -231,7 +231,7 @@ const AGENT_POST = (app) => {
         //validation 
         const error = validationResult(req);
         if (!error.isEmpty()) {
-            console.err('Validation errors:', errors.array());
+            console.error('Validation errors:', error.array());
             return res.status(403).json({
                 success: false,
                 message: 'Validation failed'
@@ -239,6 +239,44 @@ const AGENT_POST = (app) => {
         }
 
         const { title, type, category, price, location, beds, baths, area, description, features } = req.body;
+        const isLand = type === 'land';
+        const newImageNames = req.files.map(file => file.filename);
+        const keepImages    = req.body.keepImages
+            ? (Array.isArray(req.body.keepImages) ? req.body.keepImages : [req.body.keepImages])
+            : [];
+        const imageName = [...keepImages, ...newImageNames];
+        try {
+            const id = req.params.id;
+            const agentPost = await AgentPost.findById(id);
+
+            //make the changes 
+            agentPost.title = title ;
+            agentPost.type = type;
+            agentPost.category = category;
+            agentPost.price = price;
+            agentPost.location = location;
+            agentPost.beds = isLand ? null : (beds  || null);
+            agentPost.baths = isLand ? null : (baths || null);
+            agentPost.area = area;
+            agentPost.description = description;
+            agentPost.features = features;
+            agentPost.imageNames = imageName;
+            agentPost.date = Date.now();
+            
+            //save change
+            await agentPost.save();
+
+            res.json({
+                success: true,
+                property: agentPost
+            })
+        } catch (error) {
+            console.error('Property edit Error', error)
+            res.status(500).json({
+                success: false,
+                message: 'Server Error'
+            })
+        }
     });
 
 }

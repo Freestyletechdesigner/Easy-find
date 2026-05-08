@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const isLand = (p.type || '').toLowerCase() === 'land';
 
         return `
-            <div class="property-card" id="card-${p._id}">
+            <div class="property-card" id="card-${p._id}" data-property="${encodeURIComponent(JSON.stringify(p))}">
                 <div class="card-image">
                     <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
                     <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
@@ -425,9 +425,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <button onclick="shareProperty('${p._id}')">
                                 <i class="fas fa-share-alt"></i> Share
                             </button>
-                            <a href="/property?id=${p._id}" target="_blank">
-                                <i class="fas fa-eye"></i> Preview
-                            </a>
+                            <button onclick="editPost('${p._id}')">
+                                <i class="fa-solid fa-gear"></i> Edit post
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -525,6 +525,202 @@ document.addEventListener('DOMContentLoaded', () => {
             alertBox.error('Error', 'Something went wrong. Please try again.');
         } finally {
             bioSpinner.style.display = 'none';
+        }
+    };
+
+    // ── Edit Property ─────────────────────────────────────
+    const editTypeSelect  = document.getElementById('editTypeSelect');
+    const editGroupBeds   = document.getElementById('editGroupBeds');
+    const editGroupBaths  = document.getElementById('editGroupBaths');
+    const editGroupLand   = document.getElementById('editGroupLand');
+    const editForm        = document.getElementById('editPropertyForm');
+    const editPreview     = document.getElementById('editImagePreviewContainer');
+    const editFileInput   = document.getElementById('editFileInput');
+    let editImages        = [];
+    let editSelectedFeatures = new Set();
+    let currentEditId     = null;
+    let existingImages    = [];
+
+    function handleEditTypeChange() {
+        const isLand = editTypeSelect.value === 'land';
+        editGroupBeds.style.display  = isLand ? 'none' : '';
+        editGroupBaths.style.display = isLand ? 'none' : '';
+        editGroupLand.style.display  = isLand ? '' : 'none';
+        if (isLand) {
+            document.getElementById('editBeds').value  = '';
+            document.getElementById('editBaths').value = '';
+        }
+    }
+
+    editTypeSelect.addEventListener('change', handleEditTypeChange);
+
+    function initEditFeatures(existing) {
+        const list = Array.isArray(existing)
+            ? existing
+            : (existing ? existing.split(',').map(f => f.trim()).filter(Boolean) : []);
+        editSelectedFeatures = new Set(list);
+        const container = document.getElementById('editFeaturesContainer');
+        container.innerHTML = '';
+        availableFeatures.forEach(feature => {
+            const tag = document.createElement('div');
+            tag.className = 'feature-tag' + (editSelectedFeatures.has(feature) ? ' selected' : '');
+            tag.textContent = feature;
+            tag.onclick = () => {
+                if (editSelectedFeatures.has(feature)) {
+                    editSelectedFeatures.delete(feature);
+                    tag.classList.remove('selected');
+                } else {
+                    editSelectedFeatures.add(feature);
+                    tag.classList.add('selected');
+                }
+                document.getElementById('editFeaturesInput').value = Array.from(editSelectedFeatures).join(',');
+            };
+            container.appendChild(tag);
+        });
+        document.getElementById('editFeaturesInput').value = Array.from(editSelectedFeatures).join(',');
+    }
+
+    function updateEditPreview() {
+        editPreview.innerHTML = '';
+
+        // existing images
+        existingImages.forEach((name, index) => {
+            const item = document.createElement('div');
+            item.className = 'preview-item';
+            item.innerHTML = `
+                <img src="/agent-loged/upload-property/${name}" alt="Current image">
+                <button type="button" class="remove-preview" onclick="removeExistingImage(${index})">×</button>
+            `;
+            editPreview.appendChild(item);
+        });
+
+        // new images
+        editImages.forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const item = document.createElement('div');
+                item.className = 'preview-item';
+                item.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview">
+                    <button type="button" class="remove-preview" onclick="removeEditImage(${index})">×</button>
+                `;
+                editPreview.appendChild(item);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    window.removeEditImage = function(index) {
+        editImages.splice(index, 1);
+        updateEditPreview();
+    };
+
+    window.removeExistingImage = function(index) {
+        existingImages.splice(index, 1);
+        updateEditPreview();
+    };
+
+    editFileInput.addEventListener('change', (e) => {
+        const valid = Array.from(e.target.files).filter(f => f.type.startsWith('image/') && f.size <= 10 * 1024 * 1024);
+        editImages = [...editImages, ...valid];
+        updateEditPreview();
+    });
+
+    window.editPost = async function(id) {
+        currentEditId = id;
+        editImages = [];
+        existingImages = [];
+        updateEditPreview();
+
+        try {
+            const card = document.getElementById(`card-${id}`);
+            const p    = JSON.parse(decodeURIComponent(card.dataset.property));
+
+            existingImages = Array.isArray(p.imageNames) ? [...p.imageNames] : [];
+
+            document.getElementById('editTitle').value       = p.title       || '';
+            document.getElementById('editPrice').value       = p.price       || '';
+            document.getElementById('editLocation').value    = p.location    || '';
+            document.getElementById('editBeds').value        = p.beds        || '';
+            document.getElementById('editBaths').value       = p.baths       || '';
+            document.getElementById('editArea').value        = p.area        || '';
+            document.getElementById('editDescription').value = p.description || '';
+            editTypeSelect.value = (p.type || 'house').toLowerCase();
+            document.getElementById('editCategory').value   = p.category    || '';
+            handleEditTypeChange();
+            initEditFeatures(p.features);
+            updateEditPreview();
+
+            document.getElementById('editModalOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        } catch (err) {
+            alertBox.error('Error', err.message || 'Failed to open editor. Please try again.');
+        }
+    };
+
+    window.closeEditModal = function() {
+        document.getElementById('editModalOverlay').classList.remove('active');
+        document.body.style.overflow = 'auto';
+        currentEditId  = null;
+        editImages     = [];
+        existingImages = [];
+    };
+
+    window.submitEdit = async function() {
+        const btn     = document.getElementById('editSubmitBtn');
+        const spinner = btn.querySelector('.spinner');
+        const btnText = btn.querySelector('.btn-text');
+
+        if (editImages.length === 0 && existingImages.length === 0) { alertBox.warning('No Images', 'Please keep or upload at least one image'); return; }
+
+        const emojiOrSymbol = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FEFF}!@#$%^&*()+=\[\]{}<>?\\|`~]/u;
+        const textOnly      = /^[a-zA-Z0-9\s,.\-'"\/]+$/;
+        const numbersOnly   = /^\d+(\.\d+)?$/;
+
+        const title    = document.getElementById('editTitle').value.trim();
+        const price    = document.getElementById('editPrice').value.trim();
+        const category = document.getElementById('editCategory').value;
+        const location = document.getElementById('editLocation').value.trim();
+        const beds     = document.getElementById('editBeds').value.trim();
+        const baths    = document.getElementById('editBaths').value.trim();
+        const area     = document.getElementById('editArea').value.trim();
+        const desc     = document.getElementById('editDescription').value.trim();
+
+        if (!title)                                              { alertBox.warning('Missing Field', 'Property title is required'); return; }
+        if (emojiOrSymbol.test(title) || !textOnly.test(title)) { alertBox.error('Invalid Title', 'Title must not contain emojis or special symbols'); return; }
+        if (!price)                                              { alertBox.warning('Missing Field', 'Price is required'); return; }
+        if (!numbersOnly.test(price))                            { alertBox.error('Invalid Price', 'Price must be numbers only'); return; }
+        if (!category)                                           { alertBox.warning('Missing Field', 'Please select a listing category'); return; }
+        if (!location)                                           { alertBox.warning('Missing Field', 'Location is required'); return; }
+        if (emojiOrSymbol.test(location) || !textOnly.test(location)) { alertBox.error('Invalid Location', 'Location must not contain emojis or special symbols'); return; }
+
+        const formData = new FormData(editForm);
+        formData.delete('file');
+        existingImages.forEach(name => formData.append('keepImages', name));
+        editImages.forEach(file => formData.append('file', file));
+
+        btn.disabled          = true;
+        spinner.style.display = 'inline-block';
+        btnText.style.display = 'none';
+
+        try {
+            const res  = await fetch(`/api/edit/post/${currentEditId}`, { method: 'PATCH', body: formData });
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                alertBox.success('Updated', 'Property updated successfully!', () => {
+                    closeEditModal();
+                    loadProperties();
+                });
+            } else {
+                alertBox.error('Failed', data.message || 'Failed to update property');
+            }
+        } catch (err) {
+            alertBox.error('Error', 'Something went wrong. Please try again.');
+        } finally {
+            btn.disabled          = false;
+            spinner.style.display = 'none';
+            btnText.style.display = 'inline';
         }
     };
 

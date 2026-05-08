@@ -156,7 +156,101 @@
         </div>
     </section>
 
-    <!-- Bio Section — compact strip below hero -->
+    <!-- Edit Modal -->
+    <section class="modal-overlay" id="editModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Property</h3>
+                <button class="modal-close" onclick="closeEditModal()">×</button>
+            </div>
+
+            <div class="modal-body">
+                <form enctype="multipart/form-data" id="editPropertyForm">
+                    <div class="form-group">
+                        <label>Property Images</label>
+                        <div class="upload-preview" id="editImagePreviewContainer"></div>
+                        <div class="image-upload-zone" onclick="document.getElementById('editFileInput').click()">
+                            <input type="file" name="file" id="editFileInput" class="upload-input" accept="image/*" multiple>
+                            <div class="upload-icon"><i class="fa-regular fa-cloud"></i></div>
+                            <div class="upload-text">Click to upload new images</div>
+                            <div class="upload-hint">PNG, JPG, GIF up to 10MB</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Property Title *</label>
+                            <input type="text" name="title" id="editTitle" required placeholder="e.g., Flats or Duplex">
+                        </div>
+                        <div class="form-group">
+                            <label>Price (₦) *</label>
+                            <input type="text" name="price" id="editPrice" required placeholder="500000">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Property Type</label>
+                            <select name="type" id="editTypeSelect">
+                                <option value="house">House</option>
+                                <option value="apartment">Apartment</option>
+                                <option value="land">Land</option>
+                                <option value="villa">Villa</option>
+                                <option value="commercial">Commercial</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Listing Category *</label>
+                            <select name="category" id="editCategory" required>
+                                <option value="" disabled>Select category</option>
+                                <option value="sale">For Sale</option>
+                                <option value="rent">For Rent</option>
+                                <option value="shortlet">Short-let</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Location *</label>
+                            <input type="text" name="location" id="editLocation" required placeholder="Agbani Road">
+                        </div>
+                    </div>
+
+                    <div class="form-row three">
+                        <div class="form-group" id="editGroupBeds">
+                            <label>Bedrooms</label>
+                            <input type="number" name="beds" id="editBeds" min="0" placeholder="0">
+                        </div>
+                        <div class="form-group" id="editGroupBaths">
+                            <label>Bathrooms</label>
+                            <input type="number" name="baths" id="editBaths" min="0" step="0.5" placeholder="0">
+                        </div>
+                        <div class="form-group" id="editGroupLand">
+                            <label>Plot</label>
+                            <input type="text" name="area" id="editArea" placeholder="eq. 1 Plot">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea name="description" id="editDescription" rows="3" placeholder="Describe the property..."></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Features (Select all that apply)</label>
+                        <div class="features-container" id="editFeaturesContainer"></div>
+                        <input type="hidden" name="features" id="editFeaturesInput">
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                <button type="button" class="btn btn-primary" id="editSubmitBtn" onclick="submitEdit()">
+                    <span class="spinner"></span>
+                    <span class="btn-text">Save Changes</span>
+                </button>
+            </div>
+        </div>
+    </section>
     <div class="bio-strip" id="bioStrip">
         <div class="bio-strip-inner">
             <span class="bio-strip-icon"><i class="fas fa-user-pen"></i></span>
