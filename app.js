@@ -143,6 +143,7 @@ app.use('/agent-profile', express.static('public/agent-profile'));
 app.use('/agent-loged/upload-profilepicture', express.static('agent-loged/upload-image.html'));
 app.use('/agent-loged/setting', express.static('agent-loged/setting.html'));
 app.use('/agent-verification', express.static('agent-verification'));
+app.use('/appear', express.static('appear'));
 
 login(app);
 sectionImageChanger(app);

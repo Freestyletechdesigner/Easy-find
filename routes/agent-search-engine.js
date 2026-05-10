@@ -3,7 +3,7 @@ const AgentUser = require('../model/AgentUser.js');
 function SEARCH_ENGINE(app) {
     app.get('/api/search/agent', async (req, res) => {
         try {
-            const agents = await AgentUser.find()
+            const agents = await AgentUser.find({ status: 'active' })
                 .select('name profilePicture stand')
                 .lean();
             res.json({

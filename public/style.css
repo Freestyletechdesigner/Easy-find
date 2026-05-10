@@ -800,8 +800,8 @@ header {
 
 .btn-view-details:hover {
     background: linear-gradient(135deg, #0d7068 0%, #055361 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(13, 112, 104, 0.3);
+    transform: translateY(-5px);
+    box-shadow: 0 4px 16px rgba(0, 56, 51, 0.3);
 }
 
 /* Empty state */

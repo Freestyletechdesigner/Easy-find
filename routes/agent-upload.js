@@ -130,7 +130,10 @@ const AGENT_POST = (app) => {
     //get request for all user
     app.get('/api/post/property', async (req, res) => {
         try {
-            const agentPost = await AgentPost.find().lean()
+            // Find active agent
+            const activeAgent = await AgentUser.find({status: 'active'}).select('_id').lean();
+            const activeId = activeAgent.map(a => a._id);
+            const agentPost = await AgentPost.find({ agentId: {$in: activeId} }).lean();
 
             // Fisher-Yates shuffle
             for (let i = agentPost.length - 1; i > 0; i--) {

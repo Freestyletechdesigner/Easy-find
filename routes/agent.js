@@ -118,7 +118,11 @@ const agent = (app) => {
             }
 
             if (agent.status !== 'active') {
-                return res.status(403).json({ success: false, message: 'Your account is inactive. Please contact admin.' });
+                return res.status(403).json({ 
+                    success: false, 
+                    message: 'Your account is inactive. Please contact us through email.',
+                    inactive: true 
+                });
             }
 
             const isPasswordValid = await agent.comparePassword(password);
@@ -130,10 +134,10 @@ const agent = (app) => {
             await agent.save();
 
             req.session.agent = {
-                id:             agent._id,
-                name:           agent.name,
-                email:          agent.email,
-                role:           agent.role,
+                id: agent._id,
+                name: agent.name,
+                email: agent.email,
+                role: agent.role,
                 profilePicture: agent.profilePicture || null
             };
 
@@ -152,9 +156,9 @@ const agent = (app) => {
     app.get('/api/agent/status', (req, res) => {
         if (req.session.agent) {
             res.json({ success: true, isAgent: true, agent: {
-                name:           req.session.agent.name,
-                email:          req.session.agent.email,
-                role:           req.session.agent.role,
+                name: req.session.agent.name,
+                email: req.session.agent.email,
+                role: req.session.agent.role,
                 profilePicture: req.session.agent.profilePicture || null
             }});
         } else {
@@ -353,7 +357,7 @@ const agent = (app) => {
     // Get verified agents (public)
     app.get('/api/agents/verified', async (req, res) => {
         try {
-            const agents = await AgentUser.find({ stand: 'Verified Agent' })
+            const agents = await AgentUser.find({ stand: 'Verified Agent', status: 'active'})
                 .select('name profilePicture stand bio')
                 .lean();
 

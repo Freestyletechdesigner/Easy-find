@@ -482,6 +482,11 @@
                         setTimeout(() => {
                             window.location.href = '/agent-loged';
                         }, 1000);
+                    } else if (data.inactive) {
+                        showAlert(data.message || 'Invalid email or password', 'error');
+                        setTimeout(() => {
+                            window.location.href = '/appear'
+                        }, 1000);
                     } else {
                         showAlert(data.message || 'Invalid email or password', 'error');
                         loginBtn.disabled = false;
