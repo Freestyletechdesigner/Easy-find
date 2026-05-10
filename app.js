@@ -25,7 +25,8 @@ const AGENT_POST = require('./routes/agent-upload.js');
 const VIEW_POST = require('./routes/view-post.js');
 const SEARCH_ENGINE = require('./routes/agent-search-engine.js');
 
-
+// Database schema
+const PageViews = require('./model/PageViews.js');
 
 app.use(express.json());
 
@@ -63,52 +64,51 @@ function initViewsFile() {
 initViewsFile();
 
 // Get page views
-app.get('/api/views', (req, res) => {
+app.get('/api/views', async (req, res) => {
     try {
         const ip = req.ip || req.connection.remoteAddress;
-        const data = JSON.parse(fs.readFileSync(VIEWS_FILE, 'utf8'));
-        
-        // Check if this IP has visited before
-        if (!data.ips.includes(ip)) {
-            data.ips.push(ip);
-            data.count++;
-            data.lastUpdated = new Date().toISOString();
-            
-            fs.writeFileSync(VIEWS_FILE, JSON.stringify(data, null, 2));
+        let record = await PageViews.findOne();
+
+        if (!record) {
+            record = await PageViews.create({ ip: [], count: 0 });
         }
-        
+
+        if (!record.ip.includes(ip)) {
+            record.ip.push(ip);
+            record.count = (record.count || 0) + 1;
+            record.lastUpdated = new Date();
+            await record.save();
+        }
+
         res.json({
             success: true,
-            views: data.count,
-            uniqueVisitors: data.ips.length
+            views: record.count,
+            uniqueVisitors: record.ip.length
         });
     } catch (err) {
         console.error('Error tracking views:', err);
-        res.status(500).json({
-            success: false,
-            message: 'Error tracking views',
-            views: 0
-        });
+        res.status(500).json({ success: false, message: 'Error tracking views', views: 0 });
     }
 });
 
 // Get views statistics (for analytics dashboard)
-app.get('/api/views/stats', (req, res) => {
+app.get('/api/views/stats', async (req, res) => {
     try {
-        const data = JSON.parse(fs.readFileSync(VIEWS_FILE, 'utf8'));
-        
+        let record = await PageViews.findOne();
+
+        if (!record) {
+            record = { count: 0, ip: [], lastUpdated: new Date() };
+        }
+
         res.json({
             success: true,
-            totalViews: data.count,
-            uniqueVisitors: data.ips.length,
-            lastUpdated: data.lastUpdated
+            totalViews: record.count,
+            uniqueVisitors: record.ip.length,
+            lastUpdated: record.lastUpdated
         });
     } catch (err) {
         console.error('Error getting view stats:', err);
-        res.status(500).json({
-            success: false,
-            message: 'Error getting view statistics'
-        });
+        res.status(500).json({ success: false, message: 'Error getting view statistics' });
     }
 });
 

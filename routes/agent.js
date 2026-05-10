@@ -357,6 +357,12 @@ const agent = (app) => {
                 .select('name profilePicture stand bio')
                 .lean();
 
+                // Fisher-Yates shuffle
+                for (let i = agents.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [agents[i], agents[j]] = [agents[j], agents[i]]
+                }
+
             res.json({
                 success: true,
                 agents: agents.map(agent => ({
