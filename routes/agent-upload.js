@@ -55,13 +55,13 @@ const AGENT_POST = (app) => {
         check('title').notEmpty().trim().escape(),
         check('type').notEmpty().trim().escape(),
         check('category').notEmpty().isIn(['sale', 'rent', 'shortlet']).withMessage('Invalid category'),
-        check('price'),
+        check('price').notEmpty().isNumeric().isFloat({ min: 0 }),
         check('location').notEmpty().trim().escape(),
         check('beds').optional({ checkFalsy: true }).isNumeric().trim().escape(),
         check('baths').optional({ checkFalsy: true }).isNumeric().trim().escape(),
         check('area').optional({ checkFalsy: true }).trim(),
-        check('description').trim(),
-        check('features').trim()
+        check('description').trim().escape().isLength({ max: 5000 }),
+        check('features').trim().escape().isLength({ max: 1000 })
     ],async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -220,13 +220,13 @@ const AGENT_POST = (app) => {
         check('title').notEmpty().trim().escape(),
         check('type').notEmpty().trim().escape(),
         check('category').notEmpty().isIn(['sale', 'rent', 'shortlet']).withMessage('Invalid category'),
-        check('price'),
+        check('price').notEmpty().isNumeric().isFloat({ min: 0 }),
         check('location').notEmpty().trim().escape(),
         check('beds').optional({ checkFalsy: true }).isNumeric().trim().escape(),
         check('baths').optional({ checkFalsy: true }).isNumeric().trim().escape(),
-        check('area'),
-        check('description'),
-        check('features')
+        check('area').optional({ checkFalsy: true }).trim(),
+        check('description').trim().escape().isLength({ max: 5000 }),
+        check('features').trim().escape().isLength({ max: 1000 })
     ], async (req, res) => {
         //validation 
         const error = validationResult(req);
