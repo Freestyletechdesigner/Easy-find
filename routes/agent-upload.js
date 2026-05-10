@@ -59,9 +59,9 @@ const AGENT_POST = (app) => {
         check('location').notEmpty().trim().escape(),
         check('beds').optional({ checkFalsy: true }).isNumeric().trim().escape(),
         check('baths').optional({ checkFalsy: true }).isNumeric().trim().escape(),
-        check('area'),
-        check('description'),
-        check('features')
+        check('area').optional({ checkFalsy: true }).trim(),
+        check('description').trim(),
+        check('features').trim()
     ],async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
