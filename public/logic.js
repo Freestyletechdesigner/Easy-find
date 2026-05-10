@@ -103,7 +103,7 @@
                     <div class="card-stats">
                         ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
                         ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
-                        <span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>
+                        ${isLand? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>` : ''}
                     </div>
                     <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
                 </div>
@@ -256,10 +256,10 @@
         let search = searchBar.value.toLowerCase();
 
         cards.forEach(card => {
-            let dataName     = card.getAttribute('data-title').toLowerCase();
+            let dataName = card.getAttribute('data-title').toLowerCase();
             let dataLocation = card.getAttribute('data-location').toLowerCase();
-            let dataPrice    = card.getAttribute('data-price');
-            let dataRoom     = card.getAttribute('data-room');
+            let dataPrice = card.getAttribute('data-price');
+            let dataRoom = card.getAttribute('data-room');
 
             card.style.display = (
                 dataName.includes(search) ||
@@ -268,6 +268,7 @@
                 dataRoom.includes(search)
             ) ? '' : 'none';
         });
+        document.getElementById('loadMoreBtn').style.display = 'none'
     });
 
     //search for agent
@@ -297,6 +298,7 @@ async function searchAgent() {
                 a.name.toLowerCase().includes(searchValue)
             );
             renderAgents(filtered);
+            document.getElementById('loadMoreBtn').style.display = 'none'
         });
 
         // Hide when clicking outside

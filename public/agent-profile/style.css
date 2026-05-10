@@ -28,11 +28,6 @@ header {
     text-decoration: none;
     color: #000;
     letter-spacing: 1px;
-    animation: logo-motion 1.2s linear infinite alternate;
-}
-@keyframes logo-motion {
-    from { font-size: 1.15rem; }
-    to   { font-size: 1.05rem; }
 }
 .logo span {
     color: #fff;

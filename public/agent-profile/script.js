@@ -136,7 +136,7 @@ function renderListings(posts) {
                     <div class="card-stats">
                         ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
                         ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
-                        <span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>
+                        ${isLand ? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>` : ''}
                     </div>
                     <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
                 </div>

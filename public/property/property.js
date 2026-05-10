@@ -72,10 +72,13 @@ function renderProperty(p) {
     const propStats = document.querySelector('.prop-stats');
 
     if (p.type.toLowerCase() === 'land') {
-        quickDetailsList.children[2].style.display = 'none'
-        quickDetailsList.children[3].style.display = 'none'
-        propStats.children[0].style.display = 'none'
-        propStats.children[1].style.display = 'none'
+        quickDetailsList.children[2].style.display = 'none';
+        quickDetailsList.children[3].style.display = 'none';
+        propStats.children[0].style.display = 'none';
+        propStats.children[1].style.display = 'none';
+    } else {
+        propStats.children[2].style.display = 'none';
+        quickDetailsList.children[4].style.display = 'none'
     }
 
 
