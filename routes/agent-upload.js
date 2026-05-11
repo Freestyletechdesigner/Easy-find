@@ -136,8 +136,6 @@ const AGENT_POST = (app) => {
                 status: 'active'
             }).select('_id').lean();
 
-            console.log('[POST/PROPERTY] activeAgents:', activeAgent.length);
-
             const boostedAgent = await AgentUser.find({ 
                 status: 'active',
                 boostAccount: true,
