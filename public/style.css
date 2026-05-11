@@ -250,7 +250,13 @@ header {
 .hold-hero-text p {
     font-size: 2rem;
     font-weight: bold;
-    text-shadow: 2px 2px 6px #fff;
+}
+
+.hero-text {
+    font-size: 2rem;
+    font-weight: bold;
+    text-shadow: 2px 2px 8px #000000;
+    color: #fff;
 }
 
 .hold-hero-text h1 {

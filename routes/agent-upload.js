@@ -130,20 +130,53 @@ const AGENT_POST = (app) => {
     //get request for all user
     app.get('/api/post/property', async (req, res) => {
         try {
-            // Find active agent
-            const activeAgent = await AgentUser.find({status: 'active'}).select('_id').lean();
-            const activeId = activeAgent.map(a => a._id);
-            const agentPost = await AgentPost.find({ agentId: {$in: activeId} }).lean();
+            const now = new Date()
+            // Find active agent and boosted account
+            const activeAgent = await AgentUser.find({ 
+                status: 'active'
+            }).select('_id').lean();
 
-            // Fisher-Yates shuffle
-            for (let i = agentPost.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [agentPost[i], agentPost[j]] = [agentPost[j], agentPost[i]]
+            console.log('[POST/PROPERTY] activeAgents:', activeAgent.length);
+
+            const boostedAgent = await AgentUser.find({ 
+                status: 'active',
+                boostAccount: true,
+                boostAccountExpiry: {$gt: now}
+            }).select('_id').lean();
+
+            const boostedAgentId = boostedAgent.map(a => a._id.toString());
+            const activeId = activeAgent.map(a => a._id.toString());
+
+            const agentPost = await AgentPost.find({ agentId: { $in: activeId } }).lean();
+
+            // also log a sample agentId from posts vs activeId to compare
+            if (agentPost.length === 0) {
+                const allPosts = await AgentPost.find().select('agentId').lean();
             }
+
+            // split into group
+            const accountBoosted = agentPost.filter(p => boostedAgentId.includes(p.agentId.toString()));
+            const postBoosted = agentPost.filter(p => p.boostPost && new Date(p.boostPostExpiry) > now);
+            const normal = agentPost.filter(p => 
+                !boostedAgentId.includes(p.agentId.toString()) &&
+                !(p.boostPost && new Date(p.boostPostExpiry) > now)
+            )
+            
+            // Fisher-Yates shuffle function
+            function shuffle(arr) {
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
+                }
+                return arr;
+            }
+
+            // Merge: single boosted posts first, then account boosted, then normal
+            const sorted = [...shuffle(postBoosted), ...shuffle(accountBoosted), ...shuffle(normal)];
 
             res.json({
                 success: true,
-                property: agentPost
+                property: sorted
             });
         } catch(err) {
             res.status(500).json({ success: false, message: 'Error loading properties' });

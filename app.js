@@ -47,21 +47,6 @@ app.use(session({
     }
 }));
 
-// Track page views
-const VIEWS_FILE = path.join(__dirname, 'database', 'views.json');
-
-// Initialize views file
-function initViewsFile() {
-    if (!fs.existsSync(VIEWS_FILE)) {
-        fs.writeFileSync(VIEWS_FILE, JSON.stringify({
-            ips: [],
-            count: 0,
-            lastUpdated: new Date().toISOString()
-        }, null, 2));
-    }
-}
-
-initViewsFile();
 
 // Get page views
 app.get('/api/views', async (req, res) => {
@@ -117,19 +102,6 @@ app.get('/api/views/stats', async (req, res) => {
 const uploadPropertyDir = path.join(__dirname, 'agent-loged', 'upload-property');
 if (!fs.existsSync(uploadPropertyDir)) fs.mkdirSync(uploadPropertyDir, { recursive: true });
 
-const databaseDir = path.join(__dirname, 'database');
-if (!fs.existsSync(databaseDir)) fs.mkdirSync(databaseDir, { recursive: true });
-
-// Ensure database JSON files exist
-const dbFiles = {
-    'admin.json': []
-};
-Object.entries(dbFiles).forEach(([file, defaultVal]) => {
-    const filePath = path.join(databaseDir, file);
-    if (!fs.existsSync(filePath)) {
-        fs.writeFileSync(filePath, JSON.stringify(defaultVal, null, 2));
-    }
-});
 
 //Direct URL
 app.use(express.static('public'));

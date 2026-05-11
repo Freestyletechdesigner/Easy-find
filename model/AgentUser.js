@@ -56,6 +56,14 @@ const agentSchema = new mongoose.Schema({
     ipAddress: {
         type: String,
     },
+    boostAccount: {
+        type: Boolean,
+        default: false
+    },
+    boostAccountExpiry: {
+        type: Date,
+        default: null
+    },
     // VERIFICATION FIELDS
     isVerified: { 
         type: Boolean, 

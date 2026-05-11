@@ -42,7 +42,7 @@
     const grid = cardsContainer;
 
         //send the skeleton card
-        grid.innerHTML = Array(6).fill(`
+        grid.innerHTML = Array(8).fill(`
             <div class="skeleton-card">
                 <div class="skeleton skeleton-img"></div>
                 <div class="skeleton-body">
@@ -55,6 +55,9 @@
 
     //call API
     uploadProperty();
+    setInterval(() => {
+        uploadProperty();
+    }, 10 * 60 * 1000);
     async function uploadProperty() {
         try {
             const res = await fetch('/api/post/property');

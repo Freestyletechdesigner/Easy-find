@@ -59,6 +59,14 @@ const postSchema = new mongoose.Schema({
     date: {
         type: Date,
         default: Date.now
+    },
+    boostPost: {
+        type: Boolean,
+        default: false
+    },
+    boostPostExpiry: {
+        type: Date,
+        default: null
     }
 });
 
