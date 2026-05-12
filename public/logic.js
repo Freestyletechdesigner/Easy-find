@@ -30,11 +30,20 @@
     //nav
     const nav2 = document.getElementById("nav2");
     const hamburger = document.getElementById("hamburger");
+    const bg = document.querySelector('.bgf');
+    const navX = document.getElementById('navX');
+
+    navX.addEventListener('click', () => {
+        nav2.classList.remove('active');
+        hamburger.classList.remove('active');
+        bg.style.display = 'none'
+    });
 
     hamburger.addEventListener('click', (e) => {
         e.stopPropagation();
         nav2.classList.toggle('active');
         hamburger.classList.toggle('active');
+        bg.style.display = nav2.classList.contains('active') ? 'flex' : 'none';
     });
 
     //property upload here
@@ -1007,9 +1016,10 @@ searchAgent();
             loginPage.classList.remove('log');
         }
         //close nav2 logic
-        if (!hamburger.contains(e.target)) {
+        if (!hamburger.contains(e.target) && !nav2.contains(e.target)) {
             hamburger.classList.remove('active');
-            nav2.classList.remove('active')
+            nav2.classList.remove('active');
+            bg.style.display = 'none';
         }
     });
 
