@@ -450,7 +450,6 @@
 
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
-                const remember = document.getElementById('remember').checked;
 
                 // Disable button and show loading
                 loginBtn.disabled = true;
@@ -464,8 +463,7 @@
                         },
                         body: new URLSearchParams({
                             email: email,
-                            password: password,
-                            remember: remember
+                            password: password
                         })
                     });
 

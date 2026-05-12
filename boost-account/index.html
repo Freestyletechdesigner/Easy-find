@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boost Account - Easy Find</title>
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #66eaea 0%, #08634f 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── LEFT ── */
+        .left {
+            background: linear-gradient(135deg, #005f66 0%, #00443e 100%);
+            padding: 60px 40px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .left .icon { font-size: 52px; margin-bottom: 24px; opacity: 0.9; }
+        .left h1 { font-size: 32px; margin-bottom: 16px; }
+        .left p  { font-size: 15px; line-height: 1.7; opacity: 0.85; margin-bottom: 28px; }
+
+        .left ul { list-style: none; }
+        .left ul li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .left ul li i { font-size: 18px; }
+
+        /* ── RIGHT ── */
+        .right { padding: 50px 40px; overflow-y: auto; }
+
+        .right-header { text-align: center; margin-bottom: 32px; }
+        .right-header h2 { font-size: 26px; color: #333; margin-bottom: 8px; }
+        .right-header p  { color: #666; font-size: 14px; }
+
+        /* steps */
+        .steps {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 32px;
+        }
+        .step { width: 30px; height: 4px; background: #e8ecf1; border-radius: 2px; transition: 0.4s; }
+        .step.active { background: #27a594; width: 50px; }
+
+        /* views */
+        .view { display: none; animation: fadeIn 0.3s ease-out; }
+        .view.active { display: block; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* plan cards */
+        .plan-card {
+            border: 2px solid #e8ecf1;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: 0.2s;
+        }
+        .plan-card:hover { border-color: #27a594; }
+        .plan-card.selected { border-color: #27a594; background: #f0fdfb; }
+
+        .plan-icon {
+            width: 48px; height: 48px;
+            background: #f5f7fa;
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px;
+            color: #888;
+            flex-shrink: 0;
+            transition: 0.2s;
+        }
+        .plan-card.selected .plan-icon { background: #27a594; color: white; }
+
+        .plan-info { flex: 1; }
+        .plan-info b { display: block; font-size: 15px; color: #333; margin-bottom: 3px; }
+        .plan-info span { font-size: 12px; color: #888; }
+        .plan-price { font-weight: 700; color: #27a594; font-size: 15px; white-space: nowrap; }
+
+        /* summary */
+        .summary-box {
+            background: #f5f7fa;
+            border-radius: 14px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .summary-box .label { font-size: 13px; color: #888; margin-bottom: 6px; }
+        .summary-box .amount { font-size: 2rem; font-weight: 800; color: #333; }
+
+        /* payment methods */
+        .method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px; }
+        .method {
+            border: 2px solid #e8ecf1;
+            padding: 12px 8px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            color: #555;
+            transition: 0.2s;
+        }
+        .method.active { border-color: #27a594; color: #27a594; background: #f0fdfb; }
+
+        /* form */
+        .form-group { margin-bottom: 18px; }
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: #888;
+            letter-spacing: 0.5px;
+            margin-bottom: 7px;
+            text-transform: uppercase;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 13px 16px;
+            border: 2px solid #e8ecf1;
+            border-radius: 12px;
+            font-size: 15px;
+            background: #f5f7fa;
+            transition: 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #27a594;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(39,165,148,0.1);
+        }
+        .form-row { display: flex; gap: 12px; }
+        .form-row .form-group { flex: 1; }
+
+        /* buttons */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: none;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #27a594 0%, #02502c 100%);
+            color: white;
+            box-shadow: 0 5px 20px rgba(39,165,148,0.3);
+        }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(39,165,148,0.4); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-ghost {
+            background: none;
+            color: #888;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .btn-ghost:hover { color: #333; }
+
+        /* success */
+        .success-screen { text-align: center; padding: 20px 0; }
+        .success-icon {
+            width: 72px; height: 72px;
+            background: linear-gradient(135deg, #27a594, #02502c);
+            color: white;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+            margin: 0 auto 20px;
+            box-shadow: 0 8px 24px rgba(39,165,148,0.35);
+        }
+        .success-screen h2 { font-size: 24px; color: #333; margin-bottom: 10px; }
+        .success-screen p  { color: #888; font-size: 14px; line-height: 1.6; margin-bottom: 28px; }
+
+        .back-home { text-align: center; margin-top: 20px; }
+        .back-home a {
+            color: #27a594;
+            text-decoration: none;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .back-home a:hover { text-decoration: underline; }
+
+        @media (max-width: 768px) {
+            .container { grid-template-columns: 1fr; }
+            .left { padding: 40px 30px; }
+            .right { padding: 36px 28px; }
+            .left h1 { font-size: 26px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- LEFT -->
+    <div class="left">
+        <div class="icon"><i class="fas fa-rocket"></i></div>
+        <h1>Boost Your Visibility</h1>
+        <p>Get your listings in front of more buyers and renters. Choose a plan that works for you.</p>
+        <ul>
+            <li><i class="fas fa-bolt"></i> Posts appear every 10 minutes at the top</li>
+            <li><i class="fas fa-users"></i> Reach more active buyers</li>
+            <li><i class="fas fa-shield-alt"></i> Secure payment processing</li>
+            <li><i class="fas fa-clock"></i> Boost activates instantly</li>
+        </ul>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+        <div class="right-header">
+            <h2 id="stepTitle">Choose a Plan</h2>
+            <p id="stepSub">Select the boost that fits your goal</p>
+        </div>
+
+        <div class="steps">
+            <div class="step active" id="dot1"></div>
+            <div class="step" id="dot2"></div>
+            <div class="step" id="dot3"></div>
+        </div>
+
+        <!-- STEP 1 — Plan -->
+        <div class="view active" id="view1">
+            <div class="plan-card selected" onclick="selectPlan('post', 950, this)">
+                <div class="plan-icon"><i class="fas fa-bolt"></i></div>
+                <div class="plan-info">
+                    <b>Boost Single Post</b>
+                    <span>3 Days • Priority in search results</span>
+                </div>
+                <div class="plan-price">₦950</div>
+            </div>
+
+            <div class="plan-card" onclick="selectPlan('profile', 7500, this)">
+                <div class="plan-icon"><i class="fas fa-award"></i></div>
+                <div class="plan-info">
+                    <b>Boost Profile</b>
+                    <span>1 Month • Featured Agent badge</span>
+                </div>
+                <div class="plan-price">₦7,500</div>
+            </div>
+
+            <button class="btn btn-primary" style="margin-top: 8px;" onclick="nextStep()">
+                Continue <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- STEP 2 — Payment -->
+        <div class="view" id="view2">
+            <div class="summary-box">
+                <div class="label" id="summaryName">Single Post Boost</div>
+                <div class="amount" id="summaryAmount">₦950</div>
+            </div>
+
+            <div class="method-grid">
+                <div class="method active" onclick="selectMethod(this)">Card</div>
+                <div class="method" onclick="selectMethod(this)">Transfer</div>
+                <div class="method" onclick="selectMethod(this)">USSD</div>
+            </div>
+
+            <div class="form-group">
+                <label>Card Number</label>
+                <input type="tel" placeholder="0000 0000 0000 0000" maxlength="19" id="cardNumber">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Expiry</label>
+                    <input type="tel" placeholder="MM/YY" maxlength="5" id="cardExpiry">
+                </div>
+                <div class="form-group">
+                    <label>CVV</label>
+                    <input type="tel" placeholder="123" maxlength="3" id="cardCvv">
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="payBtn" onclick="processPayment()">
+                Pay <span id="payAmount">₦950</span>
+            </button>
+            <button class="btn btn-ghost" onclick="prevStep()">
+                <i class="fas fa-arrow-left"></i> Go Back
+            </button>
+        </div>
+
+        <!-- STEP 3 — Success -->
+        <div class="view" id="view3">
+            <div class="success-screen">
+                <div class="success-icon"><i class="fas fa-check"></i></div>
+                <h2>Boost Active!</h2>
+                <p>Your visibility has been upgraded. Your listings will now appear at the top of search results.</p>
+                <button class="btn btn-primary" onclick="window.location.href='/agent-loged'">
+                    <i class="fas fa-home"></i> Back to Dashboard
+                </button>
+            </div>
+        </div>
+
+        <div class="back-home">
+            <a href="/agent-loged"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentStep  = 1;
+    let selectedPlan = 'post';
+    let selectedAmt  = 950;
+    let selectedLabel = 'Single Post Boost';
+
+    function selectPlan(type, price, el) {
+        document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        selectedPlan  = type;
+        selectedAmt   = price;
+        selectedLabel = type === 'post' ? 'Single Post Boost' : 'Profile Boost';
+    }
+
+    function selectMethod(el) {
+        document.querySelectorAll('.method').forEach(m => m.classList.remove('active'));
+        el.classList.add('active');
+    }
+
+    function nextStep() {
+        if (currentStep === 1) {
+            currentStep = 2;
+            document.getElementById('summaryName').textContent   = selectedLabel;
+            document.getElementById('summaryAmount').textContent = `₦${selectedAmt.toLocaleString()}`;
+            document.getElementById('payAmount').textContent     = `₦${selectedAmt.toLocaleString()}`;
+            document.getElementById('stepTitle').textContent = 'Secure Checkout';
+            document.getElementById('stepSub').textContent   = 'Complete your payment below';
+            document.getElementById('dot2').classList.add('active');
+            showView(2);
+        }
+    }
+
+    function prevStep() {
+        if (currentStep === 2) {
+            currentStep = 1;
+            document.getElementById('stepTitle').textContent = 'Choose a Plan';
+            document.getElementById('stepSub').textContent   = 'Select the boost that fits your goal';
+            document.getElementById('dot2').classList.remove('active');
+            showView(1);
+        }
+    }
+
+    function showView(n) {
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById('view' + n).classList.add('active');
+    }
+
+    function processPayment() {
+        const btn = document.getElementById('payBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+
+        setTimeout(() => {
+            currentStep = 3;
+            document.getElementById('stepTitle').textContent = 'Payment Confirmed';
+            document.getElementById('stepSub').textContent   = '';
+            document.getElementById('dot3').classList.add('active');
+            document.querySelector('.back-home').style.display = 'none';
+            showView(3);
+        }, 2000);
+    }
+
+    // Card number formatting
+    document.getElementById('cardNumber').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+    });
+
+    // Expiry formatting
+    document.getElementById('cardExpiry').addEventListener('input', function () {
+        this.value = this.value.replace(/\D/g, '').replace(/^(\d{2})(\d)/, '$1/$2');
+    });
+</script>
+
+</body>
+</html>

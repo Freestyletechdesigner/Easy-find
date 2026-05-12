@@ -130,53 +130,54 @@ const AGENT_POST = (app) => {
     //get request for all user
     app.get('/api/post/property', async (req, res) => {
         try {
-            const now = new Date()
-            // Find active agent and boosted account
-            const activeAgent = await AgentUser.find({ 
-                status: 'active'
-            }).select('_id').lean();
+            const now = new Date();
 
-            const boostedAgent = await AgentUser.find({ 
-                status: 'active',
-                boostAccount: true,
-                boostAccountExpiry: {$gt: now}
-            }).select('_id').lean();
+            const properties = await AgentPost.aggregate([
+                // convert agentId string to ObjectId for the join
+                {
+                    $addFields: {
+                        agentObjId: { $toObjectId: '$agentId' }
+                    }
+                },
+                // 1. Join with agentusers collection
+                {
+                    $lookup: {
+                        from: 'agentusers',
+                        localField: 'agentObjId',
+                        foreignField: '_id',
+                        as: 'agent'
+                    }
+                },
+                { $unwind: '$agent' },
+                // 2. Filter for active agents only
+                { $match: { 'agent.status': 'active' } },
+                // 3. Add priority + random sort field
+                {
+                    $addFields: {
+                        priority: {
+                            $cond: [
+                                { $and: [{ $eq: ['$boostPost', true] }, { $gt: ['$boostPostExpiry', now] }] },
+                                1,
+                                { $cond: [
+                                    { $and: [{ $eq: ['$agent.boostAccount', true] }, { $gt: ['$agent.boostAccountExpiry', now] }] },
+                                    2,
+                                    3
+                                ]}
+                            ]
+                        },
+                        randomSort: { $rand: {} }
+                    }
+                },
+                // 4. Sort by priority, then randomly within each group
+                { $sort: { priority: 1, randomSort: 1 } },
+                { $limit: 50 },
+                // 5. Remove the joined agent field from response
+                { $project: { agent: 0, agentObjId: 0 } }
+            ]);
 
-            const boostedAgentId = boostedAgent.map(a => a._id.toString());
-            const activeId = activeAgent.map(a => a._id.toString());
-
-            const agentPost = await AgentPost.find({ agentId: { $in: activeId } }).lean();
-
-            // also log a sample agentId from posts vs activeId to compare
-            if (agentPost.length === 0) {
-                const allPosts = await AgentPost.find().select('agentId').lean();
-            }
-
-            // split into group
-            const accountBoosted = agentPost.filter(p => boostedAgentId.includes(p.agentId.toString()));
-            const postBoosted = agentPost.filter(p => p.boostPost && new Date(p.boostPostExpiry) > now);
-            const normal = agentPost.filter(p => 
-                !boostedAgentId.includes(p.agentId.toString()) &&
-                !(p.boostPost && new Date(p.boostPostExpiry) > now)
-            )
-            
-            // Fisher-Yates shuffle function
-            function shuffle(arr) {
-                for (let i = arr.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [arr[i], arr[j]] = [arr[j], arr[i]];
-                }
-                return arr;
-            }
-
-            // Merge: single boosted posts first, then account boosted, then normal
-            const sorted = [...shuffle(postBoosted), ...shuffle(accountBoosted), ...shuffle(normal)];
-
-            res.json({
-                success: true,
-                property: sorted
-            });
-        } catch(err) {
+            res.json({ success: true, property: properties });
+        } catch (err) {
+            console.error('[POST/PROPERTY] error:', err);
             res.status(500).json({ success: false, message: 'Error loading properties' });
         }
     });
