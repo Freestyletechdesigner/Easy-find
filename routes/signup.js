@@ -27,6 +27,25 @@ function requireAdmin(req, res, next) {
     next();
 }
 
+// Strict limiter for Login and password reset
+const authLimiter = rateLimit({
+    windowMs: 60 * 1000, 
+    max: 4, // Limit each IP to 4 requests per windowMs
+    message: {
+        success: false, 
+        message: 'Too many attempts. Please try again after 15 minutes.'
+    },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
+// General limiter for public profiles/status
+const apiLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 60, // 60 requests per minute
+    message: { success: false, message: 'Too many requests.' }
+});
+
 module.exports = function(app) {
 
     // Validate email format
@@ -149,7 +168,7 @@ module.exports = function(app) {
     });
 
     // Login
-    app.post('/api/login', async (req, res) => {
+    app.post('/api/login', authLimiter, async (req, res) => {
         try {
             const { email, password } = req.body;
 
@@ -279,7 +298,7 @@ module.exports = function(app) {
     });
 
     // Password reset
-    app.post('/api/reset-password', async (req, res) => {
+    app.post('/api/reset-password', authLimiter, async (req, res) => {
         try {
             const { email, currentPassword, newPassword } = req.body;
 

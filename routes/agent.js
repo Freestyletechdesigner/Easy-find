@@ -427,7 +427,7 @@ const agent = (app) => {
     });
 
     // Update agent name (settings)
-    app.patch('/api/agent/settings/name', requireAgent, async (req, res) => {
+    app.patch('/api/agent/settings/name', requireAgent, authLimiter, async (req, res) => {
         const { name } = req.body;
         if (!name || name.trim().length < 2)
             return res.status(400).json({ success: false, message: 'Name must be at least 2 characters' });
@@ -441,7 +441,7 @@ const agent = (app) => {
     });
 
     // Change agent password (settings)
-    app.patch('/api/agent/settings/password', requireAgent, async (req, res) => {
+    app.patch('/api/agent/settings/password', requireAgent, authLimiter, async (req, res) => {
         const { currentPassword, newPassword } = req.body;
         if (!currentPassword || !newPassword)
             return res.status(400).json({ success: false, message: 'All fields are required' });
