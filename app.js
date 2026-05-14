@@ -23,10 +23,14 @@ const agentProfileUpload = require('./routes/agent-profile-upload.js');
 const profileUpload = require('./routes/profile-upload.js');
 const AGENT_POST = require('./routes/agent-upload.js');
 const VIEW_POST = require('./routes/view-post.js');
+const PAYMENT_FOR_BOOST = require('./routes/payment-for-boost.js');
 const SEARCH_ENGINE = require('./routes/agent-search-engine.js');
 
 // Database schema
 const PageViews = require('./model/PageViews.js');
+
+// Raw body for Paystack webhook signature verification
+app.use('/api/paystack-webhook', express.raw({ type: 'application/json' }));
 
 app.use(express.json());
 
@@ -116,6 +120,7 @@ app.use('/agent-loged/upload-profilepicture', express.static('agent-loged/upload
 app.use('/agent-loged/setting', express.static('agent-loged/setting.html'));
 app.use('/agent-verification', express.static('agent-verification'));
 app.use('/appeal', express.static('appeal'));
+app.use('/boost-account', express.static('boost-account'));
 
 login(app);
 sectionImageChanger(app);
@@ -131,6 +136,7 @@ profileUpload(app);
 AGENT_POST(app);
 VIEW_POST(app);
 SEARCH_ENGINE(app);
+PAYMENT_FOR_BOOST(app);
 
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));
