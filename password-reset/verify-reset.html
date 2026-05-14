@@ -121,6 +121,11 @@
             .right { padding: 40px 24px; }
             .otp-input { width: 44px; height: 50px; font-size: 1.3rem; }
         }
+        
+        @media (max-width: 400px) {
+            .otp-input { width: 38px; height: 46px; font-size: 1.3rem; }
+        }
+        
     </style>
 </head>
 <body>
@@ -166,7 +171,7 @@
         </button>
 
         <div class="back-link">
-            <a href="/forgot-password.html"><i class="fas fa-arrow-left"></i> Back</a>
+            <a href="/password-reset/forgot-password.html"><i class="fas fa-arrow-left"></i> Back</a>
         </div>
     </div>
 </div>
@@ -238,7 +243,7 @@
             if (data.success) {
                 showAlert('Verified! Redirecting...', 'success');
                 sessionStorage.setItem('resetPhone', phone);
-                setTimeout(() => window.location.href = '/reset-password.html', 1200);
+                setTimeout(() => window.location.href = '/password-reset/reset-password.html', 1200);
             } else {
                 showAlert(data.message || 'Invalid code', 'error');
                 inputs.forEach(i => { i.classList.add('error'); i.value = ''; i.classList.remove('filled'); });

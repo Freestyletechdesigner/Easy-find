@@ -121,6 +121,7 @@ app.use('/agent-loged/setting', express.static('agent-loged/setting.html'));
 app.use('/agent-verification', express.static('agent-verification'));
 app.use('/appeal', express.static('appeal'));
 app.use('/boost-account', express.static('boost-account'));
+app.use('/password-reset', express.static('password-reset'));
 
 login(app);
 sectionImageChanger(app);

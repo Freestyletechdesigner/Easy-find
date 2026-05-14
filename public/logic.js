@@ -50,42 +50,107 @@
     const cardsContainer = document.getElementById('cardsContainer');
     const grid = cardsContainer;
 
-        //send the skeleton card
-        grid.innerHTML = Array(8).fill(`
-            <div class="skeleton-card">
-                <div class="skeleton skeleton-img"></div>
-                <div class="skeleton-body">
-                    <div class="skeleton skeleton-line" style="width:60%"></div>
-                    <div class="skeleton skeleton-line" style="width:40%"></div>
-                    <div class="skeleton skeleton-line" style="width:80%"></div>
-                </div>
-            </div>
-        `).join('');
+    const BATCH      = 40;   // cards per fetch
+    const MAX_DOM    = 120;  // max cards kept in DOM at once
+    const RECYCLE_DELAY = 800; // ms delay between batches to ease browser load
 
-    //call API
-    uploadProperty();
-    setInterval(() => {
-        uploadProperty();
-    }, 10 * 60 * 1000);
-    async function uploadProperty() {
+    let currentPage = 1;
+    let isLoading   = false;
+
+    // sentinel — sits below the grid, triggers next load when visible
+    const sentinel = document.createElement('div');
+    sentinel.id = 'scroll-sentinel';
+    sentinel.style.cssText = 'height:40px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:13px;';
+    grid.after(sentinel);
+
+    async function uploadProperty(page = 1) {
+        if (isLoading) return;
+        isLoading = true;
+
+        if (page === 1) {
+            // show skeletons on first load only
+            grid.innerHTML = Array(8).fill(`
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-img"></div>
+                    <div class="skeleton-body">
+                        <div class="skeleton skeleton-line" style="width:60%"></div>
+                        <div class="skeleton skeleton-line" style="width:40%"></div>
+                        <div class="skeleton skeleton-line" style="width:80%"></div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            sentinel.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp; Loading...';
+        }
+
+        // artificial delay on pages beyond 1 to avoid hammering the browser
+        if (page > 1) {
+            await new Promise(r => setTimeout(r, RECYCLE_DELAY));
+        }
+
         try {
-            const res = await fetch('/api/post/property');
+            const res  = await fetch(`/api/post/property?page=${page}&limit=${BATCH}`);
             const data = await res.json();
 
-            grid.innerHTML = '';
+            if (page === 1) grid.innerHTML = '';
 
             if (data.success && data.property.length) {
+                // append new cards
                 data.property.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
-                window.dispatchEvent(new Event('scroll')); // trigger animation for visible cards
-                hidecard();
-            } else {
+
+                // DOM recycling — remove oldest cards from the top if over MAX_DOM
+                const allCards = grid.querySelectorAll('.listing-card');
+                if (allCards.length > MAX_DOM) {
+                    const removeCount = allCards.length - MAX_DOM;
+                    for (let i = 0; i < removeCount; i++) {
+                        allCards[i].remove();
+                    }
+                }
+
+                window.dispatchEvent(new Event('scroll'));
+            } else if (page === 1) {
                 grid.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">No properties listed yet.</p>';
             }
+
+            sentinel.innerHTML = '';
+
         } catch (err) {
             console.error(err);
-            grid.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Network error failed to load properties.</p>';
+            if (page === 1) grid.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Network error. Please refresh.</p>';
+            sentinel.innerHTML = '';
+        } finally {
+            isLoading = false;
         }
     }
+
+    // observer fires when sentinel enters viewport
+    const scrollObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !isLoading) {
+            currentPage++;
+            uploadProperty(currentPage);
+        }
+    }, { threshold: 0.1 });
+
+    scrollObserver.observe(sentinel);
+
+    // initial load
+    uploadProperty(1);
+
+    // silent refresh every 10 min to reorder boosted posts
+    setInterval(async () => {
+        try {
+            const res  = await fetch(`/api/post/property?page=1&limit=${BATCH}`);
+            const data = await res.json();
+            if (data.success && data.property.length) {
+                grid.innerHTML = '';
+                data.property.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
+                currentPage = 1;
+                isLoading   = false;
+                sentinel.innerHTML = '';
+            }
+        } catch (err) { /* silent */ }
+    }, 10 * 60 * 1000);
+
         // set the card function up 
         function propertyCard(p) {
         const imgSrc   = p.imageNames && p.imageNames.length
@@ -350,22 +415,13 @@ searchAgent();
     //card load
     const btnShow = document.getElementById("loadMoreBtn");
 
-    function hidecard() {
-        const allCard = document.querySelectorAll('.listing-card');
-        allCard.forEach((perCard, index) => {
-            perCard.style.display = index >= 4 ? 'none' : '';
-        });
-    }
+    function hidecard() { /* no-op — infinite scroll handles display */ }
 
-    btnShow.textContent = 'Load More';
+    // Load More button triggers next batch (fallback for users who don't scroll)
     btnShow.addEventListener('click', () => {
-        const allCard = document.querySelectorAll('.listing-card');
-        if (btnShow.textContent === 'Load More') {
-            allCard.forEach(perCard => { perCard.style.display = ''; });
-            btnShow.textContent = 'Show Less';
-        } else {
-            btnShow.textContent = 'Load More';
-            hidecard();
+        if (!isLoading) {
+            currentPage++;
+            uploadProperty(currentPage);
         }
     });
 
