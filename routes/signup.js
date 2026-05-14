@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcrypt');
 const User = require('../model/User.js');
+const rateLimit = require('express-rate-limit');
 
 //Admin file
 const ADMIN_FILE = path.join(__dirname, '..', 'database', 'admin.json');
