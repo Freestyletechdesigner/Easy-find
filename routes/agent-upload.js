@@ -131,9 +131,7 @@ const AGENT_POST = (app) => {
     app.get('/api/post/property', async (req, res) => {
         try {
             const now   = new Date();
-            const page  = Math.max(1, parseInt(req.query.page) || 1);
-            const limit = Math.min(40, parseInt(req.query.limit) || 12);
-            const skip  = (page - 1) * limit;
+            const limit = 200;
 
             const pipeline = [
                 { $addFields: { agentObjId: { $toObjectId: '$agentId' } } },
@@ -153,30 +151,12 @@ const AGENT_POST = (app) => {
                     }
                 },
                 { $sort: { priority: 1, _id: -1 } },
+                { $limit: limit },
                 { $project: { agent: 0, agentObjId: 0 } }
             ];
 
-            // get total count for looping
-            const countResult = await AgentPost.aggregate([...pipeline, { $count: 'total' }]);
-            const total = countResult[0]?.total || 0;
-
-            if (total === 0) return res.json({ success: true, property: [], hasMore: false, page });
-
-            // wrap skip so it loops back when reaching the end
-            const wrappedSkip = skip % total;
-
-            const part1 = await AgentPost.aggregate([...pipeline, { $skip: wrappedSkip }, { $limit: limit }]);
-
-            let properties = part1;
-
-            // if we hit the end and need to wrap around, fetch from the beginning
-            if (part1.length < limit) {
-                const remaining = limit - part1.length;
-                const part2 = await AgentPost.aggregate([...pipeline, { $skip: 0 }, { $limit: remaining }]);
-                properties = [...part1, ...part2];
-            }
-
-            res.json({ success: true, property: properties, hasMore: true, page });
+            const properties = await AgentPost.aggregate(pipeline);
+            res.json({ success: true, property: properties });
         } catch (err) {
             console.error('[POST/PROPERTY] error:', err);
             res.status(500).json({ success: false, message: 'Error loading properties' });

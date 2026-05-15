@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -55,11 +55,6 @@
     <div id="alert"></div>
 
 <section class="hero">
-<div id="login-nav">Login</div>
-<div class="hold-login">
-    <div id="login-btn">as client</div>
-    <a href="/login-agent" id="login-agent-btn">as Agent</a>
-</div>
 
 <div id="user-log"></div>
 <a href="/" class="btn-logout" title="Logout">
@@ -73,7 +68,10 @@
         <p>Welcome to</p>
         <h1><span>E</span>asy Find</h1>
         <p class="hero-text"> To discover the property you’ve been looking for. </p>
-        <a href="#search-bar"><i class="fa-solid fa-magnifying-glass"></i> Search for a house</a>
+        <div class="hero-actions">
+            <a href="#search-bar" class="hero-search-icon"><i class="fa-solid fa-magnifying-glass"></i></a>
+            <div id="login-nav-hero">Login</div><div class="hold-login"><div id="login-btn">as client</div><a href="/login-agent" id="login-agent-btn">as Agent</a></div>
+        </div>
     </div>
 
     <!-- RESPONSIVE BRAND SHAPE -->

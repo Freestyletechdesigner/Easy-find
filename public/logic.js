@@ -50,106 +50,123 @@
     const cardsContainer = document.getElementById('cardsContainer');
     const grid = cardsContainer;
 
-    const BATCH      = 40;   // cards per fetch
-    const MAX_DOM    = 120;  // max cards kept in DOM at once
-    const RECYCLE_DELAY = 800; // ms delay between batches to ease browser load
+    const BATCH   = 8;   // cards added/removed at a time
+    const MAX_DOM = 50;  // max cards in the DOM at once
 
-    let currentPage = 1;
-    let isLoading   = false;
+    let allPosts  = [];  // full pool fetched from server
+    let cursor    = 0;   // index into allPosts for next batch
+    let isLoading = false;
 
-    // sentinel — sits below the grid, triggers next load when visible
+    // sentinel — triggers next batch when user reaches the bottom
     const sentinel = document.createElement('div');
     sentinel.id = 'scroll-sentinel';
     sentinel.style.cssText = 'height:40px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:13px;';
     grid.after(sentinel);
 
-    async function uploadProperty(page = 1) {
-        if (isLoading) return;
+    function shuffle(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    // get next 8 posts from the pool, looping and shuffling when exhausted
+    function nextBatch() {
+        const batch = [];
+        for (let i = 0; i < BATCH; i++) {
+            // when we reach the end, shuffle the pool and restart
+            if (cursor >= allPosts.length) {
+                shuffle(allPosts);
+                cursor = 0;
+            }
+            batch.push(allPosts[cursor++]);
+        }
+        return batch;
+    }
+
+    function addBatch() {
+        if (isLoading || !allPosts.length) return;
         isLoading = true;
 
-        if (page === 1) {
-            // show skeletons on first load only
-            grid.innerHTML = Array(8).fill(`
-                <div class="skeleton-card">
-                    <div class="skeleton skeleton-img"></div>
-                    <div class="skeleton-body">
-                        <div class="skeleton skeleton-line" style="width:60%"></div>
-                        <div class="skeleton skeleton-line" style="width:40%"></div>
-                        <div class="skeleton skeleton-line" style="width:80%"></div>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            sentinel.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp; Loading...';
-        }
+        sentinel.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp; Loading...';
 
-        // artificial delay on pages beyond 1 to avoid hammering the browser
-        if (page > 1) {
-            await new Promise(r => setTimeout(r, RECYCLE_DELAY));
-        }
+        // defer DOM work to next animation frame — keeps scroll smooth
+        requestAnimationFrame(() => {
+            const batch = nextBatch();
 
-        try {
-            const res  = await fetch(`/api/post/property?page=${page}&limit=${BATCH}`);
-            const data = await res.json();
+            // single DOM write for all 8 cards
+            grid.insertAdjacentHTML('beforeend', batch.map(p => propertyCard(p)).join(''));
 
-            if (page === 1) grid.innerHTML = '';
-
-            if (data.success && data.property.length) {
-                // append new cards
-                data.property.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
-
-                // DOM recycling — remove oldest cards from the top if over MAX_DOM
-                const allCards = grid.querySelectorAll('.listing-card');
-                if (allCards.length > MAX_DOM) {
-                    const removeCount = allCards.length - MAX_DOM;
-                    for (let i = 0; i < removeCount; i++) {
-                        allCards[i].remove();
-                    }
-                }
-
-                window.dispatchEvent(new Event('scroll'));
-            } else if (page === 1) {
-                grid.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">No properties listed yet.</p>';
+            // remove oldest from top using live HTMLCollection — no querySelectorAll
+            while (grid.children.length > MAX_DOM + 1) { // +1 for sentinel
+                grid.firstElementChild.remove();
             }
 
             sentinel.innerHTML = '';
+            isLoading = false;
+        });
+    }
+
+    async function uploadProperty() {
+        // show skeletons while fetching
+        grid.innerHTML = Array(8).fill(`
+            <div class="skeleton-card">
+                <div class="skeleton skeleton-img"></div>
+                <div class="skeleton-body">
+                    <div class="skeleton skeleton-line" style="width:60%"></div>
+                    <div class="skeleton skeleton-line" style="width:40%"></div>
+                    <div class="skeleton skeleton-line" style="width:80%"></div>
+                </div>
+            </div>
+        `).join('');
+
+        try {
+            const res  = await fetch('/api/post/property');
+            const data = await res.json();
+
+            grid.innerHTML = '';
+
+            if (data.success && data.property.length) {
+                allPosts = data.property;
+                cursor   = 0;
+
+                // render first 50 cards (or all if less than 50)
+                const initial = allPosts.slice(0, MAX_DOM);
+                cursor = initial.length;
+                initial.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
+                window.dispatchEvent(new Event('scroll'));
+            } else {
+                grid.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">No properties listed yet.</p>';
+            }
 
         } catch (err) {
             console.error(err);
-            if (page === 1) grid.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Network error. Please refresh.</p>';
-            sentinel.innerHTML = '';
-        } finally {
-            isLoading = false;
+            grid.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">Network error. Please refresh.</p>';
         }
     }
 
     // observer fires when sentinel enters viewport
     const scrollObserver = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && !isLoading) {
-            currentPage++;
-            uploadProperty(currentPage);
-        }
+        if (entries[0].isIntersecting) addBatch();
     }, { threshold: 0.1 });
 
     scrollObserver.observe(sentinel);
 
-    // initial load
-    uploadProperty(1);
+    // initial fetch
+    uploadProperty();
 
-    // silent refresh every 10 min to reorder boosted posts
+    // re-fetch every 1 min to pick up new/boosted posts
     setInterval(async () => {
         try {
-            const res  = await fetch(`/api/post/property?page=1&limit=${BATCH}`);
+            const res  = await fetch('/api/post/property');
             const data = await res.json();
             if (data.success && data.property.length) {
-                grid.innerHTML = '';
-                data.property.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
-                currentPage = 1;
-                isLoading   = false;
-                sentinel.innerHTML = '';
+                allPosts = data.property;
+                cursor   = 0;
             }
         } catch (err) { /* silent */ }
-    }, 10 * 60 * 1000);
+    },  60 * 1000);
 
         // set the card function up 
         function propertyCard(p) {
@@ -819,19 +836,14 @@ searchAgent();
     const linkToLogin = document.getElementById('link-to-login');
     const logAlert = document.getElementById('log-alert');
     const logoutBtn = document.querySelector('.btn-logout');
-    const loginNav = document.getElementById('login-nav');
+    const loginNav = document.getElementById('login-nav-hero');
     const holdLogin = document.querySelector('.hold-login');
 
     holdLogin.style.right = '-10rem'
 
     loginNav.addEventListener('click', (e) => {
         e.stopPropagation();
-        if (holdLogin.style.right === '-10rem') {
-            holdLogin.style.right = '1.8rem';
-        } else {
-            holdLogin.style.right = '-10rem'
-        }
-        
+        holdLogin.classList.toggle('open');
     });
 
     // Check if user is already logged in via session cookie
@@ -1070,6 +1082,10 @@ searchAgent();
     window.addEventListener('click', (e) => {
         if (loginPage && !loginPage.contains(e.target) && !loginBtn.contains(e.target)) {
             loginPage.classList.remove('log');
+        }
+        // close hold-login if clicking outside
+        if (!holdLogin.contains(e.target) && !loginNav.contains(e.target)) {
+            holdLogin.classList.remove('open');
         }
         //close nav2 logic
         if (!hamburger.contains(e.target) && !nav2.contains(e.target)) {
