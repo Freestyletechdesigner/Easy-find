@@ -38,7 +38,7 @@ async function loadProfile() {
     try {
         const [agentRes, postsRes] = await Promise.all([
             fetch(`/api/agent/public/${agentId}`),
-            fetch('/api/post/property')
+            fetch(`/api/get/postForPublicAgentProfile/${agentId}`)
         ]);
 
         const agentData = await agentRes.json();
@@ -48,7 +48,7 @@ async function loadProfile() {
 
         const agent = agentData.agent;
         const allPosts = postsData.success ? postsData.property : [];
-        const agentPosts = allPosts.filter(p => p.agentId === agentId);
+        const agentPosts = allPosts;
         const totalViews = agentPosts.reduce((sum, p) => sum + (p.view || 0), 0);
 
         renderProfile(agent, agentPosts.length, totalViews);

@@ -183,13 +183,35 @@ const AGENT_POST = (app) => {
         }
     });
 
+    // Get request for agent public profile
+    app.get('/api/get/postForPublicAgentProfile/:id', async (req, res) => {
+        const id = req.params.id;
+        try {
+            const property = await AgentPost.find({agentId: id});
+            if (!property) {
+                return res.json({
+                    success: false,
+                    message: 'No property listed'
+                });
+            } 
+            res.json({
+                success: true,
+                property
+            })
+        } catch (error) {
+            console.error('Error Loading public agent post:', error);
+            res.json({
+                success: false,
+                message: 'Error loading property'
+            })
+        }
+    });
+
     //delete post by agent only 
     app.delete('/api/agent/property/:id', requireAgent, async (req, res) => {
         try {
             const agentId    = req.session.agent.id;
             const propertyId = req.params.id;
-
-            console.log('[DELETE] propertyId:', propertyId, '| sessionAgentId:', agentId);
 
             const agentPost = await AgentPost.findById(propertyId);
             const agentUser = await AgentUser.findById(agentId);
@@ -199,7 +221,6 @@ const AGENT_POST = (app) => {
             }
 
             if (!agentUser) {
-                console.log('[DELETE] agentId mismatch — post.agentId:', post.agentId, '!== session:', agentId);
                 return res.status(403).json({ success: false, message: 'Not authorised to delete this property' });
             }
 
@@ -232,7 +253,6 @@ const AGENT_POST = (app) => {
         
         try {
             const agentPost = await AgentPost.findById(id);
-            console.log('Found property:', agentPost ? 'YES' : 'NO');
             
             if (!agentPost) {
                 return res.status(404).json({
