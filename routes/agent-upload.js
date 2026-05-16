@@ -310,7 +310,52 @@ const AGENT_POST = (app) => {
             console.error('Property edit Error', error)
             res.status(500).json({
                 success: false,
-                message: 'Server Error'
+                message: 'Error editing post'
+            })
+        }
+    });
+
+    // Find related property
+    app.get('/api/property/related/:id', async (req, res) => {
+        const id = req.params.id;
+
+        const page = parseInt(req.query.page) || 1; 
+        const limit = 8;
+        const skip = (page - 1) * limit; // Calculate how many items to skip
+        try {
+            const post = await AgentPost.findById(id)
+            if (!post) {
+                return res.json({
+                    success: false,
+                    message: 'Property did not exist'
+                });
+            }
+            const related = await AgentPost.find({
+                _id: {$ne: post._id}, // exclude the current post
+                $or: [
+                    {type: post.type},
+                    {location: post.location},
+                    {price: post.price},
+                    {category: post.category},
+                    {beds: post.beds},
+                    {baths: post.baths},
+                    {area: post.area},
+                    {title: post.title}
+                ]
+            })
+            .skip(skip)
+            .limit(limit)
+            .lean();
+
+            res.json({
+                success: true,
+                related
+            })
+        } catch (error) {
+            console.error('Error on related propery:', error);
+            res.json({
+                success: false,
+                message: 'Error loading related'
             })
         }
     });

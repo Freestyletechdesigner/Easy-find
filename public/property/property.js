@@ -140,6 +140,12 @@ function renderProperty(p) {
     // Agent
     loadAgent(p.agentId);
 
+    // Related properties
+    currentPropId = p._id;
+    relatedPage   = 1;
+    document.getElementById('relatedGrid').innerHTML = '';
+    loadRelated(p._id, 1);
+
     // Scroll animations
     setTimeout(triggerScrollAnim, 100);
 }
@@ -289,6 +295,109 @@ function showError(msg) {
             <a href="/" style="display:inline-block;margin-top:20px;padding:10px 24px;background:#0d7068;color:#fff;border-radius:10px;text-decoration:none;font-weight:700;">Go Home</a>
         </div>`;
 }
+
+// ── Related Properties ────────────────────────────────
+let relatedPage = 1;
+let currentPropId = null;
+
+function relatedCard(p) {
+    const imgSrc   = p.imageNames && p.imageNames.length
+        ? `/agent-loged/upload-property/${p.imageNames[0]}`
+        : '/icon/home icon.png';
+    const imgCount = p.imageNames ? p.imageNames.length : 0;
+    const price    = Number(p.price).toLocaleString();
+    const date     = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const isLand   = (p.type || '').toLowerCase() === 'land';
+
+    return `
+            <div class="related-card section" data-title="${p.title}, ${p.type || 'Property'}" data-location="${p.location || 'N/A'}" data-price="${p.price}" data-room="${p.beds || 0} , ${p.baths || 0}">
+                <div class="related-card-img">
+                    <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy" onerror="this.src='/icon/home icon.png'">
+                    <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
+                    ${p.category ? `<span class="related-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
+                    ${imgCount > 1 ? `<span class="related-image-count"><i class="fas fa-images"></i> ${imgCount}</span>` : ''}
+                </div>
+                <div class="related-card-body">
+                    <div class="related-price">₦${price}</div>
+                    <div class="related-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
+                    <div class="related-stats">
+                        ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
+                        ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
+                        ${isLand? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>` : ''}
+                    </div>
+                    <div class="related-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
+                </div>
+                <div class="card-footer">
+                    <a href="/property?id=${p._id}" class="btn-view-details">
+                        View Details <i class="fas fa-arrow-right"></i>
+                    </a>
+                    <button class="btn-share-card" onclick="shareCard('${p._id}')">
+                        <i class="fas fa-share-alt"></i>
+                    </button>
+                </div>
+            </div>
+    `;
+}
+
+    //share link
+    window.shareCard = function(id) {
+        const url = `${window.location.origin}/property?id=${id}`;
+        if (navigator.share) {
+            navigator.share({ title: 'Check out this property on Easy Find', url })
+                .catch(() => copyLink(url));
+        } else {
+            copyLink(url);
+        }
+    };
+    //copy link
+    function copyLink(url) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url)
+                .then(() => alertBox.success('Copied', 'Property link copied to clipboard'))
+                .catch(() => fallbackCopy(url));
+        } else {
+            fallbackCopy(url);
+        }
+    }
+
+    function fallbackCopy(url) {
+        const el = document.createElement('textarea');
+        el.value = url;
+        el.style.cssText = 'position:fixed;opacity:0';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        alertBox.success('Copied', 'Property link copied to clipboard');
+    }
+
+async function loadRelated(id, page = 1) {
+    try {
+        const res  = await fetch(`/api/property/related/${id}?page=${page}`);
+        const data = await res.json();
+
+        if (!data.success || !data.related.length) {
+            if (page === 1) document.getElementById('relatedSection').style.display = 'none';
+            return;
+        }
+
+        document.getElementById('relatedSection').style.display = 'block';
+        const grid = document.getElementById('relatedGrid');
+        data.related.forEach(p => grid.insertAdjacentHTML('beforeend', relatedCard(p)));
+
+        // show load more if full batch returned
+        const moreBtn = document.getElementById('relatedMore');
+        moreBtn.style.display = data.related.length === 8 ? 'flex' : 'none';
+
+    } catch (err) {
+        console.error('Related load error:', err);
+    }
+}
+
+document.getElementById('btnLoadMore').addEventListener('click', () => {
+    relatedPage++;
+    loadRelated(currentPropId, relatedPage);
+});
 
 // ── Init ──────────────────────────────────────────────
 loadProperty();
