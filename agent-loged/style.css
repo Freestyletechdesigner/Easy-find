@@ -4,6 +4,12 @@
   font-weight: normal;
   font-style: normal;
 }
+@font-face {
+  font-family: "Logo";
+  src: url("fonts/LeagueSpartan-Bold.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
 
 * {
  margin: 0; 
@@ -47,7 +53,7 @@ header {
     padding: 0 7px;
     margin-right: 4px;
     border-radius: 7px;
-    font-family: monospace;
+    font-family: "Logo";
     font-size: 2.2rem;
 }
 
@@ -196,7 +202,6 @@ header {
     background: linear-gradient(90deg, #bb0d0d, #eb314d);
     color: rgba(255, 255, 255, 0.973);
     border: none;
-    width: 100%;
     padding: 10px;
     margin-top: 0;
     border-radius: 8px;
@@ -1209,6 +1214,9 @@ header {
     .listings {
         width: 100%;
         grid-template-columns: repeat(3, 1fr);
+    }
+    .logout-btn {
+        width: 100%;
     }
 }
 
