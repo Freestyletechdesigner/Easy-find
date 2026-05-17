@@ -30,8 +30,38 @@ const SEARCH_ENGINE = require('./routes/agent-search-engine.js');
 // Database schema
 const PageViews = require('./model/PageViews.js');
 
-// Raw body for Paystack webhook signature verification
 app.use('/api/paystack-webhook', express.raw({ type: 'application/json' }));
+
+// Geocode location via Nominatim — server-side to avoid mobile CORS issues
+app.get('/api/geocode', async (req, res) => {
+    const { location } = req.query;
+    if (!location) return res.json({ success: false });
+
+    try {
+        const query      = encodeURIComponent(`${location}, Enugu State, Nigeria`);
+        const url        = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
+        const controller = new AbortController();
+        const timeout    = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+                'User-Agent':      'EasyFind/1.0',
+                'Accept-Language': 'en'
+            }
+        });
+        clearTimeout(timeout);
+
+        const data = await response.json();
+        if (data && data.length > 0) {
+            res.json({ success: true, lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) });
+        } else {
+            res.json({ success: false });
+        }
+    } catch (err) {
+        res.json({ success: false });
+    }
+});
 
 app.use(express.json());
 

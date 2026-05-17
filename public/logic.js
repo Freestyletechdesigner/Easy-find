@@ -701,7 +701,7 @@ searchAgent();
             }
         } catch (err) {
             console.error('Error loading agents:', err);
-            document.getElementById('agents-container').innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">Failed to load agents.</p>';
+            document.getElementById('agents-container').innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">Network error. Please refresh.</p>';
         }
     }
 
@@ -822,7 +822,7 @@ searchAgent();
             })
             .catch((err) => {
                 console.error('Error sending message:', err);
-                contactAlertBox.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Error: Could not send message';
+                contactAlertBox.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Network error. Please refresh.';
                 contactAlertBox.className = 'error';
                 contactAlertBox.style.display = 'block';
                 setTimeout(() => {
@@ -900,7 +900,7 @@ searchAgent();
                 </div>
             `).join('');
         } catch (err) {
-            list.innerHTML = '<div class="feedback-loading" style="color:#888;">Could not load reviews.</div>';
+            list.innerHTML = '<div class="feedback-loading" style="color:#888;">Network error. Please refresh.</div>';
         }
     }
 

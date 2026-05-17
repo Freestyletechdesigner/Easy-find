@@ -128,10 +128,41 @@ function renderProperty(p) {
     $('qdArea').textContent     = p.area  ? `${p.area.toUpperCase()}` : '—';
     $('qdLocation').textContent = p.location || '—';
 
-    // Map
+    // Map — route through backend to avoid mobile CORS issues
+    const mapFrame   = $('mapFrame');
+    const mapSection = mapFrame ? mapFrame.closest('.prop-section') : null;
+
     if (p.location) {
-        const encoded = encodeURIComponent(p.location + ',Enugu State' + ', Nigeria');
-        $('mapFrame').src = `https://maps.google.com/maps?q=${encoded}&output=embed`;
+        fetch(`/api/geocode?location=${encodeURIComponent(p.location)}`)
+        .then(r => r.json())
+        .then(geo => {
+            if (geo.success) {
+                const { lat, lng } = geo;
+                const delta = 0.008;
+                mapFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lng-delta},${lat-delta},${lng+delta},${lat+delta}&layer=mapnik&marker=${lat},${lng}`;
+                mapFrame.style.display = 'block';
+            } else {
+                showMapFallback(mapSection);
+            }
+        })
+        .catch(() => showMapFallback(mapSection));
+    } else if (mapSection) {
+        mapSection.style.display = 'none';
+    }
+
+    function showMapFallback(section) {
+        if (!section) return;
+        section.innerHTML = `
+            <h2><i class="fa-solid fa-map-location-dot"></i> Location on Map</h2>
+            <div style="background:#f0fdfb;border:1px dashed #0d7068;border-radius:12px;padding:28px 20px;text-align:center;">
+                <i class="fa-solid fa-map-pin" style="font-size:2rem;color:#0d7068;margin-bottom:12px;display:block;"></i>
+                <p style="font-weight:700;color:#333;margin-bottom:6px;">Map Unavailable for This Area</p>
+                <p style="font-size:0.875rem;color:#666;line-height:1.6;">This property is in a newly developing area. Contact the agent for precise directions.</p>
+                <button onclick="document.getElementById('btnContact').click()" style="margin-top:16px;padding:10px 24px;background:#0d7068;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:0.9rem;">
+                    <i class="fas fa-phone"></i> Contact Agent
+                </button>
+            </div>
+        `;
     }
 
     // Images
@@ -372,22 +403,34 @@ function relatedCard(p) {
     }
 
 async function loadRelated(id, page = 1) {
+    const section = document.getElementById('relatedSection');
+    const grid    = document.getElementById('relatedGrid');
+    const moreBtn = document.getElementById('relatedMore');
+
+    // show skeletons while fetching
+    section.style.display = 'block';
+    grid.innerHTML = Array(4).fill(`
+        <div class="skeleton-card">
+            <div class="skeleton skeleton-img"></div>
+            <div class="skeleton-body">
+                <div class="skeleton skeleton-line" style="width:60%"></div>
+                <div class="skeleton skeleton-line" style="width:40%"></div>
+                <div class="skeleton skeleton-line" style="width:80%"></div>
+            </div>
+        </div>
+    `).join('');
+
     try {
         const res  = await fetch(`/api/property/related/${id}?page=${page}`);
         const data = await res.json();
 
-        if (!data.success || !data.related.length) {
-            if (page === 1) document.getElementById('relatedSection').style.display = 'none';
-            return;
+        grid.innerHTML = '';
+
+        if (data.success && data.related && data.related.length) {
+            data.related.forEach(p => grid.insertAdjacentHTML('beforeend', relatedCard(p)));
+            moreBtn.style.display = data.related.length === 8 ? 'flex' : 'none';
+        } else {
         }
-
-        document.getElementById('relatedSection').style.display = 'block';
-        const grid = document.getElementById('relatedGrid');
-        data.related.forEach(p => grid.insertAdjacentHTML('beforeend', relatedCard(p)));
-
-        // show load more if full batch returned
-        const moreBtn = document.getElementById('relatedMore');
-        moreBtn.style.display = data.related.length === 8 ? 'flex' : 'none';
 
     } catch (err) {
         console.error('Related load error:', err);
