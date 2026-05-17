@@ -327,119 +327,200 @@ function showError(msg) {
         </div>`;
 }
 
-// ── Related Properties ────────────────────────────────
+// ── Related Properties State ────────────────────────────────
 let relatedPage = 1;
 let currentPropId = null;
 
+/**
+ * Generates the HTML layout for a single property card
+ * @param {Object} p - Property data object
+ * @returns {string} HTML Template string
+ */
 function relatedCard(p) {
-    const imgSrc   = p.imageNames && p.imageNames.length
-        ? `/agent-loged/upload-property/${p.imageNames[0]}`
+    if (!p) return '';
+
+    // Handle Image fallbacks cleanly
+    const imgSrc = p.imageNames && p.imageNames.length
+        ? `/agent-loged/upload-property/${encodeURIComponent(p.imageNames[0])}`
         : '/icon/home icon.png';
     const imgCount = p.imageNames ? p.imageNames.length : 0;
-    const price    = Number(p.price).toLocaleString();
-    const date     = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const isLand   = (p.type || '').toLowerCase() === 'land';
+
+    // Formatting values defensively
+    const price = p.price ? Number(p.price).toLocaleString('en-NG') : 'Price on Ask';
+    const date = p.date 
+        ? new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) 
+        : 'Recent';
+    const isLand = String(p.type || '').toLowerCase() === 'land';
+
+    // Escape strings injected inside raw data tags to prevent structural breaks
+    const cleanTitle = String(p.title || '').replace(/"/g, '&quot;');
+    const cleanType = String(p.type || 'Property').replace(/"/g, '&quot;');
+    const cleanLocation = String(p.location || 'N/A').replace(/"/g, '&quot;');
 
     return `
-            <div class="related-card section" data-title="${p.title}, ${p.type || 'Property'}" data-location="${p.location || 'N/A'}" data-price="${p.price}" data-room="${p.beds || 0} , ${p.baths || 0}">
-                <div class="related-card-img">
-                    <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy" onerror="this.src='/icon/home icon.png'">
-                    <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
-                    ${p.category ? `<span class="related-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
-                    ${imgCount > 1 ? `<span class="related-image-count"><i class="fas fa-images"></i> ${imgCount}</span>` : ''}
+        <div class="related-card section action" 
+             data-title="${cleanTitle}, ${cleanType}" 
+             data-location="${cleanLocation}" 
+             data-price="${p.price || 0}" 
+             data-room="${p.beds || 0}, ${p.baths || 0}">
+            
+            <div class="related-card-img">
+                <img src="${imgSrc}" alt="${cleanType}" loading="lazy" onerror="this.onerror=null; this.src='/icon/home icon.png';">
+                <span class="card-type-badge">${cleanType}${p.title ? `, ${p.title}` : ''}</span>
+                ${p.category ? `<span class="related-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
+                ${imgCount > 1 ? `<span class="related-image-count"><i class="fas fa-images"></i> ${imgCount}</span>` : ''}
+            </div>
+            
+            <div class="related-card-body">
+                <div class="related-price">₦${price}</div>
+                <div class="related-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
+                <div class="related-stats">
+                    ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
+                    ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
+                    ${isLand && p.area ? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area}</span>` : ''}
                 </div>
-                <div class="related-card-body">
-                    <div class="related-price">₦${price}</div>
-                    <div class="related-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
-                    <div class="related-stats">
-                        ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
-                        ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
-                        ${isLand? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>` : ''}
-                    </div>
-                    <div class="related-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
-                </div>
-                <div class="card-footer">
-                    <a href="/property?id=${p._id}" class="btn-view-details">
-                        View Details <i class="fas fa-arrow-right"></i>
-                    </a>
-                    <button class="btn-share-card" onclick="shareCard('${p._id}')">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
+                <div class="related-date">
+                    <i class="fas fa-calendar-alt"></i> Listed ${date} 
+                    <span class="view-count"><i class="fas fa-eye"></i> ${p.view || 0} views</span>
                 </div>
             </div>
+            
+            <div class="card-footer">
+                <a href="/property?id=${p._id}" class="btn-view-details">
+                    View Details <i class="fas fa-arrow-right"></i>
+                </a>
+                <button class="btn-share-card" onclick="shareCard('${p._id}')" aria-label="Share property">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+            </div>
+        </div>
     `;
 }
 
-    //share link
-    window.shareCard = function(id) {
-        const url = `${window.location.origin}/property?id=${id}`;
-        if (navigator.share) {
-            navigator.share({ title: 'Check out this property on Easy Find', url })
-                .catch(() => copyLink(url));
-        } else {
-            copyLink(url);
-        }
-    };
-    //copy link
-    function copyLink(url) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url)
-                .then(() => alertBox.success('Copied', 'Property link copied to clipboard'))
-                .catch(() => fallbackCopy(url));
-        } else {
-            fallbackCopy(url);
-        }
+// ── Native Sharing Actions ───────────────────────────────────
+window.shareCard = function(id) {
+    if (!id) return;
+    const url = `${window.location.origin}/property?id=${id}`;
+    
+    if (navigator.share) {
+        navigator.share({ title: 'Check out this property on Easy Find', url })
+            .catch((err) => {
+                if(err.name !== 'AbortError') copyLink(url);
+            });
+    } else {
+        copyLink(url);
     }
+};
 
-    function fallbackCopy(url) {
-        const el = document.createElement('textarea');
-        el.value = url;
-        el.style.cssText = 'position:fixed;opacity:0';
-        document.body.appendChild(el);
-        el.select();
+function copyLink(url) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url)
+            .then(() => showNotification('Copied', 'Property link copied to clipboard'))
+            .catch(() => fallbackCopy(url));
+    } else {
+        fallbackCopy(url);
+    }
+}
+
+function fallbackCopy(url) {
+    const el = document.createElement('textarea');
+    el.value = url;
+    el.style.cssText = 'position:fixed;opacity:0;top:0;left:0;';
+    document.body.appendChild(el);
+    el.select();
+    try {
         document.execCommand('copy');
-        document.body.removeChild(el);
-        alertBox.success('Copied', 'Property link copied to clipboard');
+        showNotification('Copied', 'Property link copied to clipboard');
+    } catch (err) {
+        console.error('Fallback copy failed', err);
     }
+    document.body.removeChild(el);
+}
 
-async function loadRelated(id, page = 1) {
-    const section = document.getElementById('relatedSection');
-    const grid    = document.getElementById('relatedGrid');
-    const moreBtn = document.getElementById('relatedMore');
+// Global UI notification layer check fallback
+function showNotification(title, message) {
+    if (typeof alertBox !== 'undefined' && alertBox.success) {
+        alertBox.success(title, message);
+    } else {
+        alert(`${title}: ${message}`);
+    }
+}
 
-    // show skeletons while fetching
-    section.style.display = 'block';
-    grid.innerHTML = Array(4).fill(`
-        <div class="skeleton-card">
-            <div class="skeleton skeleton-img"></div>
-            <div class="skeleton-body">
-                <div class="skeleton skeleton-line" style="width:60%"></div>
-                <div class="skeleton skeleton-line" style="width:40%"></div>
-                <div class="skeleton skeleton-line" style="width:80%"></div>
+// ── Skeleton Loader Element ──────────────────────────────────
+function getSkeletonHTML() {
+    return Array(4).fill(`
+        <div class="skeleton-card temporary-skeleton">
+            <div class="skeleton skeleton-img" style="height:200px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+            <div class="skeleton-body" style="padding:15px;">
+                <div class="skeleton skeleton-line" style="width:60%; height:15px; margin-bottom:10px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+                <div class="skeleton skeleton-line" style="width:40%; height:12px; margin-bottom:10px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+                <div class="skeleton skeleton-line" style="width:80%; height:12px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
             </div>
         </div>
     `).join('');
+}
+
+// ── Data Layer Management ───────────────────────────────────
+async function loadRelated(id, page = 1) {
+    if (!id) return;
+    
+    const section = document.getElementById('relatedSection');
+    const grid    = document.getElementById('relatedGrid');
+    const moreBtn = document.getElementById('btnLoadMore'); // Changed target to target button element accurately
+
+    if (!section || !grid) return;
+
+    section.style.display = 'block';
+    
+    // Clean up or inject skeleton layout smoothly
+    if (page === 1) {
+        grid.innerHTML = getSkeletonHTML();
+    } else {
+        grid.insertAdjacentHTML('beforeend', getSkeletonHTML());
+    }
+
+    if (moreBtn) moreBtn.style.display = 'none';
 
     try {
         const res  = await fetch(`/api/property/related/${id}?page=${page}`);
         const data = await res.json();
 
-        grid.innerHTML = '';
+        // Clear skeletons
+        const skeletons = grid.querySelectorAll('.temporary-skeleton');
+        skeletons.forEach(sk => sk.remove());
+
+        if (page === 1 && (!data.success || !data.related || !data.related.length)) {
+            grid.innerHTML = `<div class="empty-state-container" style="padding:40px; text-align:center; width:100%;">
+                <i class="fas fa-home" style="font-size: 48px; color:#ccc; margin-bottom:15px;"></i>
+                <p style="color:#666;">No matching related properties found.</p>
+            </div>`;
+            return;
+        }
 
         if (data.success && data.related && data.related.length) {
             data.related.forEach(p => grid.insertAdjacentHTML('beforeend', relatedCard(p)));
-            moreBtn.style.display = data.related.length === 8 ? 'flex' : 'none';
-        } else {
+            // force cards visible — scroll observer may not fire on mobile refresh
+            grid.querySelectorAll('.section').forEach(el => el.classList.add('action'));
+            if (moreBtn) {
+                moreBtn.style.display = data.related.length === 8 ? 'flex' : 'none';
+            }
         }
-
     } catch (err) {
-        console.error('Related load error:', err);
+        console.error('Related properties failed loading:', err);
+        const skeletons = grid.querySelectorAll('.temporary-skeleton');
+        skeletons.forEach(sk => sk.remove());
     }
 }
 
-document.getElementById('btnLoadMore').addEventListener('click', () => {
-    relatedPage++;
-    loadRelated(currentPropId, relatedPage);
+// ── Global App Instantiators ──────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    const moreBtn = document.getElementById('btnLoadMore');
+    if (moreBtn) {
+        moreBtn.addEventListener('click', () => {
+            relatedPage++;
+            loadRelated(currentPropId, relatedPage);
+        });
+    }
 });
 
 // ── Init ──────────────────────────────────────────────

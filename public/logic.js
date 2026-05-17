@@ -804,30 +804,15 @@ searchAgent();
                         from_text: text
                     }).catch(err => console.log('EmailJS error:', err));
 
-                    contactAlertBox.innerHTML = '<i class="fa-solid fa-circle-check"></i> Message sent successfully!';
-                    contactAlertBox.className = 'success';
-                    contactAlertBox.style.display = 'block';
-                    setTimeout(() => {
-                        contactAlertBox.style.display = 'none';
-                    }, 3000);
+                    showLoginAlert('Message sent successful.', 'success');
                     document.querySelector('.contact-form').reset();
                 } else {
-                    contactAlertBox.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Error: ' + (data.message || 'Message not sent');
-                    contactAlertBox.className = 'error';
-                    contactAlertBox.style.display = 'block';
-                    setTimeout(() => {
-                        contactAlertBox.style.display = 'none';
-                    }, 3000);
+                    showLoginAlert('Message failed. Please try again.', 'error');
                 }
             })
             .catch((err) => {
                 console.error('Error sending message:', err);
-                contactAlertBox.innerHTML = '<i class="fa-solid fa-circle-xmark"></i> Network error. Please refresh.';
-                contactAlertBox.className = 'error';
-                contactAlertBox.style.display = 'block';
-                setTimeout(() => {
-                    contactAlertBox.style.display = 'none';
-                }, 3000);
+                showLoginAlert('Network error. Please check your internet.', 'error');
             })
             .finally(() => {
                 submitButton.disabled = false;
