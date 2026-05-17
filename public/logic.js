@@ -442,7 +442,7 @@ function renderAgents(agents) {
             </div>
             <div class="agent-search-info">
                 <p class="agent-search-name">${a.name}</p>
-                <p class="agent-search-stand">${a.stand.toLowerCase() === 'verified agent'? `<i class="fa-solid fa-circle-check"></i> ${a.stand}` : `${a.stand}`}</p>
+                <p class="agent-search-stand">${a.stand.toLowerCase() === 'verified agent'? `<i class="fa-solid fa-circle-check"></i> ${a.stand}` : ''}</p>
             </div>
         </a>
     `).join('');
