@@ -1009,6 +1009,7 @@ searchAgent();
         logoutBtn.addEventListener('click', async () => {
             try {
                 await fetch('/api/logout', { method: 'POST', credentials: 'include' });
+                await fetch('/api/agent/logout', { method: 'POST', credentials: 'include' });
                 userLog.style.display = 'none';
                 logoutBtn.style.display = 'none';
                 loginNav.style.display = 'flex';

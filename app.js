@@ -60,15 +60,29 @@ app.get('/api/views', async (req, res) => {
         let record = await PageViews.findOne();
 
         if (!record) {
-            record = await PageViews.create({ ip: [], count: 0 });
+            record = await PageViews.create({ ip: [], count: 0, daily: [] });
         }
+
+        const today = new Date().toISOString().slice(0, 10);
+        const dayEntry = record.daily.find(d => d.date === today);
 
         if (!record.ip.includes(ip)) {
             record.ip.push(ip);
             record.count = (record.count || 0) + 1;
             record.lastUpdated = new Date();
-            await record.save();
         }
+
+        // increment daily count on every page load
+        if (dayEntry) {
+            dayEntry.count++;
+        } else {
+            record.daily.push({ date: today, count: 1 });
+        }
+
+        // keep only last 14 days
+        if (record.daily.length > 14) record.daily = record.daily.slice(-14);
+
+        await record.save();
 
         res.json({
             success: true,
@@ -85,16 +99,36 @@ app.get('/api/views', async (req, res) => {
 app.get('/api/views/stats', async (req, res) => {
     try {
         let record = await PageViews.findOne();
+        if (!record) record = { count: 0, ip: [], lastUpdated: new Date(), daily: [] };
 
-        if (!record) {
-            record = { count: 0, ip: [], lastUpdated: new Date() };
+        // build last 7 days with labels
+        const days = [];
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const key   = d.toISOString().slice(0, 10);
+            const label = d.toLocaleDateString('en-GB', { weekday: 'short' });
+            const entry = record.daily.find(x => x.date === key);
+            days.push({ label, count: entry ? entry.count : 0 });
+        }
+
+        // previous 7 days for comparison
+        const prevDays = [];
+        for (let i = 13; i >= 7; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const key   = d.toISOString().slice(0, 10);
+            const entry = record.daily.find(x => x.date === key);
+            prevDays.push(entry ? entry.count : 0);
         }
 
         res.json({
             success: true,
-            totalViews: record.count,
+            totalViews:     record.count,
             uniqueVisitors: record.ip.length,
-            lastUpdated: record.lastUpdated
+            lastUpdated:    record.lastUpdated,
+            daily:          days,
+            previousDaily:  prevDays
         });
     } catch (err) {
         console.error('Error getting view stats:', err);

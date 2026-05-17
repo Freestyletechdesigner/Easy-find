@@ -315,19 +315,19 @@ https://templatemo.com/tm-608-daynight-admin
                     <div class="card-header">
                         <div>
                             <h3 class="card-title">Traffic Comparison</h3>
-                            <p class="card-subtitle">This period vs previous period</p>
+                            <p class="card-subtitle">This week vs previous week</p>
                         </div>
                     </div>
                     <div class="chart-container">
                         <div class="chart-scroll">
                             <div class="chart-scroll-inner">
-                                <div class="bar-chart">
-                                    <div class="y-axis">
-                                        <span class="y-axis-label">5K</span>
-                                        <span class="y-axis-label">4K</span>
-                                        <span class="y-axis-label">3K</span>
-                                        <span class="y-axis-label">2K</span>
-                                        <span class="y-axis-label">1K</span>
+                                <div class="bar-chart" id="trafficBarChart">
+                                    <div class="y-axis" id="trafficYAxis">
+                                        <span class="y-axis-label">—</span>
+                                        <span class="y-axis-label">—</span>
+                                        <span class="y-axis-label">—</span>
+                                        <span class="y-axis-label">—</span>
+                                        <span class="y-axis-label">—</span>
                                         <span class="y-axis-label">0</span>
                                     </div>
                                     <div class="y-axis-lines">
@@ -338,99 +338,60 @@ https://templatemo.com/tm-608-daynight-admin
                                         <div class="y-axis-line"></div>
                                         <div class="y-axis-line"></div>
                                     </div>
-                                    <div class="bar-group">
-                                        <div class="bar-wrapper">
-                                            <div class="bar previous" style="height: 90px;"></div>
-                                            <div class="bar current" style="height: 120px;"></div>
-                                        </div><span class="bar-label">Mon</span></div>
-                                    <div class="bar-group">
-                                        <div class="bar-wrapper">
-                                            <div class="bar previous" style="height: 100px;"></div>
-                                            <div class="bar current" style="height: 140px;"></div>
-                                        </div><span class="bar-label">Tue</span></div>
-                                    <div class="bar-group">
-                                        <div class="bar-wrapper">
-                                            <div class="bar previous" style="height: 85px;"></div>
-                                            <div class="bar current" style="height: 110px;"></div>
-                                        </div><span class="bar-label">Wed</span></div>
-                                    <div class="bar-group">
-                                        <div class="bar-wrapper">
-                                            <div class="bar previous" style="height: 110px;"></div>
-                                            <div class="bar current" style="height: 145px;"></div>
-                                        </div><span class="bar-label">Thu</span></div>
-                                    <div class="bar-group">
-                                        <div class="bar-wrapper">
-                                            <div class="bar previous" style="height: 130px;"></div>
-                                            <div class="bar current" style="height: 155px;"></div>
-                                        </div><span class="bar-label">Fri</span></div>
-                                    <div class="bar-group">
-                                        <div class="bar-wrapper">
-                                            <div class="bar previous" style="height: 75px;"></div>
-                                            <div class="bar current" style="height: 95px;"></div>
-                                        </div><span class="bar-label">Sat</span></div>
-                                    <div class="bar-group">
-                                        <div class="bar-wrapper">
-                                            <div class="bar previous" style="height: 65px;"></div>
-                                            <div class="bar current" style="height: 85px;"></div>
-                                        </div><span class="bar-label">Sun</span></div>
+                                    <!-- bars injected by JS -->
                                 </div>
                             </div>
                         </div>
                         <div class="chart-legend">
-                            <div class="legend-item"><span class="legend-dot current"></span>This Period</div>
-                            <div class="legend-item"><span class="legend-dot previous"></span>Previous Period</div>
+                            <div class="legend-item"><span class="legend-dot current"></span>This Week</div>
+                            <div class="legend-item"><span class="legend-dot previous"></span>Previous Week</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Traffic Sources -->
+                <!-- Traffic Summary -->
                 <div class="card">
                     <div class="card-header">
                         <div>
-                            <h3 class="card-title">Traffic Sources</h3>
-                            <p class="card-subtitle">Where your visitors come from</p>
+                            <h3 class="card-title">Visit Summary</h3>
+                            <p class="card-subtitle">Overall site traffic stats</p>
                         </div>
                     </div>
                     <div class="chart-scroll">
                         <div class="chart-scroll-inner" style="min-width: 400px;">
-                            <div style="display: flex; align-items: center; gap: 2rem; padding: 1rem 0;">
+                            <div style="display:flex;align-items:center;gap:2rem;padding:1rem 0;">
                                 <div class="donut-chart">
                                     <svg viewBox="0 0 36 36">
                                         <circle class="donut-ring" cx="18" cy="18" r="15.9"/>
-                                        <circle class="donut-segment" cx="18" cy="18" r="15.9" stroke="var(--accent)" stroke-dasharray="42 100" stroke-dashoffset="0"/>
-                                        <circle class="donut-segment" cx="18" cy="18" r="15.9" stroke="var(--success)" stroke-dasharray="28 100" stroke-dashoffset="-42"/>
-                                        <circle class="donut-segment" cx="18" cy="18" r="15.9" stroke="var(--warning)" stroke-dasharray="18 100" stroke-dashoffset="-70"/>
-                                        <circle class="donut-segment" cx="18" cy="18" r="15.9" stroke="#A855F7" stroke-dasharray="12 100" stroke-dashoffset="-88"/>
+                                        <circle class="donut-segment" id="donutUnique" cx="18" cy="18" r="15.9" stroke="var(--accent)" stroke-dasharray="60 100" stroke-dashoffset="0"/>
+                                        <circle class="donut-segment" id="donutReturn" cx="18" cy="18" r="15.9" stroke="var(--success)" stroke-dasharray="40 100" stroke-dashoffset="-60"/>
                                     </svg>
                                     <div class="donut-center">
-                                        <div class="donut-value">45K</div>
-                                        <div class="donut-label">Visitors</div>
+                                        <div class="donut-value" id="donutTotal">—</div>
+                                        <div class="donut-label">Total</div>
                                     </div>
                                 </div>
-                                <div style="flex: 1;">
-                                    <div style="margin-bottom: 1rem;">
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;"><span style="font-size: 0.875rem; color: var(--text-primary);">Direct</span><span style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);">42%</span></div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill accent" style="width: 42%;"></div>
+                                <div style="flex:1;">
+                                    <div style="margin-bottom:1rem;">
+                                        <div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">
+                                            <span style="font-size:0.875rem;color:var(--text-primary);">Unique Visitors</span>
+                                            <span style="font-size:0.875rem;font-weight:600;color:var(--text-primary);" id="statUnique">—</span>
                                         </div>
+                                        <div class="progress-bar"><div class="progress-fill accent" id="barUnique" style="width:0%"></div></div>
                                     </div>
-                                    <div style="margin-bottom: 1rem;">
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;"><span style="font-size: 0.875rem; color: var(--text-primary);">Organic Search</span><span style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);">28%</span></div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill success" style="width: 28%;"></div>
+                                    <div style="margin-bottom:1rem;">
+                                        <div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">
+                                            <span style="font-size:0.875rem;color:var(--text-primary);">Total Page Views</span>
+                                            <span style="font-size:0.875rem;font-weight:600;color:var(--text-primary);" id="statTotal">—</span>
                                         </div>
-                                    </div>
-                                    <div style="margin-bottom: 1rem;">
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;"><span style="font-size: 0.875rem; color: var(--text-primary);">Social Media</span><span style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);">18%</span></div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill warning" style="width: 18%;"></div>
-                                        </div>
+                                        <div class="progress-bar"><div class="progress-fill success" id="barTotal" style="width:0%"></div></div>
                                     </div>
                                     <div>
-                                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;"><span style="font-size: 0.875rem; color: var(--text-primary);">Referral</span><span style="font-size: 0.875rem; font-weight: 600; color: var(--text-primary);">12%</span></div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill" style="width: 12%; background: #A855F7;"></div>
+                                        <div style="display:flex;justify-content:space-between;margin-bottom:0.25rem;">
+                                            <span style="font-size:0.875rem;color:var(--text-primary);">This Week</span>
+                                            <span style="font-size:0.875rem;font-weight:600;color:var(--text-primary);" id="statWeek">—</span>
                                         </div>
+                                        <div class="progress-bar"><div class="progress-fill warning" id="barWeek" style="width:0%"></div></div>
                                     </div>
                                 </div>
                             </div>
@@ -620,6 +581,7 @@ https://templatemo.com/tm-608-daynight-admin
       
       if (viewsData.success) {
         document.getElementById('total-views').textContent = viewsData.totalViews.toLocaleString();
+        renderTrafficChart(viewsData.daily || [], viewsData.previousDaily || [], viewsData.totalViews, viewsData.uniqueVisitors);
       }
       
       // Fetch user count
@@ -763,6 +725,64 @@ https://templatemo.com/tm-608-daynight-admin
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  function renderTrafficChart(daily, prevDaily, totalViews, uniqueVisitors) {
+    const chart   = document.getElementById('trafficBarChart');
+    const yAxis   = document.getElementById('trafficYAxis');
+    if (!chart) return;
+
+    const maxCount = Math.max(...daily.map(d => d.count), ...prevDaily, 1);
+    const maxH     = 150; // max bar height in px
+    const step     = Math.ceil(maxCount / 5);
+
+    // update y-axis labels
+    if (yAxis) {
+        const labels = yAxis.querySelectorAll('.y-axis-label');
+        for (let i = 0; i < 5; i++) {
+            labels[i].textContent = ((5 - i) * step).toLocaleString();
+        }
+    }
+
+    // remove old bar groups (keep y-axis and y-axis-lines)
+    chart.querySelectorAll('.bar-group').forEach(b => b.remove());
+
+    // render bars
+    daily.forEach((d, i) => {
+        const currH = maxCount > 0 ? Math.round((d.count / maxCount) * maxH) : 4;
+        const prevH = maxCount > 0 ? Math.round(((prevDaily[i] || 0) / maxCount) * maxH) : 4;
+        const group = document.createElement('div');
+        group.className = 'bar-group';
+        group.innerHTML = `
+            <div class="bar-wrapper">
+                <div class="bar previous" style="height:${prevH}px;" title="Prev: ${prevDaily[i] || 0}"></div>
+                <div class="bar current"  style="height:${currH}px;" title="This: ${d.count}"></div>
+            </div>
+            <span class="bar-label">${d.label}</span>
+        `;
+        chart.appendChild(group);
+    });
+
+    // update summary card
+    const weekTotal = daily.reduce((s, d) => s + d.count, 0);
+    const pct = totalViews > 0 ? Math.min(100, Math.round((uniqueVisitors / totalViews) * 100)) : 0;
+    const weekPct = totalViews > 0 ? Math.min(100, Math.round((weekTotal / totalViews) * 100)) : 0;
+
+    const el = id => document.getElementById(id);
+    if (el('donutTotal'))  el('donutTotal').textContent  = totalViews.toLocaleString();
+    if (el('statUnique'))  el('statUnique').textContent  = uniqueVisitors.toLocaleString();
+    if (el('statTotal'))   el('statTotal').textContent   = totalViews.toLocaleString();
+    if (el('statWeek'))    el('statWeek').textContent    = weekTotal.toLocaleString();
+    if (el('barUnique'))   el('barUnique').style.width   = pct + '%';
+    if (el('barTotal'))    el('barTotal').style.width    = '100%';
+    if (el('barWeek'))     el('barWeek').style.width     = weekPct + '%';
+
+    // update donut segments
+    if (el('donutUnique')) {
+        el('donutUnique').setAttribute('stroke-dasharray', `${pct} 100`);
+        el('donutReturn').setAttribute('stroke-dasharray', `${100 - pct} 100`);
+        el('donutReturn').setAttribute('stroke-dashoffset', `-${pct}`);
+    }
   }
 
   // Users Management Functions
