@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -504,7 +504,7 @@
             </form>
 
             <div class="login-link">
-                Already have an account? <a href="/login-agent.html">Login here</a>
+                Already have an account? <a href="/login-agent">Login here</a>
             </div>
 
             <div class="back-home">
@@ -682,7 +682,7 @@
                     
                     // Redirect to login page
                     setTimeout(() => {
-                        window.location.href = '/agent-loged/index.html';
+                        window.location.href = '/agent-loged';
                     }, 2000);
                 } else {
                     showAlert(data.message || 'Registration failed', 'error');

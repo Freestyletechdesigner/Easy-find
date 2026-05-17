@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -314,7 +314,7 @@
         </button>
 
         <div class="back-link">
-            <a href="/signup-agent.html">
+            <a href="/signup-agent">
                 <i class="fas fa-arrow-left"></i> Back to Signup
             </a>
         </div>
@@ -429,7 +429,7 @@
 
             if (data.success) {
                 showAlert('Phone verified successfully! Redirecting...', 'success');
-                setTimeout(() => window.location.href = '/agent-loged/index.html', 1500);
+                setTimeout(() => window.location.href = '/agent-loged', 1500);
             } else {
                 showAlert(data.message || 'Invalid code. Please try again.', 'error');
                 inputs.forEach(i => { i.classList.add('error'); i.value = ''; i.classList.remove('filled'); });

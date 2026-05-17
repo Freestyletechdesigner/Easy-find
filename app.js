@@ -158,6 +158,21 @@ app.use('/appeal', express.static('appeal'));
 app.use('/boost-account', express.static('boost-account'));
 app.use('/password-reset', express.static('password-reset'));
 
+// ── Clean admin routes (no .html) ─────────────────────
+const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'file-uploader', 'login'];
+adminPages.forEach(page => {
+    const file = page === 'dashboard' ? 'index' : page;
+    app.get(`/admin/${page}`, (req, res) => {
+        res.sendFile(path.join(__dirname, 'admin', `${file}.html`));
+    });
+});
+
+// ── Clean password-reset routes (no .html) ────────────
+app.get('/password-reset/forgot-password', (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'forgot-password.html')));
+app.get('/password-reset/verify-reset',    (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'verify-reset.html')));
+app.get('/password-reset/verify-otp',      (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'verify-otp.html')));
+app.get('/password-reset/reset-password',  (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'reset-password.html')));
+
 login(app);
 sectionImageChanger(app);
 uploadnewP(app);

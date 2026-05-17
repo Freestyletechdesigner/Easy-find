@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -171,7 +171,7 @@
         </button>
 
         <div class="back-link">
-            <a href="/password-reset/forgot-password.html"><i class="fas fa-arrow-left"></i> Back</a>
+            <a href="/password-reset/forgot-password"><i class="fas fa-arrow-left"></i> Back</a>
         </div>
     </div>
 </div>
@@ -243,7 +243,7 @@
             if (data.success) {
                 showAlert('Verified! Redirecting...', 'success');
                 sessionStorage.setItem('resetPhone', phone);
-                setTimeout(() => window.location.href = '/password-reset/reset-password.html', 1200);
+                setTimeout(() => window.location.href = '/password-reset/reset-password', 1200);
             } else {
                 showAlert(data.message || 'Invalid code', 'error');
                 inputs.forEach(i => { i.classList.add('error'); i.value = ''; i.classList.remove('filled'); });

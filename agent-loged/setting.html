@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -18,14 +18,14 @@
         </div>
         <nav class="links">
             <a href="/agent-loged">Dashboard</a>
-            <a href="/agent-loged/setting.html" class="active-link">Setting</a>
+            <a href="/agent-loged/setting" class="active-link">Setting</a>
             <button class="logout-btn" onclick="logout()" title="Logout">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
         </nav>
         <div class="nav2" id="nav2">
             <a href="/agent-loged"><i class="fa-solid fa-house"></i> Dashboard</a>
-            <a href="/agent-loged/setting.html"><i class="fa-solid fa-gear"></i> Setting</a>
+            <a href="/agent-loged/setting"><i class="fa-solid fa-gear"></i> Setting</a>
             <button class="logout-btn" onclick="logout()" title="Logout">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
@@ -140,7 +140,7 @@
             try {
                 const res  = await fetch('/api/agent/profile');
                 const data = await res.json();
-                if (!data.success) return window.location.href = '/agent-loged/login.html';
+                if (!data.success) return window.location.href = '/login-agent';
                 const agent = data.agent;
                 document.getElementById('agent-name').textContent  = agent.name.length > 8?
                  agent.name.slice(0, 8) + '...' : agent.name;
