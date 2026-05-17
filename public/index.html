@@ -29,28 +29,29 @@
              <a href="#top">Home</a>
              <a href="#search-bar">Search</a>
              <a href="#about">About</a>
-             <a href="#available-homes">Available homes</a>
+             <a href="#available-homes">Available properties</a>
              <a href="#agents">Our Agents</a>
              <a href="#contact">Contact us</a>
          </nav>
+
+            <div class="nav2" id="nav2">
+               <div class="top-nav">
+                   <a href="#top" class="logo"><span>E</span>asy Find</a>
+               </div>
+               <a href="#top"><i class="fa-solid fa-house"></i> Home</a>
+               <a href="#search-bar"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+               <a href="#about"><i class="fa-regular fa-address-card"></i> About</a>
+               <a href="#available-homes"><i class="fa-solid fa-building"></i> Available properties</a>
+               <a href="#agents"><i class="fa-solid fa-user-tie"></i> Our Agents</a>
+               <a href="#contact"><i class="fa-solid fa-envelope"></i> Contact us</a>
+            </div>
+
             <div class="hamburger" id="hamburger">
               <div id="hand" class="hand"></div>
               <div id="hand" class="hand"></div>
               <div id="hand" class="hand"></div>
             </div>
     </header>
-             <div class="nav2" id="nav2">
-                <div class="top-nav">
-                    <a href="#top" class="logo"><span>E</span>asy Find</a>
-                    <i class="fa-solid fa-xmark" id="navX"></i>
-                </div>
-                <a href="#top"><i class="fa-solid fa-house"></i> Home</a>
-                <a href="#search"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
-                <a href="#about"><i class="fa-regular fa-address-card"></i> About</a>
-                <a href="#available-homes"><i class="fa-solid fa-building"></i> Available properties</a>
-                <a href="#agents"><i class="fa-solid fa-user-tie"></i> Our Agents</a>
-                <a href="#contact"><i class="fa-solid fa-envelope"></i> Contact us</a>
-             </div>
 
     <div id="alert"></div>
 
@@ -509,20 +510,29 @@
 
     </div>
 </section>
-<section class="clients-feedback">
-
-    <div class="clients-container">
-        <div class="clients-feed">
-            <h4> A Landlord</h4>
-            <p>“Posting my property was quick and straightforward. I received serious inquiries within a short time, and the platform helped me connect with genuine tenants. I’m very satisfied with the results.”</p>
+<section class="clients-feedback" id="feedbackPanel">
+    <div class="feedback-panel">
+        <div class="feedback-header">
+            <h3><i class="fas fa-comments"></i> What people say</h3>
+            <button class="feedback-close" id="feedbackClose"><i class="fas fa-times"></i></button>
         </div>
-        <div class="clients-feed">
-            <h4>Ifeoma</h4>
-            <p>“User-friendly, fast, and trustworthy. Highly recommended for anyone looking to rent a house.”</p>
+        <div class="clients-container" id="feedbackList">
+            <div class="feedback-loading"><i class="fas fa-spinner fa-spin"></i></div>
         </div>
-        <div class="clients-feed">
-            <h4>Tenant</h4>
-            <p>“I found my rental house within two days using this website. The photos and descriptions were accurate, and contacting the landlord was simple. The process saved me a lot of time compared to other platforms.”</p>
+        <div class="feedback-form">
+            <div class="feedback-stars" id="feedbackStars">
+                <i class="fas fa-star" data-v="1"></i>
+                <i class="fas fa-star" data-v="2"></i>
+                <i class="fas fa-star" data-v="3"></i>
+                <i class="fas fa-star" data-v="4"></i>
+                <i class="fas fa-star" data-v="5"></i>
+            </div>
+            <input type="text" id="feedbackName" placeholder="Your name (optional)" maxlength="50">
+            <textarea id="feedbackMsg" placeholder="Share your experience..." maxlength="300" rows="3"></textarea>
+            <div class="feedback-form-footer">
+                <span id="feedbackCharCount">0/300</span>
+                <button id="feedbackSubmit"><i class="fas fa-paper-plane"></i> Send</button>
+            </div>
         </div>
     </div>
     <p id="client-btn">FeedBack</p>
@@ -557,17 +567,6 @@
 
 <div id="log-alert"></div>
 
-
-
-<section class="feeling">
-    <h3>How was your experience?</h3>
-    <div class="f-container">
-        <span class="f"><i class="fa-solid fa-face-angry"></i></span>
-        <span class="f"><i class="fa-solid fa-face-sad-tear"></i></i></span>
-        <span class="f"><i class="fa-regular fa-face-meh"></i></span>
-        <span class="f"><i class="fa-regular fa-face-grin-beam"></i></span>
-    </div>
-</section>
 <div class="bgf"></div>
 
 <section class="chat-us-wa">

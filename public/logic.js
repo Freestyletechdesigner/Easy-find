@@ -1,4 +1,4 @@
-    //load
+﻿    //load
     const body = document.getElementById('body');
     const load = document.querySelector('.load');
     
@@ -30,20 +30,12 @@
     //nav
     const nav2 = document.getElementById("nav2");
     const hamburger = document.getElementById("hamburger");
-    const bg = document.querySelector('.bgf');
     const navX = document.getElementById('navX');
-
-    navX.addEventListener('click', () => {
-        nav2.classList.remove('active');
-        hamburger.classList.remove('active');
-        bg.style.display = 'none'
-    });
 
     hamburger.addEventListener('click', (e) => {
         e.stopPropagation();
         nav2.classList.toggle('active');
         hamburger.classList.toggle('active');
-        bg.style.display = nav2.classList.contains('active') ? 'flex' : 'none';
     });
 
     //property upload here
@@ -89,23 +81,51 @@
         if (isLoading || !allPosts.length) return;
         isLoading = true;
 
-        sentinel.innerHTML = '<i class="fas fa-spinner fa-spin"></i>&nbsp; Loading...';
+        // show skeletons at the bottom
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < BATCH; i++) {
+            const sk = document.createElement("div");
+            sk.className = "skeleton-card scroll-skeleton";
+            sk.innerHTML = `<div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line" style="width:60%"></div><div class="skeleton skeleton-line" style="width:40%"></div><div class="skeleton skeleton-line" style="width:80%"></div></div>`;
+            frag.appendChild(sk);
+        }
+        grid.appendChild(frag);
 
-        // defer DOM work to next animation frame — keeps scroll smooth
-        requestAnimationFrame(() => {
-            const batch = nextBatch();
+        setTimeout(() => {
+            requestAnimationFrame(() => {
+                // save scroll position before any DOM change
+                const scrollY = window.scrollY;
 
-            // single DOM write for all 8 cards
-            grid.insertAdjacentHTML('beforeend', batch.map(p => propertyCard(p)).join(''));
+                // remove skeletons
+                grid.querySelectorAll(".scroll-skeleton").forEach(s => s.remove());
 
-            // remove oldest from top using live HTMLCollection — no querySelectorAll
-            while (grid.children.length > MAX_DOM + 1) { // +1 for sentinel
-                grid.firstElementChild.remove();
-            }
+                // insert real cards
+                const batch = nextBatch();
+                const cardFrag = document.createDocumentFragment();
+                batch.forEach(p => {
+                    const tmp = document.createElement("div");
+                    tmp.innerHTML = propertyCard(p);
+                    cardFrag.appendChild(tmp.firstElementChild);
+                });
+                grid.appendChild(cardFrag);
 
-            sentinel.innerHTML = '';
-            isLoading = false;
-        });
+                // remove oldest cards only if user has scrolled far enough down
+                // so removing top cards does not affect visible area
+                const cards = grid.querySelectorAll(".listing-card");
+                if (cards.length > MAX_DOM) {
+                    const excess = cards.length - MAX_DOM;
+                    let removedHeight = 0;
+                    for (let i = 0; i < excess; i++) {
+                        removedHeight += cards[i].offsetHeight;
+                        cards[i].remove();
+                    }
+                    // restore scroll position to compensate for removed top cards
+                    window.scrollTo({ top: scrollY - removedHeight, behavior: "instant" });
+                }
+
+                isLoading = false;
+            });
+        }, 600);
     }
 
     async function uploadProperty() {
@@ -146,10 +166,14 @@
         }
     }
 
-    // observer fires when sentinel enters viewport
+    // observer fires when sentinel is 600px away from entering the viewport
     const scrollObserver = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting) addBatch();
-    }, { threshold: 0.1 });
+    }, {
+        root: null,           // use the viewport
+        rootMargin: '0px 0px 100px 0px', // trigger 600px before sentinel is visible
+        threshold: 0
+    });
 
     scrollObserver.observe(sentinel);
 
@@ -814,12 +838,107 @@ searchAgent();
     });
 
     //feedback toggle
-    const clientsFB = document.querySelector('.clients-feedback');
+    const clientsFB  = document.querySelector('.clients-feedback');
     const clientsBtn = document.getElementById('client-btn');
+    const feedbackClose = document.getElementById('feedbackClose');
+    let feedbackLoaded = false;
+    let selectedRating = 5;
+
+    function openFeedback() {
+        clientsFB.classList.add('feed-move');
+        clientsBtn.classList.add('feed-move');
+        if (!feedbackLoaded) { loadFeedbacks(); feedbackLoaded = true; }
+    }
+    function closeFeedback() {
+        clientsFB.classList.remove('feed-move');
+        clientsBtn.classList.remove('feed-move');
+    }
+
     clientsBtn.addEventListener('click', () => {
-        clientsFB.classList.toggle('feed-move');
-        clientsBtn.classList.toggle('feed-move')
-    })
+        clientsFB.classList.contains('feed-move') ? closeFeedback() : openFeedback();
+    });
+    feedbackClose.addEventListener('click', closeFeedback);
+
+    // star rating
+    const stars = document.querySelectorAll('#feedbackStars i');
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            selectedRating = parseInt(star.dataset.v);
+            stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.v) <= selectedRating));
+        });
+        star.addEventListener('mouseover', () => {
+            stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.v) <= parseInt(star.dataset.v)));
+        });
+        star.addEventListener('mouseout', () => {
+            stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.v) <= selectedRating));
+        });
+    });
+    // set default 5 stars
+    stars.forEach(s => s.classList.add('active'));
+
+    // char counter
+    const feedbackMsg = document.getElementById('feedbackMsg');
+    feedbackMsg.addEventListener('input', () => {
+        document.getElementById('feedbackCharCount').textContent = `${feedbackMsg.value.length}/300`;
+    });
+
+    // load feedbacks
+    async function loadFeedbacks() {
+        const list = document.getElementById('feedbackList');
+        try {
+            const res  = await fetch('/api/feedback');
+            const data = await res.json();
+            if (!data.success || !data.feedbacks.length) {
+                list.innerHTML = '<div class="feedback-loading" style="color:#888;font-size:0.8rem;">No reviews yet. Be the first!</div>';
+                return;
+            }
+            list.innerHTML = data.feedbacks.map(f => `
+                <div class="clients-feed">
+                    <div class="feed-name">${f.name}</div>
+                    <div class="feed-stars">${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}</div>
+                    <p>${f.message}</p>
+                </div>
+            `).join('');
+        } catch (err) {
+            list.innerHTML = '<div class="feedback-loading" style="color:#888;">Could not load reviews.</div>';
+        }
+    }
+
+    // submit feedback
+    document.getElementById('feedbackSubmit').addEventListener('click', async () => {
+        const btn     = document.getElementById('feedbackSubmit');
+        const name    = document.getElementById('feedbackName').value.trim();
+        const message = feedbackMsg.value.trim();
+
+        if (!message) { alertBox.warning('Empty', 'Please write something before sending.'); return; }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+        try {
+            const res  = await fetch('/api/feedback', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ name, message, rating: selectedRating })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alertBox.success('Thank you!', data.message);
+                feedbackMsg.value = '';
+                document.getElementById('feedbackName').value = '';
+                document.getElementById('feedbackCharCount').textContent = '0/300';
+                feedbackLoaded = false;
+                loadFeedbacks();
+            } else {
+                alertBox.error('Error', data.message || 'Could not send feedback');
+            }
+        } catch (err) {
+            alertBox.error('Error', 'Network error. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+        }
+    });
 
     //LOGIN
     const loginPage = document.querySelector('.login');
@@ -1088,10 +1207,9 @@ searchAgent();
             holdLogin.classList.remove('open');
         }
         //close nav2 logic
-        if (!hamburger.contains(e.target) && !nav2.contains(e.target)) {
+        if (!hamburger.contains(e.target)) {
             hamburger.classList.remove('active');
             nav2.classList.remove('active');
-            bg.style.display = 'none';
         }
     });
 
@@ -1214,14 +1332,7 @@ searchAgent();
 
                 if (data.success) {
                     showLoginAlert(`Account created successfully! Welcome ${signupData.name}!`, 'success');
-                    
-                    // Store user info in localStorage
-                    localStorage.setItem('user', JSON.stringify({
-                        id: data.userId,
-                        name: signupData.name,
-                        email: signupData.email
-                    }));
-                    
+                                        
                     // Hide login button and show user name
                     loginNav.style.display = 'none';
                     holdLogin.style.right = '-10rem'
@@ -1283,14 +1394,7 @@ searchAgent();
 
                 if (data.success) {
                     showLoginAlert(`Account created! Welcome ${signupData.name}!`, 'success');
-                    
-                    // Store user info in localStorage
-                    localStorage.setItem('user', JSON.stringify({
-                        id: data.userId,
-                        name: signupData.name,
-                        email: signupData.email
-                    }));
-                    
+                                        
                     // Hide login button and show user name
                     loginNav.style.display = 'none';
                     holdLogin.style.right = '-10rem'
@@ -1313,32 +1417,6 @@ searchAgent();
         });
     }
 
-    //feeling 
-    const feeling = document.querySelector('.feeling');
-    const feelingC = document.querySelectorAll('.f');
-    const bgf = document.querySelector('.bgf');
-
-    setTimeout(() => {
-        feeling.style.display = 'block';
-        bgf.style.display = 'flex';
-    }, 400000)
-
-    bgf.addEventListener('click', () => {
-        feeling.style.display = 'none';
-        bgf.style.display = 'none';
-    })
-
-    feelingC.forEach((f, index) => {
-        f.addEventListener('click', () => {
-            emailjs.send("service_2gmwz4n", "template_ta3lzir", {
-                    feedback: `User selected feeling ${index + 1}`
-                })
-                .then(() => console.log('send'))
-                .catch((err) => console.error('not send', err));
-            feeling.style.display = 'none';
-            bgf.style.display = 'none';
-        });
-    });
 
     //hold login nav
     window.addEventListener('click', (e) => {

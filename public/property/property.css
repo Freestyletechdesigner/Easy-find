@@ -41,55 +41,82 @@ header {
 
 .links a {
     text-decoration: none;
-    padding: 10px 20px;
+    padding: 8px 14px;
     color: #333;
-    font-weight: bold;
+    font-weight: 600;
+    border-radius: 8px;
     transition: background 0.2s;
 }
-.links a:hover { background: #e4e4e4; }
+.links a:hover { background: #e0faf9; color: #0d7068; }
 
 .nav2 {
     position: fixed;
-    top: 72px;
-    right: 4%;
-    width: 88%;
-    background: #0d7068;
-    padding: 16px;
-    border-radius: 12px;
-    transform: translateX(120%);
-    transition: 0.35s ease;
-    z-index: 300;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    top: 0;
+    right: -280px;
+    width: 280px;
+    height: 100vh;
+    background: #044742;
+    padding: 20px;
+    border-radius: 20px 0px 0px 20px;
+    transition: 0.4s ease;
+    z-index: 1001;
 }
-.nav2.active { transform: translateX(0); }
+.nav2.active {
+    right: 0;
+}
+
+.top-nav {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .nav2 a {
     display: block;
-    padding: 13px 10px;
+    padding: 15px 7px;
+    margin-top: 20px;
     text-decoration: none;
     color: #fff;
-    font-size: 1rem;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
-    transition: background 0.2s;
+    font-size: 1.1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
 }
-.nav2 a:hover { background: rgba(255,255,255,0.12); border-radius: 8px; }
 
-.hamburger {
-    padding: 8px 12px;
-    flex-direction: column;
-    gap: 5px;
-    display: none;
-    cursor: pointer;
+.nav2 a:focus {
+    background: #fff;
+    color: #070;
 }
-.hand {
-    width: 23px; height: 2px;
-    background: #0d7068;
+.hamburger{
+    padding: 10px 15px;
+    font-size: 30px;
+    flex-direction: column;
+    grid-gap: 5px;
+    display: none;
+    position: relative;
+    z-index: 1111;
+}
+.hand{
+    width: 23px;
+    height: 2px;
+    background: #050;
     border-radius: 20px;
     transition: transform 0.3s;
+    
 }
-.hamburger.active .hand:nth-child(1) { transform: rotate(45deg) translate(5px,5px); background: #e00; }
-.hamburger.active .hand:nth-child(2) { opacity: 0; }
-.hamburger.active .hand:nth-child(3) { transform: rotate(-45deg) translate(5px,-5px); background: #e00; }
+.hamburger.active .hand:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+  background: rgb(255, 255, 255);
+}
 
+.hamburger.active .hand:nth-child(2) {
+    transition: opacity 0.3s;
+  opacity: 0;
+}
+
+.hamburger.active .hand:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+   background: rgb(255, 255, 255);
+}
 /* ── MAIN ────────────────────────────────────────────── */
 main { padding: 0 5% 40px; max-width: 1400px; margin: 0 auto; }
 

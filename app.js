@@ -24,6 +24,7 @@ const profileUpload = require('./routes/profile-upload.js');
 const AGENT_POST = require('./routes/agent-upload.js');
 const VIEW_POST = require('./routes/view-post.js');
 const PAYMENT_FOR_BOOST = require('./routes/payment-for-boost.js');
+const FEEDBACK = require('./routes/feedback.js');
 const SEARCH_ENGINE = require('./routes/agent-search-engine.js');
 
 // Database schema
@@ -138,9 +139,10 @@ AGENT_POST(app);
 VIEW_POST(app);
 SEARCH_ENGINE(app);
 PAYMENT_FOR_BOOST(app);
+FEEDBACK(app);
 
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));
 });
 
-app.listen(process.env.PORT || 9000, '0.0.0.0', () => console.log('http://localhost:9000/', process.env.PORT || 9000))
+app.listen(process.env.PORT || 9000, '0.0.0.0', () => console.log('http://localhost:',process.env.PORT||9000))

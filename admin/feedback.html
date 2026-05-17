@@ -1,14 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Management - Admin</title>
+    <script>
+        if (localStorage.getItem('daynight-theme') === 'carbon') {
+            document.documentElement.classList.add('carbon');
+        }
+    </script>
+    <link rel="stylesheet" href="templatemo-daynight-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <title>Admin Panel - Image Manager</title>
+    <style>
+        .feedback-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .feedback-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: box-shadow 0.2s;
+        }
+        .feedback-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .feedback-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .feedback-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+        .feedback-date { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .feedback-stars { color: #f59e0b; font-size: 0.9rem; letter-spacing: 1px; }
+        .feedback-msg { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; flex: 1; }
+        .btn-delete-fb {
+            align-self: flex-end;
+            padding: 6px 14px;
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-delete-fb:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+        .feedback-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            grid-column: 1 / -1;
+        }
+        .feedback-empty i { font-size: 2.5rem; margin-bottom: 12px; display: block; opacity: 0.4; }
+    </style>
 </head>
-
 <body>
     <!-- Mobile Menu Overlay -->
     <div class="mobile-menu-overlay"></div>
@@ -71,16 +127,11 @@
                 </svg>
                 Agents
             </a>
-            <a href="file-uploader.html" class="active">
+            <a href="feedback.html" class="active">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <!-- file -->
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                  <!-- upload arrow -->
-                  <line x1="12" y1="18" x2="12" y2="12"/>
-                  <polyline points="9 15 12 12 15 15"/>
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
-                File uploader
+                Feedback
             </a>
             <a href="settings.html">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -186,16 +237,11 @@
                             </a>
                         </div>
                         <div class="nav-item">
-                            <a href="file-uploader.html" class="nav-link active">
+                            <a href="feedback.html" class="nav-link active">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                  <!-- file -->
-                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                                  <polyline points="14 2 14 8 20 8"/>
-                                  <!-- upload arrow -->
-                                  <line x1="12" y1="18" x2="12" y2="12"/>
-                                  <polyline points="9 15 12 12 15 15"/>
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                                 </svg>
-                                File uploader
+                                Feedback
                             </a>
                         </div>
                         <div class="nav-item">
@@ -251,47 +297,109 @@
                 </div>
             </div>
         </nav>
-        <div id="alert"></div>
 
-        <section class="section-drop">
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="greeting">Feedback Management</h1>
+                <p class="greeting-sub">Review and moderate user feedback.</p>
+            </div>
 
-            <form enctype="multipart/form-data" class="upload-form">
-                <div class="hero-upload">
-                    <h3>Hero Image</h3>
-
-                    <div class="drop-zone">
-                        <img src="placeholder.jpg" alt="">
-                        <span class="drop-text">Tap or drag image here</span>
-                    </div>
-
-                    <input type="file" name="file" accept="image/*" hidden>
-
-                    <button type="submit" class="save-btn">Save</button>
-                    <button type="button" class="cancel-btn">Cancel</button>
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Feedback</div>
+                    <div class="stat-value" id="fbTotal">—</div>
                 </div>
-            </form>
-
-            <form enctype="multipart/form-data" class="upload-form">
-                <div class="hero-upload">
-                    <h3>Property Uploader</h3>
-
-                    <div class="drop-zone">
-                        <img src="" alt="">
-                        <span class="drop-text">Tap or drag files here</span>
-                    </div>
-
-                    <input class="folder-name" type="text" name="folder" placeholder="Enter folder name" required>
-                    <input type="file" name="files" multiple hidden>
-
-                    <button type="submit" class="save-btn">Save</button>
-                    <button type="button" class="cancel-btn">Cancel</button>
+                <div class="stat-card">
+                    <div class="stat-label">Average Rating</div>
+                    <div class="stat-value" id="fbAvg">—</div>
                 </div>
-            </form>
+                <div class="stat-card">
+                    <div class="stat-label">5 Star Reviews</div>
+                    <div class="stat-value" id="fbFive">—</div>
+                </div>
+            </div>
 
-        </section>
+            <!-- Feedback cards -->
+            <div class="card" style="margin-top:1.5rem;">
+                <div class="card-header">
+                    <h3 class="card-title">All Feedback</h3>
+                </div>
+                <div class="feedback-grid" id="feedbackGrid">
+                    <div class="feedback-empty">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading feedback...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
 
-        <script src="templatemo-daynight-script.js"></script>
+        <footer class="footer">
+            <p>&copy; 2026 <a href="/" style="color:#050;text-decoration:none;">Easy Find</a>. All rights reserved.</p>
+        </footer>
+    </div>
 
+    <script src="templatemo-daynight-script.js"></script>
+    <script>
+        async function loadFeedback() {
+            const grid = document.getElementById('feedbackGrid');
+            try {
+                const res  = await fetch('/api/admin/feedback');
+                const data = await res.json();
+
+                if (!data.success || !data.feedbacks.length) {
+                    grid.innerHTML = '<div class="feedback-empty"><i class="fas fa-comment-slash"></i><p>No feedback yet.</p></div>';
+                    return;
+                }
+
+                document.getElementById('fbTotal').textContent = data.feedbacks.length;
+                const avg = (data.feedbacks.reduce((s, f) => s + f.rating, 0) / data.feedbacks.length).toFixed(1);
+                document.getElementById('fbAvg').textContent = avg + ' / 5';
+                document.getElementById('fbFive').textContent = data.feedbacks.filter(f => f.rating === 5).length;
+
+                grid.innerHTML = data.feedbacks.map(f => `
+                    <div class="feedback-card" id="fb-${f._id}">
+                        <div class="feedback-card-header">
+                            <div>
+                                <div class="feedback-name">${f.name}</div>
+                                <div class="feedback-date">${new Date(f.date).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</div>
+                            </div>
+                            <div class="feedback-stars">${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}</div>
+                        </div>
+                        <p class="feedback-msg">${f.message}</p>
+                        <button class="btn-delete-fb" onclick="deleteFeedback('${f._id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                `).join('');
+
+            } catch (err) {
+                grid.innerHTML = '<div class="feedback-empty"><i class="fas fa-exclamation-circle"></i><p>Failed to load feedback.</p></div>';
+            }
+        }
+
+        async function deleteFeedback(id) {
+            if (!confirm('Delete this feedback? This cannot be undone.')) return;
+            try {
+                const res  = await fetch(`/api/admin/feedback/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById(`fb-${id}`)?.remove();
+                    const remaining = document.querySelectorAll('.feedback-card').length;
+                    document.getElementById('fbTotal').textContent = remaining;
+                    if (!remaining) {
+                        document.getElementById('feedbackGrid').innerHTML =
+                            '<div class="feedback-empty"><i class="fas fa-comment-slash"></i><p>No feedback yet.</p></div>';
+                    }
+                } else {
+                    alert(data.message || 'Could not delete');
+                }
+            } catch (err) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        loadFeedback();
+    </script>
 </body>
-
 </html>

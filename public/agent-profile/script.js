@@ -18,7 +18,7 @@ hamburger.addEventListener('click', () => {
     hamburger.classList.toggle('active');
 });
 window.addEventListener('click', e => {
-    if (!hamburger.contains(e.target) && !nav2.contains(e.target)) {
+    if (!hamburger.contains(e.target)) {
         nav2.classList.remove('active');
         hamburger.classList.remove('active');
     }

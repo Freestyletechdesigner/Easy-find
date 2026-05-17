@@ -19,19 +19,18 @@ body {
 } 
 
 header {
-    position: static;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    width: 90%;
-    margin: 1% auto;
-    padding: 10px 20px;
-    border-radius: 12px;
+    background: #fff;
+    width: 92%;
+    margin: 12px auto;
+    padding: 10px 24px;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
     position: sticky;
-    top: 0%;
-    z-index: 100;
-    background: #ffffffd5;
-    backdrop-filter: blur(10px);
+    top: 10px;
+    z-index: 200;
 }
 
 .logo {
@@ -98,24 +97,31 @@ header {
 
 .nav2 {
     position: fixed;
-    top: 70px;
-    right: 2%;
-    width:65%;
-    display: flex;
-    flex-direction: column;
-    background: #00473e;
+    top: 0;
+    right: -280px;
+    width: 280px;
+    height: 100vh;
+    background: #044742;
     padding: 20px;
-    border-radius: 10px;
-    transform: translateX(150%);
-    transition: all 0.4s ease;
-    z-index: 1000;
+    border-radius: 20px 0px 0px 20px;
+    transition: 0.4s ease;
+    z-index: 1001;
 }
 .nav2.active {
-    transform: translateX(10%);
+    right: 0;
 }
+
+.top-nav {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+}
+
 .nav2 a {
     display: block;
     padding: 15px 7px;
+    margin-top: 20px;
     text-decoration: none;
     color: #fff;
     font-size: 1.1rem;
@@ -132,7 +138,8 @@ header {
     flex-direction: column;
     grid-gap: 5px;
     display: none;
-    z-index: 3;
+    position: relative;
+    z-index: 1111;
 }
 .hand{
     width: 23px;
@@ -144,7 +151,7 @@ header {
 }
 .hamburger.active .hand:nth-child(1) {
   transform: rotate(45deg) translate(5px, 5px);
-  background: #e00;
+  background: rgb(255, 255, 255);
 }
 
 .hamburger.active .hand:nth-child(2) {
@@ -154,7 +161,7 @@ header {
 
 .hamburger.active .hand:nth-child(3) {
   transform: rotate(-45deg) translate(5px, -5px);
-   background: #e00;
+   background: rgb(255, 255, 255);
 }
 
 .profile {
@@ -890,11 +897,6 @@ header {
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.property-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.13);
-}
-
 .card-image {
     position: relative;
     height: 200px;
@@ -1102,13 +1104,13 @@ header {
     border-radius: 10px;
     font-size: 0.9rem;
     font-weight: 600;
-    transition: all 0.3s ease;
+    transition: all 0.4s ease;
 }
 
 .btn-view-details:hover {
     background: linear-gradient(135deg, #0d7068 0%, #055361 100%);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(13, 112, 104, 0.3);
+    transform: translateY(-5px);
+    box-shadow: 0 4px 12px rgba(0, 39, 36, 0.603);
 }
 
 /* Empty state */
