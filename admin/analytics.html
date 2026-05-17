@@ -417,7 +417,7 @@ https://templatemo.com/tm-608-daynight-admin
                                 <th>Views</th>
                                 <th>Login User</th>
                                 <th>Login Agent</th>
-                                <th>Bounce Rate</th>
+                                <th>Verified Agents</th>
                                 <th>HLS Button</th>
                             </tr>
                         </thead>
@@ -430,7 +430,7 @@ https://templatemo.com/tm-608-daynight-admin
                                 <td id="hero-v"></td>
                                 <td id="logers"></td>
                                 <td id="agent-logs"></td>
-                                <td>5m 24s</td>
+                                <td id="verifiedA">5m 24s</td>
                                 <td><form class="sold-btn">
                                       <input type="number" id="HS" value="1" name="sold" hidden>
                                       <input type="submit" value="HLS">
@@ -1156,6 +1156,21 @@ https://templatemo.com/tm-608-daynight-admin
     }
   }
   loadAgent()
+
+  //Count verified agent
+  const verifiedA = document.getElementById('verifiedA');
+  async function loadVerifiedA() {
+    try {
+      const res = await fetch('/api/get-verified-agent/admin');
+      const data = await res.json();
+      if (data.success) {
+        verifiedA.textContent = data.VerifiedAgent
+      }
+    } catch(err) {
+      console.error(err)
+    }
+  }
+  loadVerifiedA()
 
 
 </script>

@@ -392,7 +392,8 @@ const agent = (app) => {
             // Get all agents with property count
             const agents = await AgentUser.find()
                 .select('name email number profilePicture status stand registrationDate lastLogin loginCount')
-                .lean();
+                .lean()
+                .sort({ registrationDate: -1 });
 
             // Get property counts for each agent
             const agentIds = agents.map(a => a._id.toString());
@@ -423,6 +424,30 @@ const agent = (app) => {
         } catch (err) {
             console.error('Error fetching agents:', err);
             res.status(500).json({ success: false, message: 'Server error' });
+        }
+    });
+
+    // Get verified for admin
+    app.get('/api/get-verified-agent/admin', requireAdmin, async (req, res) => {
+        try {
+            const agents = await AgentUser.find({ stand: 'Verified Agent' });
+            if (!agents) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'No verified agent yet'
+                })
+            }
+
+            res.json({
+                success: true,
+                VerifiedAgent: agents.length
+            })
+        } catch (error) {
+            console.error('Error on count verified agent:', error);
+            res.json({
+                success: false,
+                message: 'Error loading verified agent'
+            })
         }
     });
 

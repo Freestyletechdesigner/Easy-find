@@ -116,7 +116,7 @@ const AGENT_POST = (app) => {
     app.get('/api/agent/property', requireAgent, async (req, res) => {
         try {
             const agentId = req.session.agent.id;
-            const agentPost = await AgentPost.find({agentId})
+            const agentPost = await AgentPost.find({agentId}).sort({ date: -1 });
 
             res.json({
                 success: true,
@@ -167,7 +167,7 @@ const AGENT_POST = (app) => {
     app.get('/api/get/postForPublicAgentProfile/:id', async (req, res) => {
         const id = req.params.id;
         try {
-            const property = await AgentPost.find({agentId: id});
+            const property = await AgentPost.find({agentId: id}).sort({ date: -1 });
             if (!property) {
                 return res.json({
                     success: false,
