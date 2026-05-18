@@ -271,7 +271,6 @@
     const propertySearch = document.getElementById('full-search-property');
     const hotelSearch = document.getElementById('full-search-hotel')
     const property = document.getElementById('available-home');
-    const hotel = document.querySelector('.hotel-rooms');
 
     propertyBtn.style.backgroundColor = '#eee';
      //for switching from hotel to house
@@ -284,7 +283,6 @@
         propertySearch.style.display = 'flex';
         hotelSearch.style.display = 'none';
         property.style.display = '';
-        hotel.style.display = 'none'
         searchSection.style.display = ''
     });
      //for switching from house to hotel
@@ -297,7 +295,6 @@
         hotelSearch.style.display = 'flex';
         propertySearch.style.display = 'none';
         property.style.display = 'none';
-        hotel.style.display = 'block'
         searchSection.style.display = 'none'
     });
 
@@ -692,38 +689,99 @@ initSearch();
             if (timeCount) runCount()
     });
 
-    // Load verified agents
-    async function loadVerifiedAgents() {
-        try {
-            const res = await fetch('/api/agents/verified');
-            const data = await res.json();
-            
-            const container = document.getElementById('agents-container');
-            
-            if (data.success && data.agents.length > 0) {
-                container.innerHTML = data.agents.map(agent => `
-                <div class="agent-card">
-                    ${agent.profilePicture? 
-                       `<img src="${agent.profilePicture || 'https://via.placeholder.com/150'}" loading="lazy" alt="${agent.name}">`
-                       : `<i class="fa-solid fa-user-tie" id="avatar"></i>`
-                    }
-                    
-                    <h3>${agent.name}</h3>
-                    <p><i class="fa-solid fa-circle-check"></i> ${agent.stand || 'Verified Agent'}</p>
-                    <a href="/agent-profile?id=${agent.id}" class="agent-btn">View Profile</a>
+    // Load verified agents with pagination
+    let agentPage       = 1;
+    let agentLoading    = false;
+    let agentTotalCount = 0;
+
+    async function loadVerifiedAgents(page = 1) {
+        if (agentLoading) return;
+        agentLoading = true;
+
+        const container = document.getElementById('agents-container');
+        const loadMoreBtn = document.getElementById('loadMoreAgentsBtn');
+
+        // skeletons on first load
+        if (page === 1) {
+            container.innerHTML = Array(4).fill(`
+                <div class="agent-card skeleton-agent">
+                    <div class="skeleton" style="width:100px;height:100px;border-radius:50%;margin:0 auto 12px;"></div>
+                    <div class="skeleton skeleton-line" style="width:60%;margin:0 auto 8px;height:14px;"></div>
+                    <div class="skeleton skeleton-line" style="width:40%;margin:0 auto;height:12px;"></div>
                 </div>
-                `).join('');
-            } else {
-                container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">No verified agents available at the moment.</p>';
+            `).join('');
+        }
+
+        try {
+            const res  = await fetch(`/api/agents/verified?page=${page}`);
+            const data = await res.json();
+
+            if (page === 1) container.innerHTML = '';
+
+            if (data.success && data.agents.length > 0) {
+                agentTotalCount = data.totalCount;
+
+                for (let i = data.agents.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [data.agents[i], data.agents[j]] = [data.agents[j], data.agents[i]];
+                }
+
+                data.agents.forEach(agent => {
+                    const card = document.createElement('div');
+                    card.className = 'agent-card section';
+                    card.innerHTML = `
+                        ${agent.profilePicture
+                            ? `<img src="${agent.profilePicture}" loading="lazy" alt="${agent.name}" onerror="this.style.display='none'">`
+                            : `<i class="fa-solid fa-user-tie" style="font-size:3rem;color:#0d7068;margin-bottom:10px;"></i>`
+                        }
+                        <h3>${agent.name}</h3>
+                        <p><i class="fa-solid fa-circle-check" style="color:#0d7068;"></i> ${agent.stand || 'Verified Agent'}</p>
+                        <a href="/agent-profile?id=${agent.id}" class="agent-btn">View Profile</a>
+                    `;
+                    container.appendChild(card);
+                });
+
+                // show/hide load more
+                const loaded = page * 8;
+                if (loadMoreBtn) {
+                    loadMoreBtn.style.display = loaded < agentTotalCount ? 'block' : 'none';
+                }
+
+                // trigger scroll animation for newly added cards
+                window.dispatchEvent(new Event('scroll'));
+            } else if (page === 1) {
+                container.innerHTML = '<p style="text-align:center;color:#666;padding:2rem;">No verified agents available at the moment.</p>';
             }
         } catch (err) {
             console.error('Error loading agents:', err);
-            document.getElementById('agents-container').innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">Network error. Please refresh.</p>';
+            container.innerHTML = Array(4).fill(`
+                <div class="agent-card skeleton-agent">
+                    <div class="skeleton" style="width:100px;height:100px;border-radius:50%;margin:0 auto 12px;"></div>
+                    <div class="skeleton skeleton-line" style="width:60%;margin:0 auto 8px;height:14px;"></div>
+                    <div class="skeleton skeleton-line" style="width:40%;margin:0 auto;height:12px;"></div>
+                </div>
+            `).join('');
+            if (page === 1) {
+                setTimeout(() => {
+                    container.innerHTML = '<p style="text-align:center;color:#666;padding:2rem;">Network error. Please refresh.</p>';
+                }, 15 * 1000);
+            }
+        } finally {
+            agentLoading = false;
         }
     }
 
     // Load agents when page loads
-    loadVerifiedAgents();
+    loadVerifiedAgents(1);
+
+    // Load More agents button
+    const loadMoreAgentsBtn = document.getElementById('loadMoreAgentsBtn');
+    if (loadMoreAgentsBtn) {
+        loadMoreAgentsBtn.addEventListener('click', () => {
+            agentPage++;
+            loadVerifiedAgents(agentPage);
+        });
+    }
 
     // Message input Validation
     const contactAlertBox = document.getElementById('alert');

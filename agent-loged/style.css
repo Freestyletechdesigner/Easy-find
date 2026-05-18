@@ -171,6 +171,7 @@ header {
 }
 
 .profile {
+    position: relative;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -219,6 +220,19 @@ header {
 
 .logout-btn i {
     font-size: 16px;
+}
+
+.upload-pic {
+    position: absolute;
+    top: 90%;
+    left: 0%;
+    background: #ffffff;
+    color: #001b1abd;
+    font-size: 15px;
+    font-weight: bolder;
+    padding: 7px 10px;
+    border-radius: 9px;
+    display: none;
 }
 
 /* ===== HERO SECTION ===== */

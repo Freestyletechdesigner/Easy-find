@@ -356,25 +356,31 @@ const agent = (app) => {
 
     // Get verified agents (public)
     app.get('/api/agents/verified', async (req, res) => {
+        const page = parseInt(req.query.page) || 1; 
+        const limit = 8;
+        const skip = (page - 1) * limit;
+    
         try {
-            const agents = await AgentUser.find({ stand: 'Verified Agent', status: 'active'})
-                .select('name profilePicture stand bio')
-                .lean();
-
-                // Fisher-Yates shuffle
-                for (let i = agents.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [agents[i], agents[j]] = [agents[j], agents[i]]
-                }
-
+            
+            const [agents, totalCount] = await Promise.all([
+                AgentUser.find({ stand: 'Verified Agent', status: 'active' })
+                    .select('name profilePicture stand bio')
+                    .sort({ createdAt: -1 })
+                    .skip(skip)
+                    .limit(limit)
+                    .lean(),
+                AgentUser.countDocuments({ stand: 'Verified Agent', status: 'active' })
+            ]);
+    
             res.json({
                 success: true,
+                totalCount,
+                // Clean up mappings inline inside the response loop
                 agents: agents.map(agent => ({
                     id: agent._id,
                     name: agent.name,
                     profilePicture: agent.profilePicture || null,
-                    stand: agent.stand || 'Agent',
-                    bio: agent.bio || null
+                    stand: agent.stand || 'Agent'
                 }))
             });
         } catch (err) {

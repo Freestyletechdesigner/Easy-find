@@ -118,11 +118,8 @@
 
 <!-- full-search-hotel -->
     <div id="full-search-hotel">
-        <a href="#available-home" class="hotel-link">Roya</a>
-        <a href="#available-home" class="hotel-link">Roya</a>
-        <a href="#available-home" class="hotel-link">Roya</a>
-        <a href="#available-home" class="hotel-link">Roya</a>
-        <a href="#available-home" class="hotel-link">Roya</a>
+        <div style="color: rgb(0, 72, 85);">Booking of hotel not available for now.</div>
+        <span style="font-size: 15px; color: rgba(0, 0, 0, 0.329);">Try again later.</span>
     </div>
 
 </section>
@@ -179,45 +176,6 @@
     <button id="loadMoreBtn" class="load-more-btn">Load More</button>
 </section>
 
-
-<!-- ===== HOTEL ROOM SECTION ===== -->
-<section class="hotel-rooms">
-    <h2>Our Rooms</h2>
-
-    <div class="room-list">
-
-        <div class="h-room section">
-            <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2" loading="lazy" alt="Standard Room">
-            <div class="room-content">
-                <h3>Standard Room</h3>
-                <p>Comfortable room with free Wi-Fi, TV, and air conditioning.</p>
-                <div class="h-price">₦1000 per night</div>
-                <button class="book-btn" data-bookprice='1000'>Book Now</button>
-            </div>
-        </div>
-
-        <div class="h-room section">
-            <img src="https://images.unsplash.com/photo-1505691938895-1758d7feb511" loading="lazy" alt="Deluxe Room">
-            <div class="room-content">
-                <h3>Deluxe Room</h3>
-                <p>Spacious deluxe room with balcony and premium amenities.</p>
-                <div class="h-price">₦1500 per night</div>
-                <button class="book-btn" data-bookprice='1500'>Book Now</button>
-            </div>
-        </div>
-
-        <div class="h-room section">
-            <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267" loading="lazy" alt="Suite">
-            <div class="room-content">
-                <h3>Luxury Suite</h3>
-                <p>Luxury suite with living area, minibar, and ocean view.</p>
-                <div class="h-price">₦2000 per night</div>
-                <button class="book-btn" data-bookprice='2000'>Book Now</button>
-            </div>
-        </div>
-
-    </div>
-</section>
 
 <section class="book-room">
     <form id="book-form">
@@ -315,6 +273,9 @@
     <h2 class="agents-title">Our Agents</h2>
     <div class="agents-container" id="agents-container">
         <p style="text-align: center; color: #666; padding: 2rem;">Loading verified agents...</p>
+    </div>
+    <div style="text-align:center;margin-top:24px;">
+        <button id="loadMoreAgentsBtn" class="load-more-btn" style="display:none;">Load More Agents</button>
     </div>
 </div>
 

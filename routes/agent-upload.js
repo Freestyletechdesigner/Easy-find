@@ -175,8 +175,16 @@ const AGENT_POST = (app) => {
     // Get request for agent public profile
     app.get('/api/get/postForPublicAgentProfile/:id', async (req, res) => {
         const id = req.params.id;
+        const page = parseInt(req.query.page) || 1; 
+        const limit = 8;
+        const skip = (page - 1) * limit; // Calculate how many items to skip
+        
         try {
-            const property = await AgentPost.find({agentId: id}).sort({ date: -1 });
+            const property = await AgentPost.find({agentId: id})
+            .sort({ date: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
             if (!property) {
                 return res.json({
                     success: false,

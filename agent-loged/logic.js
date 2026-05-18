@@ -20,12 +20,19 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const uploadPic = document.querySelector('.upload-pic')
+
     async function loadProfilePicture() {
         try {
             const response = await fetch('/api/agent/profile/picture');
             const data = await response.json();
             if (data.success && data.profilePicture) {
                 document.getElementById('profile-picture').src = data.profilePicture;
+            } else if (!data.profilePicture) {
+                uploadPic.style.display = 'flex'
+                setTimeout(() => {
+                    uploadPic.style.display = 'none'
+                }, 2000);
             }
         } catch (error) {
             console.error('Error loading profile picture:', error);
