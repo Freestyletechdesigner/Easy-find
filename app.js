@@ -10,12 +10,8 @@ const mongoose = require('mongoose');
 // API
 const connectDB = require('./db.js');
 connectDB()
-const sectionImageChanger = require('./routes/section-image-changer.js');
 const uploadnewP = require('./routes/upload-property');
-const booking = require('./routes/booking.js');
-const payment = require('./routes/payment.js');
 const signup = require('./routes/signup.js');
-const HSLAPI = require('./routes/HLS.js');
 const messageAPI = require('./routes/message.js');
 const agent = require('./routes/agent.js');
 const agentProfileUpload = require('./routes/agent-profile-upload.js');
@@ -202,12 +198,8 @@ app.get('/password-reset/verify-reset',    (req, res) => res.sendFile(path.join(
 app.get('/password-reset/verify-otp',      (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'verify-otp.html')));
 app.get('/password-reset/reset-password',  (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'reset-password.html')));
 
-sectionImageChanger(app);
 uploadnewP(app);
-booking(app);
-payment(app);
 signup(app);
-HSLAPI(app);
 messageAPI(app);
 agent(app);
 agentProfileUpload(app);
