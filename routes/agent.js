@@ -15,9 +15,21 @@ const authLimiter = rateLimit({
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
 
+// Strict limiter for Login and OTP
+const resetLimiter = rateLimit({
+    windowMs: 24 * 60 * 60 * 1000, 
+    max: 1, // Limit each IP to 4 requests per windowMs
+    message: {
+        success: false, 
+        message: 'Too many attempts. Please try again after 24 hours.'
+    },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+
 // General limiter for public profiles/status
 const apiLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000,
+    windowMs: 60 * 1000,
     max: 60, // 60 requests per minute
     message: { success: false, message: 'Too many requests.' }
 });
@@ -472,7 +484,7 @@ const agent = (app) => {
     });
 
     // Change agent password (settings)
-    app.patch('/api/agent/settings/password', requireAgent, authLimiter, async (req, res) => {
+    app.patch('/api/agent/settings/password', requireAgent, resetLimiter, async (req, res) => {
         const { currentPassword, newPassword } = req.body;
         if (!currentPassword || !newPassword)
             return res.status(400).json({ success: false, message: 'All fields are required' });

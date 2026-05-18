@@ -140,7 +140,7 @@ const AGENT_POST = (app) => {
     app.get('/api/post/property', async (req, res) => {
         try {
             const now   = new Date();
-            const limit = 200;
+            const limit = 20;
 
             const pipeline = [
                 { $addFields: { agentObjId: { $toObjectId: '$agentId' } } },
