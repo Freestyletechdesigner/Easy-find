@@ -10,7 +10,6 @@ const mongoose = require('mongoose');
 // API
 const connectDB = require('./db.js');
 connectDB()
-const login = require('./routes/login.js');
 const sectionImageChanger = require('./routes/section-image-changer.js');
 const uploadnewP = require('./routes/upload-property');
 const booking = require('./routes/booking.js');
@@ -203,7 +202,6 @@ app.get('/password-reset/verify-reset',    (req, res) => res.sendFile(path.join(
 app.get('/password-reset/verify-otp',      (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'verify-otp.html')));
 app.get('/password-reset/reset-password',  (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'reset-password.html')));
 
-login(app);
 sectionImageChanger(app);
 uploadnewP(app);
 booking(app);
