@@ -357,98 +357,144 @@ document.addEventListener('DOMContentLoaded', () => {
         alertBox.success('Link Copied', 'Property link copied to clipboard');
     }
 
-    // ── Properties Grid ───────────────────────────────────
-    window.loadProperties = async function () {
-        const grid  = document.getElementById('propertiesGrid');
-        const empty = document.getElementById('propertiesEmpty');
-        const count = document.getElementById('property-count');
+// Keep track of pagination state out of function re-initialization scope
+let currentPropertyPage = 1; 
+let isPropertyLoading = false;
 
-        grid.innerHTML = Array(3).fill(`
-            <div class="skeleton-card">
-                <div class="skeleton skeleton-img"></div>
-                <div class="skeleton-body">
-                    <div class="skeleton skeleton-line" style="width:60%"></div>
-                    <div class="skeleton skeleton-line" style="width:40%"></div>
-                    <div class="skeleton skeleton-line" style="width:80%"></div>
-                </div>
+// ── Skeleton Loader Element ──────────────────────────────────
+function getSkeletonHTML() {
+    return Array(4).fill(`
+        <div class="skeleton-card temporary-skeleton">
+            <div class="skeleton skeleton-img" style="height:200px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+            <div class="skeleton-body" style="padding:15px;">
+                <div class="skeleton skeleton-line" style="width:60%; height:15px; margin-bottom:10px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+                <div class="skeleton skeleton-line" style="width:40%; height:12px; margin-bottom:10px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+                <div class="skeleton skeleton-line" style="width:80%; height:12px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
             </div>
-        `).join('');
+        </div>
+    `).join('');
+}
 
-        try {
-            const res  = await fetch('/api/agent/property');
-            const data = await res.json();
-
-            grid.innerHTML = '';
-
-            if (!data.success || !data.property.length) {
-                empty.style.display = 'block';
-                count.textContent   = '0';
-                return;
-            }
-
-            count.textContent = data.property.length;
-            data.property.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
-
-        } catch (err) {
-            grid.innerHTML      = '';
-            empty.style.display = 'block';
-            count.textContent   = '0';
-        }
-    };
-
-    function propertyCard(p) {
-        const imgSrc   = p.imageNames && p.imageNames.length
-            ? `/agent-loged/upload-property/${p.imageNames[0]}`
-            : 'profile.png';
-        const imgCount = p.imageNames ? p.imageNames.length : 0;
-        const price = Number(p.price).toLocaleString();
-        const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-        const isLand = (p.type || '').toLowerCase() === 'land';
-
-        return `
-            <div class="property-card" id="card-${p._id}" data-property="${encodeURIComponent(JSON.stringify(p))}">
-                <div class="card-image">
-                    <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
-                    <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
-                    ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
-                    ${imgCount > 1 ? `<span class="card-image-count"><i class="fas fa-images"></i> ${imgCount}</span>` : ''}
-
-                    <!-- 3-dot menu -->
-                    <div class="card-menu-wrap">
-                        <button class="card-menu-btn" onclick="toggleCardMenu('${p._id}')">
-                            <i class="fas fa-ellipsis-v"></i>
-                        </button>
-                        <div class="card-menu" id="menu-${p._id}">
-                            <button onclick="deleteProperty('${p._id}')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                            <button onclick="shareProperty('${p._id}')">
-                                <i class="fas fa-share-alt"></i> Share
-                            </button>
-                            <button onclick="editPost('${p._id}')">
-                                <i class="fa-solid fa-gear"></i> Edit post
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="card-price">₦${price}</div>
-                    <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
-                    <div class="card-stats">
-                        ${isLand? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
-                        ${isLand? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
-                        ${isLand ? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>` : ''}
-                    </div>
-                    <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
-                </div>
-                <div class="card-footer">
-                    <a href="/property?id=${p._id}" class="btn-view-details">
-                        View Details <i class="fas fa-arrow-right"></i>
-                    </a>
-                </div>
-            </div>
-        `;
+// ── Properties Grid ───────────────────────────────────
+window.loadProperties = async function (isNewLoad = false) {
+    // Prevent overlapping duplicate API requests if user click-spams
+    if (isPropertyLoading) return; 
+    
+    if (isNewLoad) {
+        currentPropertyPage = 1;
     }
+
+    const grid  = document.getElementById('propertiesGrid');
+    const empty = document.getElementById('propertiesEmpty');
+    const count = document.getElementById('property-count');
+
+    isPropertyLoading = true;
+
+    // Inject skeletons carefully without wiping out previous items if appending
+    if (currentPropertyPage === 1) {
+        grid.innerHTML = getSkeletonHTML();
+        empty.style.display = 'none';
+    } else {
+        grid.insertAdjacentHTML('beforeend', `<div id="pagination-skeletons">${getSkeletonHTML()}</div>`);
+    }
+
+    try {
+        const res  = await fetch(`/api/agent/property?page=${currentPropertyPage}`);
+        const data = await res.json();
+
+        // Remove temporary skeletons safely
+        if (currentPropertyPage === 1) {
+            grid.innerHTML = '';
+        } else {
+            const tempSkeletons = document.getElementById('pagination-skeletons');
+            if (tempSkeletons) tempSkeletons.remove();
+        }
+
+        if (!data.success || !data.property || !data.property.length) {
+            if (currentPropertyPage === 1) {
+                empty.style.display = 'block';
+                count.textContent = '0';
+            }
+            isPropertyLoading = false;
+            return;
+        }
+
+        // Update counts and render cards gracefully
+        if (currentPropertyPage === 1) {
+            count.textContent = data.totalCount || data.property.length; 
+        } else {
+            // If backend provides exact database count, use that, else increment aggregate values
+            count.textContent = parseInt(count.textContent) + data.property.length;
+        }
+
+        // Efficient DOM insertion loop
+        data.property.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
+        
+        // Prepare increment step for the next pagination invocation trigger
+        currentPropertyPage++;
+
+    } catch (err) {
+        console.error("Failed to load properties:", err);
+        if (currentPropertyPage === 1) {
+            grid.innerHTML = '';
+            empty.style.display = 'block';
+            count.textContent = '0';
+        } else {
+            const tempSkeletons = document.getElementById('pagination-skeletons');
+            if (tempSkeletons) tempSkeletons.remove();
+        }
+    } finally {
+        isPropertyLoading = false;
+    }
+};
+
+function propertyCard(p) {
+    const imgSrc = p.imageNames && p.imageNames.length
+        ? `/agent-loged/upload-property/${p.imageNames[0]}`
+        : 'profile.png';
+    const imgCount = p.imageNames ? p.imageNames.length : 0;
+    const price = Number(p.price).toLocaleString();
+    const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const isLand = (p.type || '').toLowerCase() === 'land';
+
+    // SCALING OPTIMIZATION:
+    return `
+        <div class="property-card" id="card-${p._id}">
+            <div class="card-image">
+                <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
+                <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
+                ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
+                ${imgCount > 1 ? `<span class="card-image-count"><i class="fas fa-images"></i> ${imgCount}</span>` : ''}
+
+                <div class="card-menu-wrap">
+                    <button class="card-menu-btn" onclick="toggleCardMenu('${p._id}')">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="card-menu" id="menu-${p._id}">
+                        <button onclick="deleteProperty('${p._id}')"><i class="fas fa-trash"></i> Delete</button>
+                        <button onclick="shareProperty('${p._id}')"><i class="fas fa-share-alt"></i> Share</button>
+                        <button onclick="editPost('${p._id}')"><i class="fa-solid fa-gear"></i> Edit post</button>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="card-price">₦${price}</div>
+                <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
+                <div class="card-stats">
+                    ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
+                    ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
+                    ${isLand ? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>` : ''}
+                </div>
+                <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} | <i class="fas fa-eye"></i> ${p.view || 0} views</div>
+            </div>
+            <div class="card-footer">
+                <a href="/property?id=${p._id}" class="btn-view-details">
+                    View Details <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    `;
+}
 
     //total views
     async function loadTotalViews() {

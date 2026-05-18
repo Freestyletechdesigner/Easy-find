@@ -157,17 +157,19 @@
 </section>
 
 <section id="search-bar" class="search-bar">
-      <div class="search-text">
-          <p>Search by street name, house location, price range, or agent name to quickly find the perfect home.</p>
-      </div>
-   <div class="search-row">
-       <div class="hold-search">
-           <i class="fa-solid fa-magnifying-glass"></i> 
-           <input type="text" id="search" placeholder="Search for houses">
-       </div>
-       <div id="search-agent-list"></div>
-   </div>
-
+    <div class="search-inner">
+        <p class="search-tagline">Find your perfect property — search by location, price, or agent</p>
+        <div class="search-field-wrap">
+            <div class="search-field">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="search" placeholder="Street, location, price, or agent name...">
+                <button class="search-clear" id="searchClear" style="display:none;" onclick="document.getElementById('search').value='';document.getElementById('searchClear').style.display='none';document.getElementById('search-agent-list').style.display='none';">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="search-agent-list"></div>
+        </div>
+    </div>
 </section>
 
 <section id="available-homes">

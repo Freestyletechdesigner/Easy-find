@@ -363,8 +363,12 @@
     //normal search
     const searchSection = document.getElementById('search-bar');
     const searchBar = document.getElementById('search');
+    const searchClear = document.getElementById('searchClear');
 
     searchBar.addEventListener('input', () => {
+        // show/hide clear button
+        if (searchClear) searchClear.style.display = searchBar.value ? 'block' : 'none';
+
         const cards = document.querySelectorAll('.listing-card');
         let search = searchBar.value.toLowerCase();
 
@@ -386,44 +390,56 @@
 
     //search for agent
 const holdListAgent = document.getElementById('search-agent-list');
+const searchInput = document.getElementById('search');
 
-async function searchAgent() {
+// Debounce helper to prevent spamming the backend
+function debounce(func, delay) {
+    let timeoutId;
+    return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => func.apply(this, args), delay);
+    };
+}
+
+// Actual API fetcher based on input value
+async function fetchAndRenderAgents(query) {
     try {
-        const res = await fetch('/api/search/agent');
+        const res = await fetch(`/api/search/agent?q=${encodeURIComponent(query)}`);
         const data = await res.json();
 
         if (!data.success) return;
 
-        const agents = data.agents;
-        const searchInput = document.getElementById('search');
-
-        // Hide dropdown initially
-        holdListAgent.style.display = 'none';
-
-        // Filter on input
-        searchInput.addEventListener('input', () => {
-            const searchValue = searchInput.value.toLowerCase().trim();
-            if (!searchValue) {
-                holdListAgent.style.display = 'none';
-                return;
-            }
-            const filtered = agents.filter(a =>
-                a.name.toLowerCase().includes(searchValue)
-            );
-            renderAgents(filtered);
-            document.getElementById('loadMoreBtn').style.display = 'none'
-        });
-
-        // Hide when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !holdListAgent.contains(e.target)) {
-                holdListAgent.style.display = 'none';
-            }
-        });
-
+        renderAgents(data.agents);
+        
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        if (loadMoreBtn) loadMoreBtn.style.display = 'none';
     } catch (error) {
         console.error('Search agent error:', error);
     }
+}
+
+// Main logic coordinator
+function initSearch() {
+    if (!searchInput) return;
+
+    // Listen to typing, but debounced
+    searchInput.addEventListener('input', debounce((e) => {
+        const searchValue = e.target.value.trim();
+        
+        if (!searchValue) {
+            holdListAgent.style.display = 'none';
+            return;
+        }
+        
+        fetchAndRenderAgents(searchValue);
+    }, 300)); // 300ms wait time
+
+    // Hide dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!searchInput.contains(e.target) && !holdListAgent.contains(e.target)) {
+            holdListAgent.style.display = 'none';
+        }
+    });
 }
 
 function renderAgents(agents) {
@@ -432,6 +448,7 @@ function renderAgents(agents) {
         holdListAgent.style.display = 'block';
         return;
     }
+    
     holdListAgent.innerHTML = agents.map(a => `
         <a href="/agent-profile?id=${a._id}" class="agent-search-item">
             <div class="agent-search-avatar">
@@ -442,15 +459,15 @@ function renderAgents(agents) {
             </div>
             <div class="agent-search-info">
                 <p class="agent-search-name">${a.name}</p>
-                <p class="agent-search-stand">${a.stand.toLowerCase() === 'verified agent'? `<i class="fa-solid fa-circle-check"></i> ${a.stand}` : ''}</p>
+                <p class="agent-search-stand">${a.stand && a.stand.toLowerCase() === 'verified agent' ? `<i class="fa-solid fa-circle-check"></i> ${a.stand}` : ''}</p>
             </div>
         </a>
     `).join('');
     holdListAgent.style.display = 'block';
 }
 
-// Call on page load
-searchAgent();
+// Call once on DOM ready
+initSearch();
 
 
     //card load

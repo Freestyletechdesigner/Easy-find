@@ -114,9 +114,18 @@ const AGENT_POST = (app) => {
 
     //get request for agent only
     app.get('/api/agent/property', requireAgent, async (req, res) => {
+
+        const page = parseInt(req.query.page) || 1; 
+        const limit = 8;
+        const skip = (page - 1) * limit; // Calculate how many items to skip
+
         try {
             const agentId = req.session.agent.id;
-            const agentPost = await AgentPost.find({agentId}).sort({ date: -1 });
+            const agentPost = await AgentPost.find({agentId})
+            .sort({ date: -1 })
+            .skip(skip)
+            .limit(limit)
+            .lean();
 
             res.json({
                 success: true,
