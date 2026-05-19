@@ -1,16 +1,11 @@
-const fs = require('fs').promises;
-const path = require('path');
-const multer = require('multer');
 const { check, validationResult } = require('express-validator');
 const message = require('../model/message.js');
 
-const upload = multer();
 
 const messageAPI = (app) => {
 
     // Submit contact form message
     app.post('/api/contact/submit',
-        upload.none(),
         [
             check('name').trim().isLength({ min: 4 }).withMessage('Name must be at least 4 characters'),
             check('email').isEmail().normalizeEmail().withMessage('Invalid email address'),

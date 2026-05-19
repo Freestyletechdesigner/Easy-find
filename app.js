@@ -77,9 +77,19 @@ app.use(session({
     }
 }));
 
+// Middleware to check if user is admin
+function requireAdmin(req, res, next) {
+    if (!req.session.admin) {
+        return res.status(403).json({
+            success: false,
+            message: 'Admin authentication required'
+        });
+    }
+    next();
+}
 
 // Get page views
-app.get('/api/views', async (req, res) => {
+app.get('/api/views', requireAdmin, async (req, res) => {
     try {
         const ip = req.ip || req.connection.remoteAddress;
         let record = await PageViews.findOne();
@@ -121,7 +131,7 @@ app.get('/api/views', async (req, res) => {
 });
 
 // Get views statistics (for analytics dashboard)
-app.get('/api/views/stats', async (req, res) => {
+app.get('/api/views/stats', requireAdmin, async (req, res) => {
     try {
         let record = await PageViews.findOne();
         if (!record) record = { count: 0, ip: [], lastUpdated: new Date(), daily: [] };

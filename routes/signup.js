@@ -1,21 +1,9 @@
-const path = require('path');
+﻿const path = require('path');
 const fs = require('fs');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const User = require('../model/User.js');
 const rateLimit = require('express-rate-limit');
-
-//Admin file
-const ADMIN_FILE = path.join(__dirname, '..', 'database', 'admin.json');
-// Helper to read admins
-function getAdmins() {
-    try {
-        const data = fs.readFileSync(ADMIN_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (err) {
-        console.error('Error reading admin.json:', err);
-        return [];
-    }
-}
+const ADMIN = require('../model/ADMIN.js');
 
 // Middleware to check if user is admin
 function requireAdmin(req, res, next) {
@@ -178,26 +166,19 @@ module.exports = function(app) {
             }
             
             //check if user is admin
-            const admins = getAdmins();
-            const admin = admins.find(a => a.email.toLowerCase() === email.toLowerCase());
-
+            const admin = await ADMIN.findOne({ email: email.trim().toLowerCase() })
             if (admin) {
 
                 // Compare password
-                const isMatch = await bcrypt.compare(password, admin.password);
-
-                if (!isMatch) {
-                    return res.status(401).json({
-                        success: false,
-                        message: 'Invalid credentials'
-                    });
-                }
+                 const isPasswordValid = await admin.comparePassword(password);
+                 if (!isPasswordValid) {
+                     return res.status(401).json({ success: false, message: 'Invalid email or password' });
+                 }
 
                 // Set session
                 req.session.admin = {
-                    id: admin.id,
+                    id: admin._id,
                     email: admin.email,
-                    name: admin.name,
                     role: admin.role
                 };
     
@@ -205,9 +186,8 @@ module.exports = function(app) {
                     success: true,
                     message: 'Login successful',
                     admin: {
-                        id: admin.id,
+                        id: admin._id,
                         email: admin.email,
-                        name: admin.name,
                         role: admin.role
                     }
                 });
@@ -330,5 +310,13 @@ module.exports = function(app) {
             console.error('Password reset error:', error);
             res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
         }
+    });
+
+    // ADMIN STATUS
+    app.get('/api/admin/status', requireAdmin, (req, res) => {
+        res.json({ success: true, isAdmin: true, admin: {
+            email: req.session.admin.email,
+            role: req.session.admin.role
+        }});
     });
 };

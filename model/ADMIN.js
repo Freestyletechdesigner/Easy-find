@@ -1,20 +1,13 @@
 ﻿const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true
-    },
+const adminSchema = new mongoose.Schema({
     email: {
         type: String,
         required: true,
         unique: true,
         trim: true,
-        lowercase: true,
-        match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please fill a valid email address']
+        lowercase: true
     },
     password: {
         type: String,
@@ -23,15 +16,6 @@ const userSchema = new mongoose.Schema({
     },
     passwordResetAt: {
         type: Date,
-    },
-    number: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true
-    },
-    status: {
-        type: String
     },
     registrationDate: {
         type: Date,
@@ -49,16 +33,16 @@ const userSchema = new mongoose.Schema({
     }
 });
 
-userSchema.pre('save', async function() {
+adminSchema.pre('save', async function() {
     if (!this.isModified('password')) return;
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
+adminSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
-const User = mongoose.model('User', userSchema);
+const ADMIN = mongoose.model('ADMIN', adminSchema);
 
-module.exports = User
+module.exports = ADMIN

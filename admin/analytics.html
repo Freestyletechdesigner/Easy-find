@@ -596,15 +596,15 @@ https://templatemo.com/tm-608-daynight-admin
       }
       
       // Fetch bookings count
-      console.log('Loading bookings...');
-      const bookingsResponse = await fetch('/api/bookings');
-      console.log('Bookings response status:', bookingsResponse.status);
-      const bookingsData = await bookingsResponse.json();
-      console.log('Bookings data:', bookingsData);
+      //console.log('Loading bookings...');
+      //const bookingsResponse = await fetch('/api/bookings');
+      //console.log('Bookings response status:', bookingsResponse.status);
+      //const bookingsData = await bookingsResponse.json();
+      //console.log('Bookings data:', bookingsData);
       
-      if (bookingsData.success) {
-        document.getElementById('total-bookings').textContent = bookingsData.bookings.length.toLocaleString();
-      }
+      //if (bookingsData.success) {
+        //document.getElementById('total-bookings').textContent = bookingsData.bookings.length.toLocaleString();
+      //}
       
       // Update legacy elements if they exist
       const heroV = document.getElementById("hero-v");
