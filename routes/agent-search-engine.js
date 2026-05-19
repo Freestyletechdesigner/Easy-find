@@ -10,7 +10,9 @@ function SEARCH_ENGINE(app) {
                     agents: []
                 })
             }
-            const searchRegex = new RegExp(q, 'i')
+            // Fix 16: Escape user input to prevent ReDoS
+            function escapeRegex(str) { return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+            const searchRegex = new RegExp(escapeRegex(q), 'i')
 
             const agents = await AgentUser.find({ status: 'active', name: searchRegex })
                 .select('name profilePicture stand')

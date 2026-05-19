@@ -56,26 +56,22 @@ https://templatemo.com/tm-608-daynight-admin
                     <p class="login-subtitle">Sign in to your account to continue</p>
                 </div>
 
-                <form class="login-form">
+                <form class="login-form" id="adminLoginForm">
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
-                        <input type="email" class="form-input" placeholder="you@example.com">
+                        <input type="email" class="form-input" id="adminEmail" placeholder="you@example.com" required>
                     </div>
                     
                     <div class="form-group">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                             <label class="form-label" style="margin-bottom: 0;">Password</label>
-                            <a href="#" style="font-size: 0.8125rem; color: var(--accent);">Forgot password?</a>
                         </div>
-                        <input type="password" class="form-input" placeholder="Enter your password">
+                        <input type="password" class="form-input" id="adminPassword" placeholder="Enter your password" required>
                     </div>
+
+                    <div id="loginError" style="display:none;color:#dc2626;font-size:0.875rem;margin-bottom:1rem;padding:10px;background:#fee2e2;border-radius:8px;"></div>
                     
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem;">
-                        <input type="checkbox" id="remember" style="width: 16px; height: 16px; accent-color: var(--accent);">
-                        <label for="remember" style="font-size: 0.875rem; color: var(--text-secondary); cursor: pointer;">Remember me for 30 days</label>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary" onclick="event.preventDefault(); window.location.href='/admin/dashboard';">
+                    <button type="submit" class="btn btn-primary" id="loginBtn">
                         Sign In
                     </button>
                 </form>
@@ -114,5 +110,42 @@ https://templatemo.com/tm-608-daynight-admin
     </div>
 
     <script src="templatemo-daynight-script.js"></script>
+    <script>
+        document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn      = document.getElementById('loginBtn');
+            const errorEl  = document.getElementById('loginError');
+            const email    = document.getElementById('adminEmail').value.trim();
+            const password = document.getElementById('adminPassword').value;
+
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+            errorEl.style.display = 'none';
+
+            try {
+                const res  = await fetch('/api/login', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (data.success && data.admin) {
+                    window.location.href = '/admin/dashboard';
+                } else {
+                    errorEl.textContent = data.message || 'Invalid email or password';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Sign In';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        });
+    </script>
 </body>
 </html>

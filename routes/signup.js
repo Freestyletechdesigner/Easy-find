@@ -18,22 +18,18 @@ function requireAdmin(req, res, next) {
 
 // Strict limiter for Login and password reset
 const authLimiter = rateLimit({
-    windowMs: 60 * 1000, 
-    max: 4, // Limit each IP to 4 requests per windowMs
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,
     message: {
         success: false, 
-        message: 'Too many attempts. Please try again after 20 seconds.'
+        message: 'Too many attempts. Please try again later.'
     },
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'development'
 });
 
-// General limiter for public profiles/status
-const apiLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000,
-    max: 60, // 60 requests per minute
-    message: { success: false, message: 'Too many requests.' }
-});
+// General limiter for public profiles/status - Fix 31: removed unused apiLimiter
 
 module.exports = function(app) {
 
@@ -59,7 +55,7 @@ module.exports = function(app) {
     }
 
     // Signup endpoint
-    app.post('/api/signup', async (req, res) => {
+    app.post('/api/signup', authLimiter, async (req, res) => {
         try {
             const { name, email, number, password } = req.body;
 
@@ -99,7 +95,7 @@ module.exports = function(app) {
                 status: 'active',
                 registrationDate: new Date(),
                 loginCount: 0,
-                ipAddress: req.ip || req.connection.remoteAddress
+                ipAddress: req.ip || req.socket?.remoteAddress
             });
 
             await newUser.save();
@@ -115,8 +111,8 @@ module.exports = function(app) {
         }
     });
 
-    // Get all users (for analytics)
-    app.get('/api/users', async (req, res) => {
+    // Get all users (for analytics) - Fix 1: requireAdmin added
+    app.get('/api/users', requireAdmin, async (req, res) => {
         try {
             const users = await User.find()
                 .select('name email number status registrationDate lastLogin loginCount')
@@ -130,8 +126,8 @@ module.exports = function(app) {
         }
     });
 
-    // Update user status
-    app.patch('/api/users/:id', async (req, res) => {
+    // Update user status - Fix 2: requireAdmin added
+    app.patch('/api/users/:id', requireAdmin, async (req, res) => {
         try {
             const { id } = req.params;
             const { status } = req.body;
@@ -181,7 +177,7 @@ module.exports = function(app) {
                     email: admin.email,
                     role: admin.role
                 };
-    
+
                 res.json({
                     success: true,
                     message: 'Login successful',
@@ -208,10 +204,8 @@ module.exports = function(app) {
                      return res.status(401).json({ success: false, message: 'Invalid email or password' });
                  }
 
-                 //Add Session cookies
-                 req.session.userId = user._id
+                 req.session.userId = user._id;
 
-                 // Update login tracking
                  user.lastLogin = new Date();
                  user.loginCount = (user.loginCount || 0) + 1;
                  await user.save();

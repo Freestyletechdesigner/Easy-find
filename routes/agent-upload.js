@@ -2,7 +2,6 @@ const multer = require('multer');
 const {check, validationResult} = require('express-validator');
 const path = require('path');
 const fs = require('fs');
-const AgentUser = require('../model/AgentUser.js');
 const AgentPost = require('../model/AgentPost.js');
 
 const ROOT = path.join(__dirname, '..');
@@ -20,15 +19,16 @@ const storage = multer.diskStorage({
     }
 });
 
-const forbidden = ['.exe', '.bat', '.cmd'];
+// Fix 6: Replace forbidden list with an allowlist for images only
+const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 const upload = multer({
     storage,
     fileFilter: (req, file, cb) => {
 
         const ext = path.extname(file.originalname).toLowerCase();
 
-        if (forbidden.includes(ext)) {
-            return cb(new Error('File forbidden'));
+        if (!allowedExtensions.includes(ext)) {
+            return cb(new Error('Only image files are allowed (.jpg, .jpeg, .png, .gif, .webp)'));
         }
 
         cb(null, true)
@@ -211,14 +211,14 @@ const AGENT_POST = (app) => {
             const propertyId = req.params.id;
 
             const agentPost = await AgentPost.findById(propertyId);
-            const agentUser = await AgentUser.findById(agentId);
 
             if (!agentPost) {
                 return res.status(404).json({ success: false, message: 'Property not found' });
             }
 
-            if (!agentUser) {
-                return res.status(403).json({ success: false, message: 'Not authorised to delete this property' });
+            // Fix 13: Proper ownership check using agentId from post vs session
+            if (agentPost.agentId.toString() !== agentId.toString()) {
+                return res.status(403).json({ success: false, message: 'Not authorized to delete this property' });
             }
 
             // delete image files
@@ -235,13 +235,18 @@ const AGENT_POST = (app) => {
         }
     });
 
-    //total view for post
+    //total view for post - Fix 30: Use aggregation instead of loading all posts into memory
     app.get('/api/agent/views', requireAgent, async (req, res) => {
         const agentId = req.session.agent.id;
-        const agentPost = await AgentPost.find({ agentId })
-
-        const totalViews = agentPost.reduce((sum, p) => sum + (p.view || 0), 0);
-        res.json({ success: true, totalViews });
+        try {
+            const result = await AgentPost.aggregate([
+                { $match: { agentId: agentId.toString() } },
+                { $group: { _id: null, totalViews: { $sum: '$view' } } }
+            ]);
+            res.json({ success: true, totalViews: result[0]?.totalViews || 0 });
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Error fetching views' });
+        }
     });
 
     //find each property by id param
@@ -301,6 +306,14 @@ const AGENT_POST = (app) => {
         try {
             const id = req.params.id;
             const agentPost = await AgentPost.findById(id);
+
+            // Fix 12: Ownership check - ensure agent owns this post
+            if (!agentPost) {
+                return res.status(404).json({ success: false, message: 'Property not found' });
+            }
+            if (agentPost.agentId.toString() !== req.session.agent.id.toString()) {
+                return res.status(403).json({ success: false, message: 'Not authorized' });
+            }
 
             //make the changes 
             agentPost.title = title ;

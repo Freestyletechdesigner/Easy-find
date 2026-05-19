@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <title>API Test</title>
@@ -35,7 +35,7 @@
             result.innerHTML = '<p>Loading...</p>';
             
             try {
-                const response = await fetch('/api/messages');
+                const response = await fetch('/api/messages', { credentials: 'include' });
                 const data = await response.json();
                 
                 result.innerHTML = `
@@ -52,7 +52,7 @@
             result.innerHTML = '<p>Loading...</p>';
             
             try {
-                const response = await fetch('/api/views/stats');
+                const response = await fetch('/api/views/stats', { credentials: 'include' });
                 const data = await response.json();
                 
                 result.innerHTML = `
@@ -69,7 +69,7 @@
             result.innerHTML = '<p>Loading...</p>';
             
             try {
-                const response = await fetch('/api/users');
+                const response = await fetch('/api/users', { credentials: 'include' });
                 const data = await response.json();
                 
                 result.innerHTML = `
@@ -86,7 +86,7 @@
             result.innerHTML = '<p>Loading...</p>';
             
             try {
-                const response = await fetch('/api/bookings');
+                const response = await fetch('/api/bookings', { credentials: 'include' });
                 const data = await response.json();
                 
                 result.innerHTML = `

@@ -107,4 +107,8 @@ agentSchema.methods.comparePassword = async function(candidatePassword) {
 
 const AgentUser = mongoose.model('AgentUser', agentSchema);
 
+// Fix 29: Add indexes for query performance
+agentSchema.index({ stand: 1, status: 1 });
+// Note: email already has unique: true which creates an index
+
 module.exports = AgentUser

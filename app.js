@@ -1,15 +1,45 @@
 require('dotenv').config();
+
+// Fix 4: Startup check - exit if SESSION_SECRET is not set
+if (!process.env.SESSION_SECRET) {
+    console.error('FATAL: SESSION_SECRET environment variable is not set. Refusing to start.');
+    process.exit(1);
+}
+
 const express = require('express');
 const app = express();
+const helmet = require('helmet'); // Fix 17
+const cors = require('cors');     // Fix 18
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
-const mongoose = require('mongoose');
+
+// Only trust proxy in production — on localhost this breaks req.ip and rate limiting
+if (process.env.NODE_ENV === 'production') {
+    app.set('trust proxy', 1);
+}
+
+// Fix 17: Add helmet for security headers
+// Disable CSP in development to avoid blocking inline scripts
+app.use(helmet({
+    contentSecurityPolicy: process.env.NODE_ENV === 'production'
+}));
+
+// Fix 18: Configure CORS — allow same origin and any localhost port in development
+const allowedOrigins = process.env.NODE_ENV === 'production'
+    ? [process.env.APP_URL].filter(Boolean)
+    : true; // allow all origins in development
+
+app.use(cors({
+    origin: allowedOrigins,
+    credentials: true
+}));
 
 // API
 const connectDB = require('./db.js');
-connectDB()
+// Fix 26: Catch connectDB() errors
+connectDB().catch(err => { console.error('Failed to connect to DB:', err); process.exit(1); });
 const uploadnewP = require('./routes/upload-property');
 const signup = require('./routes/signup.js');
 const messageAPI = require('./routes/message.js');
@@ -67,12 +97,13 @@ app.use(express.urlencoded({
 app.use(cookieParser());
 
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'fsDGUHArou##$4de',
+    secret: process.env.SESSION_SECRET, // Fix 4: No hardcoded fallback
     resave: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
+        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
         maxAge: 1000 * 60 * 60 * 24 // 24 hours
     }
 }));
@@ -91,7 +122,7 @@ function requireAdmin(req, res, next) {
 // Get page views
 app.get('/api/views', requireAdmin, async (req, res) => {
     try {
-        const ip = req.ip || req.connection.remoteAddress;
+        const ip = req.ip || req.socket?.remoteAddress;
         let record = await PageViews.findOne();
 
         if (!record) {
@@ -197,9 +228,17 @@ app.use('/password-reset', express.static('password-reset'));
 const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'file-uploader', 'login'];
 adminPages.forEach(page => {
     const file = page === 'dashboard' ? 'index' : page;
-    app.get(`/admin/${page}`, (req, res) => {
-        res.sendFile(path.join(__dirname, 'admin', `${file}.html`));
-    });
+    if (page === 'login') {
+        // Login page is public
+        app.get(`/admin/${page}`, (req, res) => {
+            res.sendFile(path.join(__dirname, 'admin', `${file}.html`));
+        });
+    } else {
+        // Fix 15: All other admin pages require admin auth
+        app.get(`/admin/${page}`, requireAdmin, (req, res) => {
+            res.sendFile(path.join(__dirname, 'admin', `${file}.html`));
+        });
+    }
 });
 
 // ── Clean password-reset routes (no .html) ────────────
@@ -219,6 +258,12 @@ VIEW_POST(app);
 SEARCH_ENGINE(app);
 PAYMENT_FOR_BOOST(app);
 FEEDBACK(app);
+
+// Fix 25: Global error handler (must be before 404 handler)
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+});
 
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));

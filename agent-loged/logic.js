@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/agent/status');
             const data = await response.json();
             if (!data.isAgent) {
-                window.location.href = '/login-agent.html';
+                window.location.href = '/login-agent';
                 return false;
             }
             document.getElementById('agent-name').textContent = data.agent.name.length > 8 
@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
             loadProfilePicture();
             return true;
         } catch (error) {
-            window.location.href = '/login-agent.html';
+            window.location.href = '/login-agent';
             return false;
         }
     }

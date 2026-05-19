@@ -40,7 +40,15 @@ const upload = multer({
 });
 
 module.exports = function uploadnewP(app) {
-    app.post('/api/files-uploader', upload.array('files'), (req, res) => {
+    // Fix 7: requireAdmin middleware defined inside the module function
+    function requireAdmin(req, res, next) {
+        if (!req.session.admin) {
+            return res.status(403).json({ success: false, message: 'Admin authentication required' });
+        }
+        next();
+    }
+
+    app.post('/api/files-uploader', requireAdmin, upload.array('files'), (req, res) => {
         if (!req.files || req.files.length === 0) {
             return res.status(403).json({ error: 'No file uploaded' });
         }

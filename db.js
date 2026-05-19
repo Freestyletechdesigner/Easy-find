@@ -22,12 +22,18 @@ const connectDB = async () => {
             console.log('✅ MongoDB Atlas Connected');
             return;
         } catch (err) {
-            console.warn('Atlas connection failed:', err.message);
-            console.log('Falling back to local MongoDB...');
+            // Fix 14: Only fall back to local in development; otherwise exit
+            if (process.env.NODE_ENV === 'development') {
+                console.warn('Atlas connection failed:', err.message);
+                console.log('Falling back to local MongoDB (development only)...');
+            } else {
+                console.error('MongoDB Atlas connection failed:', err.message);
+                process.exit(1);
+            }
         }
     }
     
-    // Fallback to local MongoDB
+    // Fallback to local MongoDB (development only)
     try {
         console.log('Connecting to local MongoDB...');
         await mongoose.connect(localUri, {

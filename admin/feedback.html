@@ -344,7 +344,7 @@
         async function loadFeedback() {
             const grid = document.getElementById('feedbackGrid');
             try {
-                const res  = await fetch('/api/admin/feedback');
+                const res  = await fetch('/api/admin/feedback', { credentials: 'include' });
                 const data = await res.json();
 
                 if (!data.success || !data.feedbacks.length) {

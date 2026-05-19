@@ -106,7 +106,7 @@ const agentProfileUpload = (app) => {
             console.error('Error uploading profile picture:', error);
             res.status(500).json({
                 success: false,
-                message: error.message || 'Error uploading profile picture'
+                message: 'An error occurred'
             });
         }
     });

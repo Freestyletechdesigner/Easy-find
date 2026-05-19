@@ -3,9 +3,19 @@ const AgentUser = require('../model/AgentUser');
 
 function NIN_VERIFICATION(app) {
     
-    app.post('/complete-verification', async (req, res) => {
+    // Fix 5: requireAgent middleware to prevent IDOR
+    function requireAgent(req, res, next) {
+        if (!req.session.agent) {
+            return res.status(403).json({ success: false, message: 'Agent authentication required' });
+        }
+        next();
+    }
+
+    app.post('/complete-verification', requireAgent, async (req, res) => {
         try {
-            const { referenceId, userId } = req.body;
+            const { referenceId } = req.body;
+            // Fix 5: Use session agent id instead of body userId
+            const userId = req.session.agent.id;
     
             if (!referenceId || !userId) {
                 return res.status(400).json({ message: "Missing Reference ID or User ID" });

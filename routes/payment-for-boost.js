@@ -83,6 +83,11 @@ function PAYMENT_FOR_BOOST(app) {
 
             const { plan_type, agent_id, post_id } = txn.metadata;
 
+            // Fix 11: Validate agent_id matches session to prevent IDOR
+            if (agent_id !== req.session.agent.id.toString()) {
+                return res.status(403).json({ success: false, message: 'Unauthorized' });
+            }
+
             const durationDays = plan_type === 'profile' ? 30 : 3;
             const expiry = new Date();
             expiry.setDate(expiry.getDate() + durationDays);

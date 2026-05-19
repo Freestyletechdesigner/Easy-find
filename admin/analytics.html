@@ -539,7 +539,7 @@ https://templatemo.com/tm-608-daynight-admin
   // Check authentication first
   async function checkAuth() {
     try {
-      const response = await fetch('/api/admin/status');
+      const response = await fetch('/api/admin/status', { credentials: 'include' });
       const data = await response.json();
       
       if (!data.isAdmin) {
@@ -574,7 +574,7 @@ https://templatemo.com/tm-608-daynight-admin
       console.log('Loading view stats...');
       
       // Fetch view stats
-      const viewsResponse = await fetch('/api/views/stats');
+      const viewsResponse = await fetch('/api/views/stats', { credentials: 'include' });
       console.log('Views response status:', viewsResponse.status);
       const viewsData = await viewsResponse.json();
       console.log('Views data:', viewsData);
@@ -586,7 +586,7 @@ https://templatemo.com/tm-608-daynight-admin
       
       // Fetch user count
       console.log('Loading users...');
-      const usersResponse = await fetch('/api/users');
+      const usersResponse = await fetch('/api/users', { credentials: 'include' });
       console.log('Users response status:', usersResponse.status);
       const usersData = await usersResponse.json();
       console.log('Users data:', usersData);
@@ -597,7 +597,7 @@ https://templatemo.com/tm-608-daynight-admin
       
       // Fetch bookings count
       //console.log('Loading bookings...');
-      //const bookingsResponse = await fetch('/api/bookings');
+      //const bookingsResponse = await fetch('/api/bookings', { credentials: 'include' });
       //console.log('Bookings response status:', bookingsResponse.status);
       //const bookingsData = await bookingsResponse.json();
       //console.log('Bookings data:', bookingsData);
@@ -627,7 +627,7 @@ https://templatemo.com/tm-608-daynight-admin
   }
 
   function loadBookings() {
-    fetch('/api/bookings')
+    fetch('/api/bookings', { credentials: 'include' })
       .then(response => response.json())
       .then(data => {
         if (data.success && data.bookings) {
@@ -787,7 +787,7 @@ https://templatemo.com/tm-608-daynight-admin
 
   // Users Management Functions
   function loadUsers() {
-    fetch('/api/users')
+    fetch('/api/users', { credentials: 'include' })
       .then(response => response.json())
       .then(data => {
         if (data.success && data.users) {
@@ -894,6 +894,7 @@ https://templatemo.com/tm-608-daynight-admin
   function updateUserStatus(userId, newStatus) {
     fetch(`/api/users/${userId}`, {
       method: 'PATCH',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json'
       },
@@ -1141,7 +1142,7 @@ https://templatemo.com/tm-608-daynight-admin
   //Reload 
   const loadAgent = async() => {
      try {
-        const res = await fetch('/api/agents');
+        const res = await fetch('/api/agents', { credentials: 'include' });
         const data =  await res.json();
 
         if (data.success) {
@@ -1161,7 +1162,7 @@ https://templatemo.com/tm-608-daynight-admin
   const verifiedA = document.getElementById('verifiedA');
   async function loadVerifiedA() {
     try {
-      const res = await fetch('/api/get-verified-agent/admin');
+      const res = await fetch('/api/get-verified-agent/admin', { credentials: 'include' });
       const data = await res.json();
       if (data.success) {
         verifiedA.textContent = data.VerifiedAgent

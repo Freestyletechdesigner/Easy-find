@@ -4,13 +4,19 @@ const mongoose = require('mongoose');
 const ADMIN    = require('./model/ADMIN.js');
 
 async function createAdmin() {
+    // Fix 3: Use env vars instead of hardcoded credentials
+    const email    = process.env.ADMIN_EMAIL;
+    const password = process.env.ADMIN_PASSWORD;
+
+    if (!email || !password) {
+        console.error('Error: ADMIN_EMAIL and ADMIN_PASSWORD environment variables must be set.');
+        process.exit(1);
+    }
+
     try {
         // 1. connect to the database
         await mongoose.connect(process.env.MONGO_URI);
         console.log('DB connected');
-
-        const email    = 'admin@easyfind.com';
-        const password = 'Freeman419';
 
         // 2. check if admin already exists
         const existing = await ADMIN.findOne({ email });

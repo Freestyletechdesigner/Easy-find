@@ -72,4 +72,8 @@ const postSchema = new mongoose.Schema({
 
 const AgentPost = mongoose.model('AgentPost', postSchema);
 
+// Fix 28: Add indexes for query performance
+postSchema.index({ category: 1, type: 1 });
+postSchema.index({ boostPost: 1, boostPostExpiry: 1 });
+
 module.exports = AgentPost;

@@ -367,7 +367,7 @@
 
         async function loadAgents() {
             try {
-                const res = await fetch('/api/admin/agents');
+                const res = await fetch('/api/admin/agents', { credentials: 'include' });
                 const data = await res.json();
 
                 if (data.success) {
@@ -462,6 +462,7 @@
                 const res = await fetch(`/api/admin/agents/${id}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify({ stand, status })
                 });
 

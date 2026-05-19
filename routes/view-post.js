@@ -1,8 +1,18 @@
 const AgentPost = require('../model/AgentPost.js');
+const rateLimit = require('express-rate-limit');
+
+// Fix 21: Rate limit view counter to 10 req/min per IP
+const viewLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { success: false, message: 'Too many requests.' },
+    standardHeaders: true,
+    legacyHeaders: false
+});
 
 const VIEW_POST = (app) => {
 
-    app.post('/api/view/post/:id/view',async (req, res) => {
+    app.post('/api/view/post/:id/view', viewLimiter, async (req, res) => {
         const id = req.params.id
         try {
             //check if post exist

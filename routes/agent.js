@@ -5,34 +5,31 @@ const rateLimit = require('express-rate-limit');
 
 // Strict limiter for Login and OTP
 const authLimiter = rateLimit({
-    windowMs: 20 * 1000, 
-    max: 4, // Limit each IP to 4 requests per windowMs
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // 20 attempts per 15 min (generous for dev/testing)
     message: {
         success: false, 
-        message: 'Too many attempts. Please try again after 20 seconds.'
+        message: 'Too many attempts. Please try again later.'
     },
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'development' // skip in dev
 });
 
-// Strict limiter for Login and OTP
+// Strict limiter for password reset
 const resetLimiter = rateLimit({
-    windowMs: 24 * 60 * 60 * 1000, 
-    max: 1, // Limit each IP to 4 requests per windowMs
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5,
     message: {
         success: false, 
-        message: 'Too many attempts. Please try again after 24 hours.'
+        message: 'Too many attempts. Please try again after an hour.'
     },
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'development'
 });
 
-// General limiter for public profiles/status
-const apiLimiter = rateLimit({
-    windowMs: 60 * 1000,
-    max: 60, // 60 requests per minute
-    message: { success: false, message: 'Too many requests.' }
-});
+// General limiter for public profiles/status - Fix 31: removed unused apiLimiter
 
 const upload = multer();
 
@@ -53,8 +50,8 @@ const agent = (app) => {
         next();
     }
 
-    // Signup
-    app.post('/api/agent/signup', upload.none(), [
+    // Signup - Fix 9: Apply authLimiter
+    app.post('/api/agent/signup', authLimiter, upload.none(), [
         check('firstName').trim().isLength({ min: 2 }).withMessage('First name must be at least 2 characters'),
         check('lastName').trim().isLength({ min: 2 }).withMessage('Last name must be at least 2 characters'),
         check('email').isEmail().normalizeEmail().withMessage('Invalid email'),
@@ -85,7 +82,7 @@ const agent = (app) => {
                 stand: 'Not verified',
                 bio: bio || '',
                 registrationDate: new Date(),
-                ipAddress: req.ip || req.connection.remoteAddress
+                ipAddress: req.ip || req.socket?.remoteAddress
             });
 
             await newAgent.save();
@@ -112,7 +109,7 @@ const agent = (app) => {
     });
 
     // Login
-    app.post('/api/agent/login', authLimiter, upload.none(), [
+    app.post('/api/agent/login', authLimiter, [
         check('email').isEmail().normalizeEmail().withMessage('Invalid email'),
         check('password').notEmpty().withMessage('Password is required')
     ], async (req, res) => {
@@ -221,32 +218,6 @@ const agent = (app) => {
         }
     });
 
-    // Update agent status
-    app.patch('/api/users/:id', async (req, res) => {
-        try {
-            const { id } = req.params;
-            const { status } = req.body;
-
-            if (!['active', 'inactive', 'suspended'].includes(status)) {
-                return res.status(400).json({ success: false, message: 'Invalid status. Must be: active, inactive, or suspended' });
-            }
-
-            const agent = await AgentUser.findByIdAndUpdate(
-                id,
-                { status, updatedAt: new Date() },
-                { new: true }
-            );
-
-            if (!agent) return res.status(404).json({ success: false, message: 'User not found' });
-
-            res.json({ success: true, message: 'User status updated successfully' });
-
-        } catch (error) {
-            console.error('Error updating user hi:', error);
-            res.status(500).json({ success: false, message: 'Error updating user' });
-        }
-    });
-
     // Update Bio
     app.post('/api/update/bio', requireAgent,[
         check('bio')
@@ -351,8 +322,8 @@ const agent = (app) => {
         }
     });
 
-    // Verify OTP 
-    app.post('/api/agent/verify-otp', (req, res) => {
+    // Verify OTP - Fix 8: Apply authLimiter
+    app.post('/api/agent/verify-otp', authLimiter, (req, res) => {
         const otp = req.body.otp;
         const stored = req.session.otp;
 
@@ -474,6 +445,9 @@ const agent = (app) => {
         const { name } = req.body;
         if (!name || name.trim().length < 2)
             return res.status(400).json({ success: false, message: 'Name must be at least 2 characters' });
+        // Fix 24: Add max length validation
+        if (name.trim().length > 50)
+            return res.status(400).json({ success: false, message: 'Name too long' });
         try {
             await AgentUser.findByIdAndUpdate(req.session.agent.id, { name: name.trim() });
             req.session.agent.name = name.trim();
@@ -530,6 +504,12 @@ const agent = (app) => {
                     success: false,
                     message: 'Invalid status. Must be: active, inactive, or suspended'
                 });
+            }
+
+            // Fix 23: Whitelist validation for stand field
+            const validStands = ['Not verified', 'Verified Agent'];
+            if (stand !== undefined && !validStands.includes(stand)) {
+                return res.status(400).json({ success: false, message: 'Invalid stand value' });
             }
 
             const updateData = {};

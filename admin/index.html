@@ -459,8 +459,8 @@
         async function loadDashboardStats() {
             try {
                 const [usersRes, agentsRes] = await Promise.all([
-                    fetch('/api/users'),
-                    fetch('/api/admin/agents')
+                    fetch('/api/users', { credentials: 'include' }),
+                    fetch('/api/admin/agents', { credentials: 'include' })
                 ]);
                 const usersData  = await usersRes.json();
                 const agentsData = await agentsRes.json();
@@ -511,9 +511,9 @@
         async function loadCharts() {
             try {
                 const [viewsRes, feedbackRes, agentsRes] = await Promise.all([
-                    fetch('/api/views/stats'),
-                    fetch('/api/feedback'),
-                    fetch('/api/admin/agents')
+                    fetch('/api/views/stats', { credentials: 'include' }),
+                    fetch('/api/feedback', { credentials: 'include' }),
+                    fetch('/api/admin/agents', { credentials: 'include' })
                 ]);
                 const views    = await viewsRes.json();
                 const feedback = await feedbackRes.json();
@@ -554,7 +554,7 @@
                 if (agents.success) {
                     const chart  = document.getElementById('userAgentChart');
                     const yAxis  = document.getElementById('userAgentYAxis');
-                    const usersRes2 = await fetch('/api/users');
+                    const usersRes2 = await fetch('/api/users', { credentials: 'include' });
                     const usersData = await usersRes2.json();
                     const totalUsers   = usersData.success ? usersData.users.length : 0;
                     const totalAgents  = agents.agents.length;
