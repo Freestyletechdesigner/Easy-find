@@ -294,8 +294,6 @@
         propertyBtn.style.backgroundColor = '#fff';
         hotelSearch.style.display = 'flex';
         propertySearch.style.display = 'none';
-        property.style.display = 'none';
-        searchSection.style.display = 'none'
     });
 
 

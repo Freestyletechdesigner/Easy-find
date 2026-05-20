@@ -247,6 +247,9 @@ app.get('/password-reset/verify-reset',    (req, res) => res.sendFile(path.join(
 app.get('/password-reset/verify-otp',      (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'verify-otp.html')));
 app.get('/password-reset/reset-password',  (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'reset-password.html')));
 
+// Terms 
+app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'terms.html')));
+
 uploadnewP(app);
 signup(app);
 messageAPI(app);

@@ -539,7 +539,7 @@ https://templatemo.com/tm-608-daynight-admin
   // Check authentication first
   async function checkAuth() {
     try {
-      const response = await fetch('/api/admin/status', { credentials: 'include' });
+      const response = await fetch('/api/admin/status');
       const data = await response.json();
       
       if (!data.isAdmin) {
