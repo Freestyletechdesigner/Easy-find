@@ -699,6 +699,21 @@
 
 <script src="https://widget.dojah.io/widget.js"></script>
 <script>
+
+    // ── Auth ──────────────────────────────────────────────
+    async function checkAuth() {
+        try {
+            const response = await fetch('/api/agent/profile', { credentials: 'include' });
+            const data = await response.json();
+            if (!data.agent) {
+                window.location.href = '/login-agent';
+            }
+        } catch (error) {
+            window.location.href = '/login-agent';
+        }
+    }
+
+    checkAuth()
     // Agent type toggle
     const labelInd  = document.getElementById('label-ind');
     const labelCorp = document.getElementById('label-corp');

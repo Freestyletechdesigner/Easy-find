@@ -161,20 +161,6 @@ const agent = (app) => {
         }
     });
 
-    // Status
-    app.get('/api/agent/status', (req, res) => {
-        if (req.session.agent) {
-            res.json({ success: true, isAgent: true, agent: {
-                name: req.session.agent.name,
-                email: req.session.agent.email,
-                role: req.session.agent.role,
-                profilePicture: req.session.agent.profilePicture || null
-            }});
-        } else {
-            res.json({ success: true, isAgent: false });
-        }
-    });
-
     // Public profile by ID
     app.get('/api/agent/public/:id', async (req, res) => {
         try {

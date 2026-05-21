@@ -1,3 +1,18 @@
+    // ── Auth ──────────────────────────────────────────────
+    async function checkAuth() {
+        try {
+            const response = await fetch('/api/agent/profile', { credentials: 'include' });
+            const data = await response.json();
+            if (!data.agent) {
+                window.location.href = '/login-agent';
+            }
+        } catch (error) {
+            window.location.href = '/login-agent';
+        }
+    }
+
+    checkAuth()
+
     // on page load, check if Paystack redirected back with a reference
     const urlParams = new URLSearchParams(window.location.search);
     const reference = urlParams.get('reference');

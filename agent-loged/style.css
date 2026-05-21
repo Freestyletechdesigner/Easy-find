@@ -235,6 +235,16 @@ header {
     display: none;
 }
 
+.verify {
+    position: absolute;
+    top: 50%;
+    left: 20%;
+    font-size: 18px;
+    color: #00b3b9c4;
+    -webkit-text-stroke: 0.7px #ffffff;
+    display: none;
+}
+
 /* ===== HERO SECTION ===== */
 .hero {
     position: relative;

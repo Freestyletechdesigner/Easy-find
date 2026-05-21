@@ -3,9 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Auth ──────────────────────────────────────────────
     async function checkAuth() {
         try {
-            const response = await fetch('/api/agent/status');
+            const response = await fetch('/api/agent/profile', { credentials: 'include' });
             const data = await response.json();
-            if (!data.isAgent) {
+            const verify = document.querySelector('.verify')
+            if (!data.agent) {
                 window.location.href = '/login-agent';
                 return false;
             }
@@ -13,6 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
             ? data.agent.name.slice(0, 8) + '...' 
             : data.agent.name;
             loadProfilePicture();
+
+            if (data.agent.stand && data.agent.stand.toLowerCase() === 'verified agent') {
+                document.querySelectorAll('[href="/agent-verification"]').forEach(el => {
+                    el.style.display = 'none';
+                });
+                verify.style.display = 'flex'
+            } else {
+                verify.style.display = 'none'
+            }
             return true;
         } catch (error) {
             window.location.href = '/login-agent';
@@ -24,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadProfilePicture() {
         try {
-            const response = await fetch('/api/agent/profile/picture');
+            const response = await fetch('/api/agent/profile/picture', { credentials: 'include' });
             const data = await response.json();
             if (data.success && data.profilePicture) {
                 document.getElementById('profile-picture').src = data.profilePicture;

@@ -17,12 +17,13 @@
             <img src="profile.png" alt="Profile" id="profile-picture" onclick="window.location.href='/agent-loged/upload-profilepicture'" title="Click to change profile picture">
             <p id="agent-name">Loading...</p>
             <span class="upload-pic">Upload profile picture!</span>
+            <span class="verify"><i class="fa-solid fa-circle-check"></i></span>
         </div>
         
          <nav class="links">
              <a href="/">Back to Home</a>
              <a href="/agent-loged/setting">Setting</a>
-             <a href="/agent-verification">Verification</a>
+             <a href="/agent-verification" id="verification-link">Verification</a>
              <a href="/boost-account"><i class="fas fa-rocket"></i> Boost</a>
             <button class="logout-btn" onclick="logout()" title="Logout">
                 <i class="fas fa-sign-out-alt"></i> Logout
@@ -35,7 +36,7 @@
                 </div>
                 <a href="/"><i class="fa-solid fa-house"></i> Back to Home</a>
                 <a href="/agent-loged/setting"><i class="fa-solid fa-gear"></i> Setting</a>
-                <a href="/agent-verification"><i class="fa-solid fa-user-tie"></i> Verification</a>
+                <a href="/agent-verification" id="verification-link"><i class="fa-solid fa-user-tie"></i> Verification</a>
                 <a href="/boost-account"><i class="fas fa-rocket"></i> Boost</a>
                 <button class="logout-btn" onclick="logout()" title="Logout">
                     <i class="fas fa-sign-out-alt"></i> Logout
