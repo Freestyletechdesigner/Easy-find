@@ -9,6 +9,12 @@
         window.location.href = '/';
         return false;
       }
+
+      if (!data.success) {
+        console.log('Not authenticated, redirecting to Home...');
+        window.location.href = '/';
+        return false;
+      }
       
       console.log('Authenticated as:', data.user);
       return true;

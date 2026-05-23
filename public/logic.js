@@ -1516,6 +1516,10 @@ initSearch();
         window.open(waURL, '_blank')
     });
 
+    
+    // Global tracking state for notifications
+    let toastQuery = [];
+    let isToastActive = false;
     // Real-time Property Upload Notifications
     const showPropertyToast = (p) => {
         let container = document.getElementById('realtime-toast-container');
@@ -1554,7 +1558,11 @@ initSearch();
 
         const closeToast = () => {
             toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 500);
+            setTimeout(() => {
+                toast.remove();
+                isToastActive = false;
+                processNextToast();
+            }, 500);
         };
         
         toast.querySelector('.toast-close').addEventListener('click', (e) => {
@@ -1565,6 +1573,15 @@ initSearch();
         container.appendChild(toast);
         setTimeout(() => toast.classList.add('show'), 50);
         setTimeout(closeToast, 6000);
+    };
+
+    // Check if there are more notifications waiting in line
+    const processNextToast = () => {
+        if (toastQuery.length > 0 && !isToastActive) {
+            isToastActive = true;
+            const next = toastQuery.shift();
+            showPropertyToast(next);
+        }
     };
 
     const initWebSocket = () => {
@@ -1582,8 +1599,9 @@ initSearch();
                 if (data.type === 'NEW_PROPERTY') {
                     const p = data.property;
                     
-                    // 1. Show premium non-intrusive notification toast
-                    showPropertyToast(p);
+                    // 1. Show premium notification toast
+                    toastQuery.push(p)
+                    processNextToast()
                     
                     // 2. Prepend the card dynamically to the main listings container
                     const cardsContainer = document.getElementById('cardsContainer');

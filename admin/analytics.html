@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -536,32 +536,7 @@ https://templatemo.com/tm-608-daynight-admin
     <script src="templatemo-daynight-script.js"></script>
 <script>
 
-  // Check authentication first
-  async function checkAuth() {
-    try {
-      const response = await fetch('/api/admin/status');
-      const data = await response.json();
-      
-      if (!data.isAdmin) {
-        console.log('Not authenticated, redirecting to Home...');
-        window.location.href = '/';
-        return false;
-      }
-      
-      console.log('Authenticated as:', data.user);
-      return true;
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      window.location.href = '/';
-      return false;
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", async () => {
-    // Check authentication first
-    const isAuthenticated = await checkAuth();
-    if (!isAuthenticated) return;
-    
+  document.addEventListener("DOMContentLoaded", async () => {    
     // Load all statistics
     loadViewStats();
     loadBookings();
@@ -1141,6 +1116,7 @@ https://templatemo.com/tm-608-daynight-admin
 
   //Reload 
   const loadAgent = async() => {
+     const hlsResult = document.getElementById('hls-result') || document.getElementById('hlsResult') || { set textContent(val) { console.error(val); } };
      try {
         const res = await fetch('/api/agents', { credentials: 'include' });
         const data =  await res.json();
@@ -1149,11 +1125,11 @@ https://templatemo.com/tm-608-daynight-admin
           agentLogs.textContent = data.agents.length;
           document.getElementById('unique-visitors').textContent = data.agents.length;
         } else if (data.success === false) {
-        hlsResult.textContent = data.error
-      } 
+          hlsResult.textContent = data.error;
+        } 
      } catch(err) {
       console.error(err);
-      hlsResult.textContent = 'Network Error'
+      hlsResult.textContent = 'Network Error';
     }
   }
   loadAgent()

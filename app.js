@@ -10,8 +10,9 @@ const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
 const app = express();
-const helmet = require('helmet'); // Fix 17
-const cors = require('cors');     // Fix 18
+const helmet = require('helmet');
+const cors = require('cors');
+const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const path = require('path');
@@ -43,6 +44,9 @@ app.set('broadcastProperty', (property) => {
 app.use(helmet({
     contentSecurityPolicy: process.env.NODE_ENV === 'production'
 }));
+
+// Compress all responses — reduces payload size by 60-80%
+app.use(compression());
 
 const allowedOrigins = process.env.NODE_ENV === 'production'
     ? [process.env.APP_URL].filter(Boolean)
@@ -126,10 +130,17 @@ app.use(session({
 
 function requireAdmin(req, res, next) {
     if (!req.session.admin) {
-        return res.status(403).json({
-            success: false,
-            message: 'Admin authentication required'
-        });
+        // If the request expects JSON or is an API request, return JSON response
+        if (req.originalUrl.startsWith('/api/') || 
+            req.xhr || 
+            (req.headers.accept && req.headers.accept.includes('application/json'))) {
+            return res.status(403).json({
+                success: false,
+                message: 'Admin authentication required'
+            });
+        }
+        // Otherwise, for browser navigation requests to admin pages, redirect to the login page
+        return res.redirect('/admin/login');
     }
     next();
 }
