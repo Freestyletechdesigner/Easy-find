@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (response.ok && data.success) {
                 alertBox.success('Success', 'Property posted successfully!', () => {
                     closeModal();
-                    loadProperties();
+                    loadProperties(isNewLoad = true);
                 });
                document.getElementById('propertiesEmpty').style.display = 'none';
             } else {
@@ -476,7 +476,7 @@ function propertyCard(p) {
 
     // SCALING OPTIMIZATION:
     return `
-        <div class="property-card" id="card-${p._id}">
+        <div class="property-card" id="card-${p._id}" data-property="${encodeURIComponent(JSON.stringify(p))}">
             <div class="card-image">
                 <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
                 <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
@@ -773,7 +773,7 @@ function propertyCard(p) {
             if (res.ok && data.success) {
                 alertBox.success('Updated', 'Property updated successfully!', () => {
                     closeEditModal();
-                    loadProperties();
+                    loadProperties(isNewLoad = true);
                 });
             } else {
                 alertBox.error('Failed', data.message || 'Failed to update property');

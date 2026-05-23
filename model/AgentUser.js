@@ -105,10 +105,11 @@ agentSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// Indexes — before model creation
+agentSchema.index({ stand: 1, status: 1 }); // verified agents public listing
+agentSchema.index({ status: 1 });            // active agent filter in property feed
+// email already indexed via unique: true
+
 const AgentUser = mongoose.model('AgentUser', agentSchema);
 
-// Fix 29: Add indexes for query performance
-agentSchema.index({ stand: 1, status: 1 });
-// Note: email already has unique: true which creates an index
-
-module.exports = AgentUser
+module.exports = AgentUser;

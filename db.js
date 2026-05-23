@@ -12,12 +12,13 @@ const connectDB = async () => {
         try {
             await mongoose.connect(atlasUri, {
                 tlsAllowInvalidCertificates: false,
-                serverSelectionTimeoutMS: 10000, // 10 seconds
+                serverSelectionTimeoutMS: 10000,
                 socketTimeoutMS: 45000,
                 retryWrites: true,
                 retryReads: true,
-                maxPoolSize: 10,
-                minPoolSize: 2
+                maxPoolSize: 50,   // handle more concurrent requests
+                minPoolSize: 5,    // keep connections warm
+                waitQueueTimeoutMS: 10000 // fail fast if pool is exhausted
             });
             console.log('✅ MongoDB Atlas Connected');
             return;

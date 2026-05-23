@@ -70,10 +70,11 @@ const postSchema = new mongoose.Schema({
     }
 });
 
-const AgentPost = mongoose.model('AgentPost', postSchema);
+// Indexes — defined before model creation so Mongoose applies them on sync
+postSchema.index({ agentId: 1, date: -1 });          // agent's own listings sorted by newest
+postSchema.index({ category: 1, type: 1 });           // public property feed filters
+postSchema.index({ boostPost: 1, boostPostExpiry: 1 }); // boost priority sort
 
-// Fix 28: Add indexes for query performance
-postSchema.index({ category: 1, type: 1 });
-postSchema.index({ boostPost: 1, boostPostExpiry: 1 });
+const AgentPost = mongoose.model('AgentPost', postSchema);
 
 module.exports = AgentPost;

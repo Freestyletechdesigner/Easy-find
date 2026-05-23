@@ -1,4 +1,4 @@
-    //load
+﻿    //load
     const body = document.getElementById('body');
     const load = document.querySelector('.load');
     
@@ -1515,3 +1515,106 @@ initSearch();
         const waURL = 'https://wa.me/2347042648065?text=Hello Easy Find'
         window.open(waURL, '_blank')
     });
+
+    // Real-time Property Upload Notifications
+    const showPropertyToast = (p) => {
+        let container = document.getElementById('realtime-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'realtime-toast-container';
+            document.body.appendChild(container);
+            
+            // styles moved to public/style.css
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'property-toast';
+        
+        const imgSrc = p.imageNames && p.imageNames.length
+            ? `/agent-loged/upload-property/${p.imageNames[0]}`
+            : 'profile.png';
+            
+        toast.innerHTML = `
+            <img class="toast-img" src="${imgSrc}" alt="${p.type || 'Property'}">
+            <div class="toast-body">
+                <div class="toast-badge">New Listing Posted!</div>
+                <h4 class="toast-title">${p.title || 'New Property'}</h4>
+                <p class="toast-loc"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</p>
+                <p class="toast-price">₦${Number(p.price).toLocaleString()}</p>
+            </div>
+            <button class="toast-close">&times;</button>
+            <div class="toast-progress"></div>
+        `;
+
+        toast.addEventListener('click', (e) => {
+            if (!e.target.classList.contains('toast-close')) {
+                window.location.href = `/property?id=${p._id}`;
+            }
+        });
+
+        const closeToast = () => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 500);
+        };
+        
+        toast.querySelector('.toast-close').addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeToast();
+        });
+
+        container.appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 50);
+        setTimeout(closeToast, 6000);
+    };
+
+    const initWebSocket = () => {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const socketUrl = `${wsProtocol}${window.location.host}`;
+        let socket = new WebSocket(socketUrl);
+
+        socket.addEventListener('open', () => {
+            console.log('Real-time notification socket connected');
+        });
+
+        socket.addEventListener('message', (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'NEW_PROPERTY') {
+                    const p = data.property;
+                    
+                    // 1. Show premium non-intrusive notification toast
+                    showPropertyToast(p);
+                    
+                    // 2. Prepend the card dynamically to the main listings container
+                    const cardsContainer = document.getElementById('cardsContainer');
+                    if (cardsContainer && typeof propertyCard === 'function') {
+                        const temp = document.createElement('div');
+                        temp.innerHTML = propertyCard(p);
+                        const newCard = temp.firstElementChild;
+                        
+                        // Add transition classes for high-end feel
+                        newCard.classList.add('action'); 
+                        
+                        // Prepend
+                        cardsContainer.insertBefore(newCard, cardsContainer.firstChild);
+                        
+                        // Keep cache pool synced so pagination doesn't break
+                        if (typeof allPosts !== 'undefined' && Array.isArray(allPosts)) {
+                            allPosts.unshift(p);
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error('Error handling WebSocket message:', err);
+            }
+        });
+
+        socket.addEventListener('close', () => {
+            console.log('WebSocket disconnected. Reconnecting in 5 seconds...');
+            setTimeout(() => {
+                initWebSocket();
+            }, 5000);
+        });
+    };
+
+    initWebSocket();

@@ -96,11 +96,17 @@ const AGENT_POST = (app) => {
             }); 
             //save data
             await newPost.save()
+
+            // Broadcast the new property upload via WebSockets
+            const broadcastProperty = req.app.get('broadcastProperty');
+            if (broadcastProperty) {
+                broadcastProperty(newPost);
+            }
     
             //send a res to user
             res.json({
                 success: true,
-                postID: newPost._id
+                postID: newPost
             })
         } catch (error) {
             console.error(error);

@@ -7,6 +7,8 @@ if (!process.env.SESSION_SECRET) {
 }
 
 const express = require('express');
+const http = require('http');
+const WebSocket = require('ws');
 const app = express();
 const helmet = require('helmet'); // Fix 17
 const cors = require('cors');     // Fix 18
@@ -20,26 +22,40 @@ if (process.env.NODE_ENV === 'production') {
     app.set('trust proxy', 1);
 }
 
-// Fix 17: Add helmet for security headers
-// Disable CSP in development to avoid blocking inline scripts
+const server = http.createServer(app);
+
+// Initialize WebSocket server
+const wss = new WebSocket.Server({ server });
+
+// Set broadcast helper on Express app instance so that route handlers can access it
+app.set('broadcastProperty', (property) => {
+    wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+                type: 'NEW_PROPERTY',
+                property
+            }));
+        }
+    });
+});
+
+
 app.use(helmet({
     contentSecurityPolicy: process.env.NODE_ENV === 'production'
 }));
 
-// Fix 18: Configure CORS — allow same origin and any localhost port in development
 const allowedOrigins = process.env.NODE_ENV === 'production'
     ? [process.env.APP_URL].filter(Boolean)
-    : true; // allow all origins in development
+    : true;
 
 app.use(cors({
     origin: allowedOrigins,
     credentials: true
 }));
 
-// API
 const connectDB = require('./db.js');
-// Fix 26: Catch connectDB() errors
 connectDB().catch(err => { console.error('Failed to connect to DB:', err); process.exit(1); });
+// API END POINT
 const uploadnewP = require('./routes/upload-property');
 const signup = require('./routes/signup.js');
 const messageAPI = require('./routes/message.js');
@@ -97,18 +113,17 @@ app.use(express.urlencoded({
 app.use(cookieParser());
 
 app.use(session({
-    secret: process.env.SESSION_SECRET, // Fix 4: No hardcoded fallback
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-        maxAge: 1000 * 60 * 60 * 24 // 24 hours
+        maxAge: 1000 * 60 * 60 * 24 * 30// a month
     }
 }));
 
-// Middleware to check if user is admin
 function requireAdmin(req, res, next) {
     if (!req.session.admin) {
         return res.status(403).json({
@@ -119,41 +134,33 @@ function requireAdmin(req, res, next) {
     next();
 }
 
-// Get page views
+// Get page views — uses $inc for atomic concurrent-safe updates
 app.get('/api/views', requireAdmin, async (req, res) => {
     try {
-        const ip = req.ip || req.socket?.remoteAddress;
-        let record = await PageViews.findOne();
-
-        if (!record) {
-            record = await PageViews.create({ ip: [], count: 0, daily: [] });
-        }
-
+        const ip    = req.ip || req.socket?.remoteAddress;
         const today = new Date().toISOString().slice(0, 10);
-        const dayEntry = record.daily.find(d => d.date === today);
 
-        if (!record.ip.includes(ip)) {
-            record.ip.push(ip);
-            record.count = (record.count || 0) + 1;
-            record.lastUpdated = new Date();
-        }
+        await PageViews.updateOne(
+            { date: today },
+            {
+                $inc: { count: 1 },
+                $addToSet: { ips: ip }
+            },
+            { upsert: true }
+        );
 
-        // increment daily count on every page load
-        if (dayEntry) {
-            dayEntry.count++;
-        } else {
-            record.daily.push({ date: today, count: 1 });
-        }
-
-        // keep only last 14 days
-        if (record.daily.length > 14) record.daily = record.daily.slice(-14);
-
-        await record.save();
+        const record = await PageViews.findOneAndUpdate(
+            { date: today },
+            [
+                {$set: { uniqueVisitors: { $size: "$ips" } }}
+            ],
+            { new: true }
+        )
 
         res.json({
             success: true,
             views: record.count,
-            uniqueVisitors: record.ip.length
+            uniqueVisitors: record.ips.length
         });
     } catch (err) {
         console.error('Error tracking views:', err);
@@ -161,40 +168,47 @@ app.get('/api/views', requireAdmin, async (req, res) => {
     }
 });
 
-// Get views statistics (for analytics dashboard)
+// Get views statistics for analytics dashboard
 app.get('/api/views/stats', requireAdmin, async (req, res) => {
     try {
-        let record = await PageViews.findOne();
-        if (!record) record = { count: 0, ip: [], lastUpdated: new Date(), daily: [] };
+        // fetch last 14 days of records in one query
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - 14);
+        const cutoffStr = cutoff.toISOString().slice(0, 10);
 
-        // build last 7 days with labels
+        const records = await PageViews.find({ date: { $gte: cutoffStr } }).lean();
+        const byDate  = {};
+        records.forEach(r => { byDate[r.date] = r; });
+
+        // build this week (last 7 days)
         const days = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
             const key   = d.toISOString().slice(0, 10);
             const label = d.toLocaleDateString('en-GB', { weekday: 'short' });
-            const entry = record.daily.find(x => x.date === key);
-            days.push({ label, count: entry ? entry.count : 0 });
+            days.push({ label, count: byDate[key]?.count || 0 });
         }
 
-        // previous 7 days for comparison
+        // previous week (days 8-14)
         const prevDays = [];
         for (let i = 13; i >= 7; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const key   = d.toISOString().slice(0, 10);
-            const entry = record.daily.find(x => x.date === key);
-            prevDays.push(entry ? entry.count : 0);
+            const key = d.toISOString().slice(0, 10);
+            prevDays.push(byDate[key]?.count || 0);
         }
+
+        const totalViews     = records.reduce((s, r) => s + r.count, 0);
+        const uniqueVisitors = new Set(records.flatMap(r => r.ips)).size;
 
         res.json({
             success: true,
-            totalViews:     record.count,
-            uniqueVisitors: record.ip.length,
-            lastUpdated:    record.lastUpdated,
-            daily:          days,
-            previousDaily:  prevDays
+            totalViews,
+            uniqueVisitors,
+            lastUpdated: new Date(),
+            daily:        days,
+            previousDaily: prevDays
         });
     } catch (err) {
         console.error('Error getting view stats:', err);
@@ -272,4 +286,4 @@ app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));
 });
 
-app.listen(process.env.PORT || 9000, '0.0.0.0', () => console.log('http://localhost:',process.env.PORT||9000))
+server.listen(process.env.PORT || 9000, '0.0.0.0', () => console.log('http://localhost:',process.env.PORT||9000))

@@ -1,15 +1,26 @@
 const mongoose = require('mongoose');
 
 const viewsSchema = new mongoose.Schema({
-    ip: { type: [String], default: [] },
-    count: { type: Number, default: 0 },
-    lastUpdated: { type: Date, default: Date.now },
-    // daily breakdown: [{ date: 'YYYY-MM-DD', count: N }]
-    daily: [{
-        date:  { type: String },  // 'YYYY-MM-DD'
-        count: { type: Number, default: 0 }
-    }]
+    date: {
+        type: String, 
+        required: true, 
+        unique: true 
+    },
+    count: { 
+        type: Number, 
+        default: 0 
+    },
+    uniqueVisitors: { 
+        type: Number, 
+        default: 0 
+    },
+    ips: { 
+        type: [String], 
+        default: [] 
+    }
 });
+
+viewsSchema.index({ date: 1 });
 
 const PageViews = mongoose.model('PageViews', viewsSchema);
 module.exports = PageViews;
