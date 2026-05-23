@@ -71,6 +71,7 @@ const VIEW_POST = require('./routes/view-post.js');
 const PAYMENT_FOR_BOOST = require('./routes/payment-for-boost.js');
 const FEEDBACK = require('./routes/feedback.js');
 const SEARCH_ENGINE = require('./routes/agent-search-engine.js');
+const PROPERTY_REPORT = require('./routes/property-report.js');
 
 // Database schema
 const PageViews = require('./model/PageViews.js');
@@ -250,7 +251,7 @@ app.use('/boost-account', express.static('boost-account'));
 app.use('/password-reset', express.static('password-reset'));
 
 // ── Clean admin routes (no .html) ─────────────────────
-const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'file-uploader', 'login'];
+const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'file-uploader', 'login', 'reports'];
 adminPages.forEach(page => {
     const file = page === 'dashboard' ? 'index' : page;
     if (page === 'login') {
@@ -286,6 +287,7 @@ VIEW_POST(app);
 SEARCH_ENGINE(app);
 PAYMENT_FOR_BOOST(app);
 FEEDBACK(app);
+PROPERTY_REPORT(app);
 
 // Fix 25: Global error handler (must be before 404 handler)
 app.use((err, req, res, next) => {

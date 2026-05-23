@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feedback Management - Admin</title>
+    <title>Property Reports - Admin</title>
     <script>
         if (localStorage.getItem('daynight-theme') === 'carbon') {
             document.documentElement.classList.add('carbon');
@@ -15,18 +15,18 @@
     <style>
         .feedback-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
             margin-top: 1.5rem;
         }
         .feedback-card {
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: 12px;
-            padding: 1.2rem;
+            padding: 1.5rem;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             transition: box-shadow 0.2s;
         }
         .feedback-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
@@ -34,14 +34,14 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
         }
         .feedback-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
         .feedback-date { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
-        .feedback-stars { color: #f59e0b; font-size: 0.9rem; letter-spacing: 1px; }
         .feedback-msg { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; flex: 1; }
         .btn-delete-fb {
-            align-self: flex-end;
-            padding: 6px 14px;
+            padding: 8px 16px;
             background: #fee2e2;
             color: #dc2626;
             border: 1px solid #fca5a5;
@@ -63,6 +63,32 @@
             grid-column: 1 / -1;
         }
         .feedback-empty i { font-size: 2.5rem; margin-bottom: 12px; display: block; opacity: 0.4; }
+        
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-yellow { background: #fef3c7; color: #d97706; }
+        .badge-red { background: #fee2e2; color: #dc2626; }
+        
+        .btn-view-prop {
+            padding: 6px 12px;
+            background: #e0faf9;
+            color: #0d7068;
+            border: 1px solid #9eebe6;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-view-prop:hover { background: #0d7068; color: #fff; }
     </style>
 </head>
 <body>
@@ -127,13 +153,13 @@
                 </svg>
                 Agents
             </a>
-            <a href="/admin/feedback" class="active">
+            <a href="/admin/feedback">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
                 Feedback
             </a>
-            <a href="/admin/reports">
+            <a href="/admin/reports" class="active">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
                     <line x1="4" y1="22" x2="4" y2="15"/>
@@ -244,7 +270,7 @@
                             </a>
                         </div>
                         <div class="nav-item">
-                            <a href="/admin/feedback" class="nav-link active">
+                            <a href="/admin/feedback" class="nav-link">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                                 </svg>
@@ -252,7 +278,7 @@
                             </a>
                         </div>
                         <div class="nav-item">
-                            <a href="/admin/reports" class="nav-link">
+                            <a href="/admin/reports" class="nav-link active">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
                                     <line x1="4" y1="22" x2="4" y2="15"/>
@@ -316,35 +342,35 @@
 
         <main class="main-content">
             <div class="page-header">
-                <h1 class="greeting">Feedback Management</h1>
-                <p class="greeting-sub">Review and moderate user feedback.</p>
+                <h1 class="greeting">Property Reports</h1>
+                <p class="greeting-sub">Cross-check flagged listings and protect user safety.</p>
             </div>
 
             <!-- Stats -->
             <div class="stats-grid">
                 <div class="stat-card">
-                    <div class="stat-label">Total Feedback</div>
-                    <div class="stat-value" id="fbTotal">—</div>
+                    <div class="stat-label">Total Reports</div>
+                    <div class="stat-value" id="repTotal">—</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Average Rating</div>
-                    <div class="stat-value" id="fbAvg">—</div>
+                    <div class="stat-label">Unique Flagged Posts</div>
+                    <div class="stat-value" id="repUnique">—</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">5 Star Reviews</div>
-                    <div class="stat-value" id="fbFive">—</div>
+                    <div class="stat-label">Critical Alerts (Fraud)</div>
+                    <div class="stat-value" id="repCritical">—</div>
                 </div>
             </div>
 
-            <!-- Feedback cards -->
+            <!-- Reports grid -->
             <div class="card" style="margin-top:1.5rem;">
                 <div class="card-header">
-                    <h3 class="card-title">All Feedback</h3>
+                    <h3 class="card-title">All Flags</h3>
                 </div>
-                <div class="feedback-grid" id="feedbackGrid">
+                <div class="feedback-grid" id="reportsGrid">
                     <div class="feedback-empty">
                         <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading feedback...</p>
+                        <p>Loading reports...</p>
                     </div>
                 </div>
             </div>
@@ -357,65 +383,117 @@
 
     <script src="templatemo-daynight-script.js"></script>
     <script>
-        async function loadFeedback() {
-            const grid = document.getElementById('feedbackGrid');
+        async function loadReports() {
+            const grid = document.getElementById('reportsGrid');
             try {
-                const res  = await fetch('/api/admin/feedback', { credentials: 'include' });
+                const res  = await fetch('/api/admin/reports', { credentials: 'include' });
                 const data = await res.json();
 
-                if (!data.success || !data.feedbacks.length) {
-                    grid.innerHTML = '<div class="feedback-empty"><i class="fas fa-comment-slash"></i><p>No feedback yet.</p></div>';
+                if (!data.success || !data.reports.length) {
+                    grid.innerHTML = '<div class="feedback-empty"><i class="fas fa-flag-slash"></i><p>No property reports submitted yet.</p></div>';
                     return;
                 }
 
-                document.getElementById('fbTotal').textContent = data.feedbacks.length;
-                const avg = (data.feedbacks.reduce((s, f) => s + f.rating, 0) / data.feedbacks.length).toFixed(1);
-                document.getElementById('fbAvg').textContent = avg + ' / 5';
-                document.getElementById('fbFive').textContent = data.feedbacks.filter(f => f.rating === 5).length;
+                // Calculate stats
+                document.getElementById('repTotal').textContent = data.reports.length;
+                const uniqueIds = new Set(data.reports.map(r => r.propertyId));
+                document.getElementById('repUnique').textContent = uniqueIds.size;
+                const criticalCount = data.reports.filter(r => r.reason === 'fraudulent').length;
+                document.getElementById('repCritical').textContent = criticalCount;
 
-                grid.innerHTML = data.feedbacks.map(f => `
-                    <div class="feedback-card" id="fb-${f._id}">
-                        <div class="feedback-card-header">
-                            <div>
-                                <div class="feedback-name">${f.name}</div>
-                                <div class="feedback-date">${new Date(f.date).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })}</div>
+                grid.innerHTML = data.reports.map(r => {
+                    const propId = r.propertyId;
+                    const propertyLink = propId 
+                        ? `<a href="/property?id=${propId}" target="_blank" class="btn-view-prop"><i class="fas fa-external-link-alt"></i> View Property & Cross-Check</a>`
+                        : '<span style="color:var(--text-muted); font-style:italic;"><i class="fas fa-ban"></i> Listing Already Deleted</span>';
+                    
+                    // Formatting reason badge
+                    let reasonBadge = '';
+                    if (r.reason === 'spam') reasonBadge = '<span class="badge badge-yellow">Spam</span>';
+                    else if (r.reason === 'incorrect_details') reasonBadge = '<span class="badge badge-yellow">Incorrect Details</span>';
+                    else if (r.reason === 'fraudulent') reasonBadge = '<span class="badge badge-red">Fraudulent</span>';
+                    else if (r.reason === 'offensive') reasonBadge = '<span class="badge badge-red">Offensive</span>';
+                    else reasonBadge = '<span class="badge">Other</span>';
+
+                    return `
+                        <div class="feedback-card" id="rep-${r._id}">
+                            <div class="feedback-card-header">
+                                <div>
+                                    <div class="feedback-name">${r.reporterName}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+                                        <i class="far fa-envelope"></i> ${r.reporterEmail}
+                                    </div>
+                                    <div class="feedback-date">${new Date(r.date).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
+                                </div>
+                                <div>${reasonBadge}</div>
                             </div>
-                            <div class="feedback-stars">${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}</div>
+                            <div style="margin: 4px 0;">
+                                <p style="font-size:0.875rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Reported Listing:</p>
+                                <div style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:10px; font-weight:500;">${r.propertyTitle}</div>
+                                ${propertyLink}
+                            </div>
+                            <div style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px; border-left: 3px solid #ff5252; margin-top: 4px; flex: 1;">
+                                <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:4px; text-transform:uppercase;">Reporter Comments:</div>
+                                <p class="feedback-msg" style="font-style:italic;">${r.description || 'No additional comments provided.'}</p>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px; border-top: 1px solid var(--border); padding-top: 12px;">
+                                <button class="btn-delete-fb" style="background:#e0faf9; color:#0d7068; border-color:#9eebe6;" onclick="dismissReport('${r._id}')">
+                                    <i class="fas fa-check"></i> Dismiss Report
+                                </button>
+                                ${propId ? `
+                                <button class="btn-delete-fb" onclick="deleteProperty('${propId}', '${r._id}')">
+                                    <i class="fas fa-trash"></i> Delete Property
+                                </button>
+                                ` : ''}
+                            </div>
                         </div>
-                        <p class="feedback-msg">${f.message}</p>
-                        <button class="btn-delete-fb" onclick="deleteFeedback('${f._id}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
 
             } catch (err) {
-                grid.innerHTML = '<div class="feedback-empty"><i class="fas fa-exclamation-circle"></i><p>Failed to load feedback.</p></div>';
+                grid.innerHTML = '<div class="feedback-empty"><i class="fas fa-exclamation-circle"></i><p>Failed to load property reports.</p></div>';
             }
         }
 
-        async function deleteFeedback(id) {
-            if (!confirm('Delete this feedback? This cannot be undone.')) return;
+        async function dismissReport(id) {
+            if (!confirm('Dismiss this warning? The listing will remain active.')) return;
             try {
-                const res  = await fetch(`/api/admin/feedback/${id}`, { method: 'DELETE' });
+                const res  = await fetch(`/api/admin/reports/${id}`, { method: 'DELETE' });
                 const data = await res.json();
                 if (data.success) {
-                    document.getElementById(`fb-${id}`)?.remove();
+                    document.getElementById(`rep-${id}`)?.remove();
                     const remaining = document.querySelectorAll('.feedback-card').length;
-                    document.getElementById('fbTotal').textContent = remaining;
+                    document.getElementById('repTotal').textContent = remaining;
                     if (!remaining) {
-                        document.getElementById('feedbackGrid').innerHTML =
-                            '<div class="feedback-empty"><i class="fas fa-comment-slash"></i><p>No feedback yet.</p></div>';
+                        document.getElementById('reportsGrid').innerHTML =
+                            '<div class="feedback-empty"><i class="fas fa-flag-slash"></i><p>No property reports submitted yet.</p></div>';
                     }
                 } else {
-                    alert(data.message || 'Could not delete');
+                    alert(data.message || 'Could not dismiss');
                 }
             } catch (err) {
                 alert('Network error. Please try again.');
             }
         }
 
-        loadFeedback();
+        async function deleteProperty(propertyId, reportId) {
+            if (!confirm('Delete this property post? This will permanently delete the listing and resolve all associated reports.')) return;
+            try {
+                const res  = await fetch(`/api/admin/properties/${propertyId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Property deleted successfully.');
+                    // Reload to update stats and clean cards
+                    loadReports();
+                } else {
+                    alert(data.message || 'Could not delete property post.');
+                }
+            } catch (err) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        loadReports();
     </script>
 </body>
 </html>

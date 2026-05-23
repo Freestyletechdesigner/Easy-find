@@ -457,6 +457,21 @@ main { padding: 0 5% 40px; max-width: 1400px; margin: 0 auto; }
     transition: all 0.25s;
 }
 .btn-share:hover { background: rgba(102,234,227,0.15); }
+.btn-report {
+    display: block;
+    width: 100%;
+    padding: 11px;
+    background: transparent;
+    color: #ff5252;
+    border: 1.5px solid #ff5252;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s;
+    margin-top: 10px;
+}
+.btn-report:hover { background: rgba(255, 82, 82, 0.15); }
 
 /* Agent card */
 .agent-card {
@@ -537,7 +552,7 @@ main { padding: 0 5% 40px; max-width: 1400px; margin: 0 auto; }
     display: none;
     align-items: center;
     justify-content: center;
-    z-index: 500;
+    z-index: 1100;
     backdrop-filter: blur(3px);
 }
 .contact-popup.open { display: flex; }

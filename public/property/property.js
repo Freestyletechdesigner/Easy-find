@@ -525,3 +525,71 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── Init ──────────────────────────────────────────────
 loadProperty();
+
+// ── Report popup ─────────────────────────────────────
+const reportPop = document.getElementById('reportPop');
+if (reportPop) {
+    reportPop.addEventListener('click', () => {
+        const reportPopup = document.getElementById('reportPopup');
+        if (reportPopup) reportPopup.classList.add('open');
+    });
+}
+
+const reportPopupClose = document.getElementById('reportPopupClose');
+if (reportPopupClose) {
+    reportPopupClose.addEventListener('click', () => {
+        const reportPopup = document.getElementById('reportPopup');
+        if (reportPopup) reportPopup.classList.remove('open');
+    });
+}
+
+const reportPopup = document.getElementById('reportPopup');
+if (reportPopup) {
+    reportPopup.addEventListener('click', e => {
+        if (e.target === reportPopup) reportPopup.classList.remove('open');
+    });
+}
+
+const reportForm = document.getElementById('reportForm');
+if (reportForm) {
+    reportForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const id = getQueryId();
+        if (!id) return;
+
+        const submitBtn = reportForm.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+
+        const payload = {
+            reason: document.getElementById('reportReason').value,
+            reporterName: document.getElementById('reportName').value,
+            reporterEmail: document.getElementById('reportEmail').value,
+            description: document.getElementById('reportDescription').value
+        };
+
+        try {
+            const res = await fetch(`/api/properties/${id}/report`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                showNotification('Success', data.message || 'Report submitted successfully.');
+                reportForm.reset();
+                if (reportPopup) reportPopup.classList.remove('open');
+            } else {
+                showNotification('Error', data.message || 'Could not submit report.');
+            }
+        } catch (error) {
+            console.error('Error submitting report:', error);
+            showNotification('Error', 'Network error. Please try again.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    });
+}
