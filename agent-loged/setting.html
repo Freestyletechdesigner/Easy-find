@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -176,7 +176,7 @@
 
             const btn = document.getElementById('save-profile-btn');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner spin-icon"></i> Saving...';
 
             try {
                 const res  = await fetch('/api/agent/settings/name', {
@@ -206,7 +206,7 @@
 
             const btn = document.getElementById('change-pw-btn');
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Updating...';
+            btn.innerHTML = '<i class="fa-solid fa-spinner spin-icon"></i> Updating...';
 
             try {
                 const res  = await fetch('/api/agent/settings/password', {

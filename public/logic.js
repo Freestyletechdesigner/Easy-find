@@ -995,7 +995,7 @@ initSearch();
         if (!message) { alertBox.warning('Empty', 'Please write something before sending.'); return; }
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fas fa-spinner" id="fa-spinner"></i>';
+        btn.innerHTML = '<i class="fas fa-spinner spin-icon" id="fa-spinner spin-icon"></i>';
 
         try {
             const res  = await fetch('/api/feedback', {

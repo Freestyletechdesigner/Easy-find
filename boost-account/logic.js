@@ -1,4 +1,4 @@
-    // ── Auth ──────────────────────────────────────────────
+﻿    // ── Auth ──────────────────────────────────────────────
     async function checkAuth() {
         try {
             const response = await fetch('/api/agent/profile', { credentials: 'include' });
@@ -90,7 +90,7 @@
     function openPostPicker() {
         document.getElementById('postPickerOverlay').classList.add('open');
         const list = document.getElementById('postPickerList');
-        list.innerHTML = '<div class="post-picker-loading"><i class="fas fa-spinner fa-spin"></i> Loading your posts...</div>';
+        list.innerHTML = '<div class="post-picker-loading"><i class="fas fa-spinner spin-icon"></i> Loading your posts...</div>';
 
         // fetch the agent's own posts
         fetch('/api/agent/property')
@@ -222,7 +222,7 @@
         btn.disabled = true;
 
         // show a spinner while processing
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        btn.innerHTML = '<i class="fas fa-spinner spin-icon"></i> Processing...';
 
         // get and trim the email the user entered
         const email = document.getElementById('payerEmail').value.trim();
