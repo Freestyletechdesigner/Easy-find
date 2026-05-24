@@ -24,19 +24,17 @@ const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 const upload = multer({
     storage,
     fileFilter: (req, file, cb) => {
-
         const ext = path.extname(file.originalname).toLowerCase();
-
         if (!allowedExtensions.includes(ext)) {
             return cb(new Error('Only image files are allowed (.jpg, .jpeg, .png, .gif, .webp)'));
         }
-
-        cb(null, true)
+        cb(null, true);
     },
     limits: {
-        fileSize: 20 * 1024 * 1024
+        fileSize: 20 * 1024 * 1024, // 20MB per file
+        files: 10                    // max 10 files per upload request
     }
-})
+});
 
 const AGENT_POST = (app) => {
 
@@ -95,21 +93,22 @@ const AGENT_POST = (app) => {
                 view: 0
             }); 
             //save data
-            await newPost.save()
-
-            // Broadcast the new property upload via WebSockets
-            const broadcastProperty = req.app.get('broadcastProperty');
-            if (broadcastProperty) {
-                broadcastProperty(newPost);
-            }
+            await newPost.save();
     
             //send a res to user
             res.json({
                 success: true,
                 postID: newPost
-            })
+            });
+        // Broadcast the new property upload via WebSockets
+        setImmediate(() => {
+            const broadcastProperty = req.app.get('broadcastProperty');
+            if (broadcastProperty) {
+                broadcastProperty(newPost);
+            }
+        });
         } catch (error) {
-            console.error(error);
+            console.error('Error uploading property:', error);
             res.status(500).json({
                 success: false,
                 message: 'Server Error'
@@ -142,39 +141,68 @@ const AGENT_POST = (app) => {
         }
     });
 
-    //get request for all user
+    // GET Request for all properties
     app.get('/api/post/property', async (req, res) => {
         try {
-            const now   = new Date();
+            const now = new Date();
             const limit = 20;
-
+    
             const pipeline = [
+                // 1. Convert the String ID to an ObjectId first
                 { $addFields: { agentObjId: { $toObjectId: '$agentId' } } },
-                { $lookup: { from: 'agentusers', localField: 'agentObjId', foreignField: '_id', as: 'agent' } },
+                
+                // 2. Perform the Lookup
+                { 
+                    $lookup: { 
+                        from: 'agentusers', 
+                        localField: 'agentObjId', 
+                        foreignField: '_id', 
+                        as: 'agent' 
+                    } 
+                },
+                
+                // 3. Deconstruct the array
                 { $unwind: '$agent' },
+                
+                // 4. Drop posts from inactive agents immediately before heavy calculations
                 { $match: { 'agent.status': 'active' } },
+                
+                // 5. Calculate stand verification and priority values
                 {
                     $addFields: {
+                        isVerified: { $eq: ['$agent.stand', 'Verified Agent'] }, // Simplified boolean condition
                         priority: {
                             $cond: [
-                                { $and: [{ $eq: ['$boostPost', true] }, { $gt: ['$boostPostExpiry', now] }] }, 1,
-                                { $cond: [
-                                    { $and: [{ $eq: ['$agent.boostAccount', true] }, { $gt: ['$agent.boostAccountExpiry', now] }] }, 2, 3
-                                ]}
+                                { $and: [{ $eq: ['$boostPost', true] }, { $gt: ['$boostPostExpiry', now] }] }, 
+                                1, // Top Priority: Boosted Post
+                                { 
+                                    $cond: [
+                                        { $and: [{ $eq: ['$agent.boostAccount', true] }, { $gt: ['$agent.boostAccountExpiry', now] }] }, 
+                                        2, // Mid Priority: Boosted Agent Account
+                                        3  // Regular Priority
+                                    ]
+                                }
                             ]
                         }
                     }
                 },
+                
+                // 6. Sort and Limit payload output
                 { $sort: { priority: 1, _id: -1 } },
                 { $limit: limit },
+                
+                // 7. Promote agentStand before removing the agent join object
+                { $addFields: { stand: '$agent.stand' } },
+                // 8. Project clean response — drop internal join fields
                 { $project: { agent: 0, agentObjId: 0 } }
             ];
-
+    
             const properties = await AgentPost.aggregate(pipeline);
-            res.json({ success: true, property: properties });
+            return res.json({ success: true, property: properties });
+    
         } catch (err) {
             console.error('[POST/PROPERTY] error:', err);
-            res.status(500).json({ success: false, message: 'Error loading properties' });
+            return res.status(500).json({ success: false, message: 'Error loading properties' });
         }
     });
 
@@ -241,7 +269,7 @@ const AGENT_POST = (app) => {
         }
     });
 
-    //total view for post - Fix 30: Use aggregation instead of loading all posts into memory
+    //total view for post
     app.get('/api/agent/views', requireAgent, async (req, res) => {
         const agentId = req.session.agent.id;
         try {
@@ -255,7 +283,7 @@ const AGENT_POST = (app) => {
         }
     });
 
-    //find each property by id param
+    //find each property by id params
     app.get('/api/view/property/:id', async (req, res) => {
         const id = req.params.id;
         

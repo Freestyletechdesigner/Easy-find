@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return false;
             }
             if (file.size > 10 * 1024 * 1024) {
-                alertBox.error('File Too Large', `${file.name} exceeds the 10MB limit`);
+                alertBox.error('File Too Large', `${file.name} exceeds the 20MB limit`);
                 return false;
             }
             return true;

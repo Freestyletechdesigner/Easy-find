@@ -60,7 +60,6 @@ app.use(cors({
 const connectDB = require('./db.js');
 connectDB().catch(err => { console.error('Failed to connect to DB:', err); process.exit(1); });
 // API END POINT
-const uploadnewP = require('./routes/upload-property');
 const signup = require('./routes/signup.js');
 const messageAPI = require('./routes/message.js');
 const agent = require('./routes/agent.js');
@@ -234,21 +233,42 @@ const uploadPropertyDir = path.join(__dirname, 'agent-loged', 'upload-property')
 if (!fs.existsSync(uploadPropertyDir)) fs.mkdirSync(uploadPropertyDir, { recursive: true });
 
 
-//Direct URL
-app.use(express.static('public'));
-app.use('/admin', express.static('admin'));
-app.use('/agent-loged', express.static('agent-loged'));
-app.use('/agent-profiles', express.static('agent-profiles'));
-app.use('/property', express.static('public/property'));
-app.use('/login-agent', express.static('public/login-agent.html'));
-app.use('/signup-agent', express.static('public/signup-agent.html'));
-app.use('/agent-profile', express.static('public/agent-profile'));
-app.use('/agent-loged/upload-profilepicture', express.static('agent-loged/upload-image.html'));
-app.use('/agent-loged/setting', express.static('agent-loged/setting.html'));
-app.use('/agent-verification', express.static('agent-verification'));
-app.use('/appeal', express.static('appeal'));
-app.use('/boost-account', express.static('boost-account'));
-app.use('/password-reset', express.static('password-reset'));
+//Direct URL — static assets with cache headers
+// No cache in development so changes are visible immediately
+// Cache in production for performance
+const staticOpts = process.env.NODE_ENV === 'production' ? { maxAge: '1h' }  : {};
+const assetOpts  = process.env.NODE_ENV === 'production' ? { maxAge: '7d' }  : {};
+
+// Cache busting — every server restart gets a new version token
+// HTML files can reference ?v=BUILD_VERSION to force browser refresh
+app.locals.v = process.env.NODE_ENV === 'production'
+    ? (process.env.APP_VERSION || '1')
+    : Date.now().toString();
+
+// In development: send no-cache headers for JS/CSS so browser always fetches fresh
+if (process.env.NODE_ENV !== 'production') {
+    app.use((req, res, next) => {
+        if (req.path.endsWith('.js') || req.path.endsWith('.css')) {
+            res.setHeader('Cache-Control', 'no-store');
+        }
+        next();
+    });
+}
+
+app.use(express.static('public', staticOpts));
+app.use('/admin', express.static('admin', staticOpts));
+app.use('/agent-loged', express.static('agent-loged', staticOpts));
+app.use('/agent-profiles', express.static('agent-profiles', assetOpts));
+app.use('/property', express.static('public/property', staticOpts));
+app.use('/login-agent', express.static('public/login-agent.html', staticOpts));
+app.use('/signup-agent', express.static('public/signup-agent.html', staticOpts));
+app.use('/agent-profile', express.static('public/agent-profile', staticOpts));
+app.use('/agent-loged/upload-profilepicture', express.static('agent-loged/upload-image.html', staticOpts));
+app.use('/agent-loged/setting', express.static('agent-loged/setting.html', staticOpts));
+app.use('/agent-verification', express.static('agent-verification', staticOpts));
+app.use('/appeal', express.static('appeal', staticOpts));
+app.use('/boost-account', express.static('boost-account', staticOpts));
+app.use('/password-reset', express.static('password-reset', staticOpts));
 
 // ── Clean admin routes (no .html) ─────────────────────
 const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'file-uploader', 'login', 'reports'];
@@ -276,7 +296,6 @@ app.get('/password-reset/reset-password',  (req, res) => res.sendFile(path.join(
 // Terms 
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'terms.html')));
 
-uploadnewP(app);
 signup(app);
 messageAPI(app);
 agent(app);

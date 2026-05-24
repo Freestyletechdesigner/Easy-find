@@ -287,7 +287,7 @@ module.exports = function(app) {
             }
 
             const user = await User.findOne({ email: email.trim().toLowerCase() });
-            if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+            if (!user) return res.status(404).json({ success: false, message: 'Invalid email or current password' });
 
             const isCurrentPasswordValid = await user.comparePassword(currentPassword);
             if (!isCurrentPasswordValid) {
