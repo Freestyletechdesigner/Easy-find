@@ -42,6 +42,13 @@ async function loadProperty() {
         const prop = data.property;
         if (!prop) { showError('Property not found.'); return; }
 
+        const verify = document.querySelector('.verify');
+        if (prop.stand.toLowerCase() === 'verified agent') {
+            verify.style.display = 'flex'
+        } else {
+            verify.style.display = 'none'
+        }
+
         console.log('✅ Rendering property:', prop.title);
         renderProperty(prop);
     } catch (e) {
@@ -351,6 +358,7 @@ function relatedCard(p) {
         ? new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) 
         : 'Recent';
     const isLand = String(p.type || '').toLowerCase() === 'land';
+    const isVerified = (p.stand || '').toLowerCase() === 'verified agent';
 
     // Escape strings injected inside raw data tags to prevent structural breaks
     const cleanTitle = String(p.title || '').replace(/"/g, '&quot;');
@@ -368,7 +376,7 @@ function relatedCard(p) {
                 <img src="${imgSrc}" alt="${cleanType}" loading="lazy" onerror="this.onerror=null; this.src='/icon/home icon.png';">
                 <span class="card-type-badge">${cleanType}${p.title ? `, ${p.title}` : ''}</span>
                 ${p.category ? `<span class="related-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
-                ${imgCount > 1 ? `<span class="related-image-count"><i class="fas fa-images"></i> ${imgCount}</span>` : ''}
+                ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-building-shield"></i></span>` : ''}
             </div>
             
             <div class="related-card-body">

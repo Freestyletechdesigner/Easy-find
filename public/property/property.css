@@ -181,6 +181,12 @@ main { padding: 0 5% 40px; max-width: 1400px; margin: 0 auto; }
     margin-bottom: 8px;
 }
 
+.verify {
+    font-size: 1rem;
+    color: #044742;
+    display: none;
+}
+
 .carousel {
     position: relative;
     width: 100%;
@@ -780,18 +786,17 @@ footer {
 }
 .related-card:hover .related-card-img img { transform: scale(1.05); }
 
-.related-image-count {
+.card-verified-badge {
     position: absolute;
     bottom: 10px;
+
     right: 12px;
-    background: rgba(0, 0, 0, 0.55);
-    color: white;
-    padding: 3px 10px;
+    color: rgb(255, 255, 255);
     border-radius: 20px;
-    font-size: 0.78rem;
+    font-size: 1.5rem;
     display: flex;
     align-items: center;
-    gap: 5px;
+    animation: fa-bounce 1.5s infinite linear;
 }
 
 .card-type-badge {
@@ -923,4 +928,16 @@ footer {
         width: 100%;
         padding: 20px;
     }
+}
+
+/* ── Verified agent badge on related property cards ── */
+.card-verified-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    color: #fff;
+    font-size: 1.4rem;
+    display: flex;
+    align-items: center;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.4));
 }

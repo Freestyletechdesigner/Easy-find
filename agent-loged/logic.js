@@ -469,10 +469,10 @@ function propertyCard(p) {
     const imgSrc = p.imageNames && p.imageNames.length
         ? `/agent-loged/upload-property/${p.imageNames[0]}`
         : 'profile.png';
-    const imgCount = p.imageNames ? p.imageNames.length : 0;
     const price = Number(p.price).toLocaleString();
     const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     const isLand = (p.type || '').toLowerCase() === 'land';
+    const isVerified = (p.stand || '').toLowerCase() === 'verified agent';
 
     // SCALING OPTIMIZATION:
     return `
@@ -481,7 +481,7 @@ function propertyCard(p) {
                 <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
                 <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
                 ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
-                ${imgCount > 1 ? `<span class="card-image-count"><i class="fas fa-images"></i> ${imgCount}</span>` : ''}
+                ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-building-shield"></i></span>` : ''}
 
                 <div class="card-menu-wrap">
                     <button class="card-menu-btn" onclick="toggleCardMenu('${p._id}')">

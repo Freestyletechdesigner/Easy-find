@@ -961,18 +961,32 @@ header {
     backdrop-filter: blur(4px);
 }
 
-.card-image-count {
+.card-verified-badge {
     position: absolute;
     bottom: 10px;
     right: 12px;
-    background: rgba(0, 0, 0, 0.55);
-    color: white;
-    padding: 3px 10px;
+    color: rgb(255, 255, 255);
     border-radius: 20px;
-    font-size: 0.78rem;
+    font-size: 1.5rem;
     display: flex;
     align-items: center;
-    gap: 5px;
+    animation: fa-bounce 1.5s infinite linear;
+}
+
+/* fa-bounce */
+.fa-bounce {
+    -webkit-animation: fa-bounce 1s infinite;
+    animation: fa-bounce 1s infinite;
+}
+
+@-webkit-keyframes fa-bounce {
+    0%, 100% { -webkit-transform: translateY(0);    transform: translateY(0); }
+    50%       { -webkit-transform: translateY(-6px); transform: translateY(-6px); }
+}
+
+@keyframes fa-bounce {
+    0%, 100% { -webkit-transform: translateY(0);    transform: translateY(0); }
+    50%       { -webkit-transform: translateY(-6px); transform: translateY(-6px); }
 }
 
 .card-category-badge {

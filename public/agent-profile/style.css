@@ -229,6 +229,18 @@ main { padding: 0 5% 60px; max-width: 1200px; margin: 0 auto; }
     overflow: hidden;
     background: #e0faf9;
 }
+.card-verified-badge {
+    position: absolute;
+    bottom: 10px;
+
+    right: 12px;
+    color: rgb(255, 255, 255);
+    border-radius: 20px;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    animation: fa-bounce 1.5s infinite linear;
+}
 .prop-card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; }
 .prop-card:hover .prop-card-img img { transform: scale(1.05); }
 .badge-cat {
@@ -402,3 +414,15 @@ footer { text-align: center; padding: 22px; background: #fff; color: #888; borde
     transition: background 0.2s;
 }
 .lightbox-close:hover { background: rgba(255,255,255,0.3); }
+
+/* ── Verified agent badge on property cards ── */
+.card-verified-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 12px;
+    color: #fff;
+    border-radius: 20px;
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+}

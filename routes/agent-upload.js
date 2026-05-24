@@ -3,6 +3,7 @@ const {check, validationResult} = require('express-validator');
 const path = require('path');
 const fs = require('fs');
 const AgentPost = require('../model/AgentPost.js');
+const AgentUser = require('../model/AgentUser.js');
 
 const ROOT = path.join(__dirname, '..');
 
@@ -119,23 +120,24 @@ const AGENT_POST = (app) => {
 
     //get request for agent only
     app.get('/api/agent/property', requireAgent, async (req, res) => {
-
         const page = parseInt(req.query.page) || 1; 
         const limit = 8;
-        const skip = (page - 1) * limit; // Calculate how many items to skip
+        const skip = (page - 1) * limit;
 
         try {
             const agentId = req.session.agent.id;
-            const agentPost = await AgentPost.find({agentId})
-            .sort({ date: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean();
 
-            res.json({
-                success: true,
-                property: agentPost
-            });
+            // fetch posts and agent stand in parallel
+            const [agentPost, agentUser] = await Promise.all([
+                AgentPost.find({ agentId }).sort({ date: -1 }).skip(skip).limit(limit).lean(),
+                AgentUser.findById(agentId).select('stand').lean()
+            ]);
+
+            // attach stand to every post so the frontend can show the verified badge
+            const stand = agentUser?.stand || '';
+            const posts = agentPost.map(p => ({ ...p, stand }));
+
+            res.json({ success: true, property: posts });
         } catch(err) {
             res.status(500).json({ success: false, message: 'Error loading properties' });
         }
@@ -211,30 +213,23 @@ const AGENT_POST = (app) => {
         const id = req.params.id;
         const page = parseInt(req.query.page) || 1; 
         const limit = 8;
-        const skip = (page - 1) * limit; // Calculate how many items to skip
+        const skip = (page - 1) * limit;
         
         try {
-            const property = await AgentPost.find({agentId: id})
-            .sort({ date: -1 })
-            .skip(skip)
-            .limit(limit)
-            .lean();
-            if (!property) {
-                return res.json({
-                    success: false,
-                    message: 'No property listed'
-                });
-            } 
-            res.json({
-                success: true,
-                property
-            })
+            const [property, agentUser] = await Promise.all([
+                AgentPost.find({ agentId: id }).sort({ date: -1 }).skip(skip).limit(limit).lean(),
+                AgentUser.findById(id).select('stand').lean()
+            ]);
+
+            if (!property) return res.json({ success: false, message: 'No property listed' });
+
+            const stand = agentUser?.stand || '';
+            const posts = property.map(p => ({ ...p, stand }));
+
+            res.json({ success: true, property: posts });
         } catch (error) {
             console.error('Error Loading public agent post:', error);
-            res.json({
-                success: false,
-                message: 'Error loading property'
-            })
+            res.json({ success: false, message: 'Error loading property' });
         }
     });
 
@@ -288,7 +283,7 @@ const AGENT_POST = (app) => {
         const id = req.params.id;
         
         try {
-            const agentPost = await AgentPost.findById(id);
+            const agentPost = await AgentPost.findById(id).lean();
             
             if (!agentPost) {
                 return res.status(404).json({
@@ -296,6 +291,10 @@ const AGENT_POST = (app) => {
                     message: 'Property not found'
                 });
             }
+
+            // fetch agent stand for verified badge
+            const agentUser = await AgentUser.findById(agentPost.agentId).select('stand').lean();
+            agentPost.stand = agentUser?.stand || '';
             
             res.json({ success: true, property: agentPost });
         } catch (error) {
@@ -382,45 +381,42 @@ const AGENT_POST = (app) => {
     // Find related property
     app.get('/api/property/related/:id', async (req, res) => {
         const id = req.params.id;
-
         const page = parseInt(req.query.page) || 1; 
         const limit = 8;
-        const skip = (page - 1) * limit; // Calculate how many items to skip
+        const skip = (page - 1) * limit;
         try {
-            const post = await AgentPost.findById(id)
-            if (!post) {
-                return res.json({
-                    success: false,
-                    message: 'Property did not exist'
-                });
-            }
-            const related = await AgentPost.find({
-                _id: {$ne: post._id}, // exclude the current post
-                $or: [
-                    {type: post.type},
-                    {location: post.location},
-                    {price: post.price},
-                    {category: post.category},
-                    {beds: post.beds},
-                    {baths: post.baths},
-                    {area: post.area},
-                    {title: post.title}
-                ]
-            })
-            .skip(skip)
-            .limit(limit)
-            .lean();
+            const post = await AgentPost.findById(id);
+            if (!post) return res.json({ success: false, message: 'Property did not exist' });
 
-            res.json({
-                success: true,
-                related
-            })
+            const related = await AgentPost.find({
+                _id: { $ne: post._id },
+                $or: [
+                    { type: post.type },
+                    { location: post.location },
+                    { price: post.price },
+                    { category: post.category },
+                    { beds: post.beds },
+                    { baths: post.baths },
+                    { area: post.area },
+                    { title: post.title }
+                ]
+            }).skip(skip).limit(limit).lean();
+
+            // get unique agent IDs from related posts
+            const agentIds = [...new Set(related.map(p => p.agentId))];
+
+            // fetch all those agents' stand in one query
+            const agents = await AgentUser.find({ _id: { $in: agentIds } }).select('_id stand').lean();
+            const standMap = {};
+            agents.forEach(a => { standMap[a._id.toString()] = a.stand || ''; });
+
+            // attach each post's own agent stand
+            const posts = related.map(p => ({ ...p, stand: standMap[p.agentId] || '' }));
+
+            res.json({ success: true, related: posts });
         } catch (error) {
-            console.error('Error on related propery:', error);
-            res.json({
-                success: false,
-                message: 'Error loading related'
-            })
+            console.error('Error on related property:', error);
+            res.json({ success: false, message: 'Error loading related' });
         }
     });
 
