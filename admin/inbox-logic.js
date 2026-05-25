@@ -47,7 +47,7 @@ async function loadMessages() {
         if (!response.ok) {
             const errorText = await response.text();
             console.error('Response error:', errorText);
-            throw new Error(`HTTP ${response.status}: ${errorText}`);
+            throw new Error(`Not authenticated`);
         }
         
         const data = await response.json();

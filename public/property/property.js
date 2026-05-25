@@ -43,10 +43,8 @@ async function loadProperty() {
         if (!prop) { showError('Property not found.'); return; }
 
         const verify = document.querySelector('.verify');
-        if (prop.stand.toLowerCase() === 'verified agent') {
-            verify.style.display = 'flex'
-        } else {
-            verify.style.display = 'none'
+        if (verify) {
+            verify.style.display = (prop.stand || '').toLowerCase() === 'verified agent' ? 'flex' : 'none';
         }
 
         console.log('✅ Rendering property:', prop.title);

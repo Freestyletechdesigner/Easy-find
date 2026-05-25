@@ -301,7 +301,7 @@ const AGENT_POST = (app) => {
             console.error('Error fetching property:', error.message);
             res.status(500).json({
                 success: false,
-                message: 'Server error: ' + error.message
+                message: 'Error on loading post by id: '
             });
         }
     });

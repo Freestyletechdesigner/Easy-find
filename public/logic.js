@@ -641,9 +641,9 @@ initSearch();
     // scroll animation count
     const initScrollCounters = () => {
         const counters = [
-            { selector: '.anime-count1', target: 50, suffix: '%' },
+            { selector: '.anime-count1', target: 98, suffix: '%' },
             { selector: '.anime-count2', target: 80, suffix: '%' },
-            { selector: '.anime-count3', target: 50, suffix: '%' }
+            { selector: '.anime-count3', target: 99, suffix: '%' }
         ];
 
         const animateCount = (el, target, suffix, duration = 2000) => {
@@ -805,119 +805,6 @@ initSearch();
         });
     }
 
-    // Message input Validation
-    const contactAlertBox = document.getElementById('alert');
-
-    const submitBtn = document.getElementById('submit');
-
-    submitBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-
-        const name = document.getElementById('name').value;
-        const nameErr = document.getElementById('name-err');
-        const email = document.getElementById('email').value;
-        const emailErr = document.getElementById('email-err');
-        const subjet = document.getElementById('subjet').value;
-        const text = document.getElementById('text').value;
-        const textErr = document.getElementById('text-err');
-        const phoneNumber = document.getElementById('phone-number').value;
-        const phoneErr = document.getElementById('phone-err');
-
-        nameErr.style.color = 'red';
-        emailErr.style.color = 'red';
-        textErr.style.color = 'red';
-        phoneErr.style.color = 'red';
-        nameErr.textContent = ''
-        emailErr.textContent = ''
-        textErr.textContent = ''
-        phoneErr.textContent = ''
-
-        let valid = true;
-
-        if (name.length < 1) {
-            nameErr.textContent = 'Enter Your name';
-            valid = false
-        } else if (name.length < 4) {
-            nameErr.textContent = 'Your name must be at least more than 4 Characters';
-            valid = false
-        }
-
-        let emalValidation = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        if (email === "") {
-            emailErr.textContent = 'Enter Your email';
-            valid = false
-        } else if (!emalValidation.test(email)) {
-            emailErr.textContent = 'Enter a valid email';
-            valid = false
-        }
-
-        if (text.length < 1) {
-            textErr.textContent = 'Make a statement';
-            valid = false
-        } else if (text.length < 10) {
-            textErr.textContent = 'Your statement must be at least 4 words';
-            valid = false
-        }
-
-        if (phoneNumber.length === 0) {
-            phoneErr.textContent = 'Enter Your number';
-            valid = false
-        } else if (phoneNumber.length != 11) {
-            phoneErr.textContent = 'Your number must be 11 digits';
-            valid = false
-        }
-
-        if (valid) {
-            // Show loading state
-            const submitButton = document.getElementById('submit');
-            const originalButtonText = submitButton.innerHTML;
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<span class="btn-text">Sending...</span>';
-
-            // Send to backend API (saves to admin inbox)
-            fetch('/api/contact/submit', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                body: new URLSearchParams({
-                    name: name,
-                    email: email,
-                    subjet: subjet,
-                    phoneNumber: phoneNumber,
-                    text: text
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Also send via EmailJS (optional - for email notifications)
-                    emailjs.send("service_2gmwz4n", "template_ta3lzir", {
-                        from_name: name,
-                        from_email: email,
-                        from_subjet: subjet,
-                        from_number: phoneNumber,
-                        from_text: text
-                    }).catch(err => console.log('EmailJS error:', err));
-
-                    showLoginAlert('Message sent successful.', 'success');
-                    document.querySelector('.contact-form').reset();
-                } else {
-                    showLoginAlert('Message failed. Please try again.', 'error');
-                }
-            })
-            .catch((err) => {
-                console.error('Error sending message:', err);
-                showLoginAlert('Network error. Please check your internet.', 'error');
-            })
-            .finally(() => {
-                submitButton.disabled = false;
-                submitButton.innerHTML = originalButtonText;
-            });
-        }
-
-    });
 
     //feedback toggle
     const clientsFB  = document.querySelector('.clients-feedback');
