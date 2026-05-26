@@ -293,6 +293,7 @@ app.get('/password-reset/verify-reset',    (req, res) => res.sendFile(path.join(
 app.get('/password-reset/verify-otp',      (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'verify-otp.html')));
 app.get('/password-reset/reset-password',  (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'reset-password.html')));
 app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
+app.get('/our-agent', (req, res) => res.sendFile(path.join(__dirname, 'public', 'our-agent.html')));
 
 // Terms 
 app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'terms.html')));

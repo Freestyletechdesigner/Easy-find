@@ -245,7 +245,6 @@ const AGENT_POST = (app) => {
                 return res.status(404).json({ success: false, message: 'Property not found' });
             }
 
-            // Fix 13: Proper ownership check using agentId from post vs session
             if (agentPost.agentId.toString() !== agentId.toString()) {
                 return res.status(403).json({ success: false, message: 'Not authorized to delete this property' });
             }

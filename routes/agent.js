@@ -5,11 +5,11 @@ const rateLimit = require('express-rate-limit');
 
 // Strict limiter for Login and OTP
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20, // 20 attempts per 15 min (generous for dev/testing)
+    windowMs: 4 * 60 * 1000,
+    max: 10, // 
     message: {
         success: false, 
-        message: 'Too many attempts. Please try again later.'
+        message: 'Too many attempts. Please try again after 4 minutes.'
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -19,17 +19,15 @@ const authLimiter = rateLimit({
 // Strict limiter for password reset
 const resetLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 5,
+    max: 2,
     message: {
         success: false, 
-        message: 'Too many attempts. Please try again after an hour.'
+        message: 'Please try again after an hour.'
     },
     standardHeaders: true,
     legacyHeaders: false,
     skip: () => process.env.NODE_ENV === 'development'
 });
-
-// General limiter for public profiles/status - Fix 31: removed unused apiLimiter
 
 const upload = multer();
 
@@ -50,8 +48,8 @@ const agent = (app) => {
         next();
     }
 
-    // Signup - Fix 9: Apply authLimiter
-    app.post('/api/agent/signup', authLimiter, upload.none(), [
+    // Signup
+    app.post('/api/agent/signup', upload.none(), [
         check('firstName').trim().isLength({ min: 2 }).withMessage('First name must be at least 2 characters'),
         check('lastName').trim().isLength({ min: 2 }).withMessage('Last name must be at least 2 characters'),
         check('email').isEmail().normalizeEmail().withMessage('Invalid email'),
@@ -308,7 +306,7 @@ const agent = (app) => {
         }
     });
 
-    // Verify OTP - Fix 8: Apply authLimiter
+    // Verify OTP 
     app.post('/api/agent/verify-otp', authLimiter, (req, res) => {
         const otp = req.body.otp;
         const stored = req.session.otp;
@@ -358,7 +356,6 @@ const agent = (app) => {
         }
     });
 
-    // ADMIN ROUTES - Agent Management
     // Get all agents (admin only)
     app.get('/api/admin/agents', requireAdmin, async (req, res) => {
         try {
@@ -431,7 +428,6 @@ const agent = (app) => {
         const { name } = req.body;
         if (!name || name.trim().length < 2)
             return res.status(400).json({ success: false, message: 'Name must be at least 2 characters' });
-        // Fix 24: Add max length validation
         if (name.trim().length > 50)
             return res.status(400).json({ success: false, message: 'Name too long' });
         try {
@@ -492,7 +488,6 @@ const agent = (app) => {
                 });
             }
 
-            // Fix 23: Whitelist validation for stand field
             const validStands = ['Not verified', 'Verified Agent'];
             if (stand !== undefined && !validStands.includes(stand)) {
                 return res.status(400).json({ success: false, message: 'Invalid stand value' });
