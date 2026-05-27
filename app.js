@@ -227,6 +227,23 @@ app.get('/api/views/stats', requireAdmin, async (req, res) => {
     }
 });
 
+// Serve term and service to the user as first visit
+app.get('/api/first-visit', async (req, res) => {
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    try {
+        const User = await PageViews.findOne({ ips: ip });
+        if (!User) return res.json({ firstVisit: true });
+
+        res.json({
+            firstVisit: false
+        });
+
+    } catch (error) {
+        console.error('Error checking first visit: ', error);
+        res.status(500).json({ message: 'Error checking first visit' });
+    }
+});
+
 
 // Ensure required folders exist on startup
 const uploadPropertyDir = path.join(__dirname, 'agent-loged', 'upload-property');

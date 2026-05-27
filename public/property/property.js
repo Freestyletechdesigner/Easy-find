@@ -272,6 +272,41 @@ async function loadAgent(agentId) {
         profile.addEventListener('click', () => {
             window.location.href = `/agent-profile?id=${agent.id}`
         });
+        // 1. WHATSAPP OPTION (Your existing working code)
+        const Whatsapp = document.getElementById('contactWhatsapp');
+        Whatsapp.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent standard anchor hashtag jump
+            const phone = agent.phone.replace(/\D/g, '');
+            const formatted = phone.startsWith('0') ? '234' + phone.slice(1) : phone;
+            const postURL = window.location.href;
+            const msg = encodeURIComponent(`Hi ${agent.name},\n\nI am interested in your property listing found here:${postURL}`);
+            window.open(`https://wa.me/${formatted}?text=${msg}`, '_blank');
+        });
+
+        // 2. EMAIL OPTION
+        const EmailOpt = document.getElementById('contactEmail');
+        EmailOpt.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            const email = agent.email;
+            const subject = encodeURIComponent('Inquiry Regarding Property Listing');
+            const body = encodeURIComponent(`Hi ${agent.name},\n\nI am interested in your property listing found here: ${window.location.href}\n\nPlease provide me with more details.`);
+            
+            // Triggers user's native email application (Mail, Outlook, Gmail app)
+            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+        });
+
+        // 3. DIRECT CALL OPTION
+        const CallOpt = document.getElementById('contactCall');
+        CallOpt.addEventListener('click', (e) => {
+            e.preventDefault();
+            
+            // Clean non-numeric characters except a leading plus sign (+) if it exists
+            const cleanPhone = agent.phone.replace(/(?!^\+)\D/g, ''); 
+            
+            // Triggers device dialer screen on mobile/desktop apps
+            window.location.href = `tel:${cleanPhone}`;
+        });
 
         if (agent.profilePicture) {
             $('agentAvatar').innerHTML = `<img src="${agent.profilePicture}" alt="${agent.name}">`;

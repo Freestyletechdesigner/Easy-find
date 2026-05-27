@@ -561,6 +561,7 @@ main { padding: 0 5% 40px; max-width: 1400px; margin: 0 auto; }
     justify-content: center;
     z-index: 1100;
     backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
 }
 .contact-popup.open { display: flex; }
 .contact-popup-inner {

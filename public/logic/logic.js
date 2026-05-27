@@ -1523,3 +1523,24 @@ initSearch();
     };
 
     initWebSocket();
+
+    // Serve term to first user
+    const serveTermsCheck = document.getElementById('serveTerms');
+    const serve = document.querySelector('.serve-terms');
+
+    async function serveTerms() {
+        try {
+            const res = await fetch('/api/first-visit');
+            const data = await res.json();
+            if (data.firstVisit) return serve.style.display = 'flex'
+            serve.style.display = 'none'
+        } catch (error) {
+            console.log(error)
+        }
+    }
+    serveTerms()
+
+    serveTermsCheck.addEventListener('input', () => {
+        serve.style.display = 'none'
+    });
+

@@ -2562,6 +2562,17 @@ header {
     transform: translateX(5px);
 }
 
+/* ── FOOTER ──────────────────────────────────────────── */
+footer {
+    text-align: center;
+    padding: 22px;
+    background: #fff;
+    color: #888;
+    border-top: 1px solid #e0f0f0;
+    margin-top: 40px;
+}
+.footer-link { color: #0d7068; text-decoration: none; font-weight: 700; }
+
 /* Responsive Design */
 @media (max-width: 968px) {
     .contact-container {
@@ -3011,6 +3022,22 @@ header {
 #alert.error {
     display: block;
     color: #900;    
+}
+
+.serve-terms {
+    display: none;
+    gap: 6px;
+    position: fixed;
+    top: 90%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffffff86;
+    padding: 10px 15px;
+    border-radius: 9px;
+    border-left: solid #008177 3px;
+    border-right: solid #008177 3px;
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
 }
 
 /* ── Real-time Property Toast Notifications ─────────── */

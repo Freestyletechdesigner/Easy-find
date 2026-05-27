@@ -25,6 +25,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.section, .section2').forEach(el => animObserver.observe(el));
 
+    // scroll animation 2
+
+    const sections2 = document.querySelectorAll('.section2');
+
+    window.addEventListener('scroll', () => {
+        sections2.forEach(section => {
+            const rect = section.getBoundingClientRect()
+            if (rect.top < window.innerHeight - 100 && rect.bottom > 0) {
+                section.classList.add('action2');
+            } else {
+                section.classList.remove('action2');
+            }
+        })
+
+    });
+
     // ── Load verified agents ──────────────────────────────
     let agentPage       = 1;
     let agentLoading    = false;
