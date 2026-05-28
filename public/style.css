@@ -314,6 +314,12 @@ header {
 }
 #login-nav-hero:hover { background: #077; }
 
+#googleBtn {
+    width: 100%;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+}
 /* ===== HERO BRAND SHAPE (RESPONSIVE) ===== */
 .hero-brand {
     position: absolute;
@@ -2563,14 +2569,7 @@ header {
 }
 
 /* ── FOOTER ──────────────────────────────────────────── */
-footer {
-    text-align: center;
-    padding: 22px;
-    background: #fff;
-    color: #888;
-    border-top: 1px solid #e0f0f0;
-    margin-top: 40px;
-}
+
 .footer-link { color: #0d7068; text-decoration: none; font-weight: 700; }
 
 /* Responsive Design */
@@ -2620,6 +2619,9 @@ footer {
 
     .contact-badge {
         padding: 10px 20px;
+        font-size: 14px;
+    }
+    .badge-text {
         font-size: 14px;
     }
 }
@@ -3031,7 +3033,7 @@ footer {
     top: 90%;
     left: 50%;
     transform: translateX(-50%);
-    background-color: #ffffff86;
+    background-color: #ffffffb7;
     padding: 10px 15px;
     border-radius: 9px;
     border-left: solid #008177 3px;

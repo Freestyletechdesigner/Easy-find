@@ -1194,70 +1194,130 @@ initSearch();
         }
     }
 
-    // Login form submission - Unified for both admin and users
-    if (loginForm) {
-        loginForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            
-            const submitBtn = loginForm.querySelector('input[type="submit"]');
-            const originalText = submitBtn.value;
-            
-            // Show loading state
-            submitBtn.classList.add('loading');
-            submitBtn.value = 'Signing In...';
-            submitBtn.disabled = true;
-
-            const formData = new FormData(loginForm);
-            
-            // Debug: Log form data
-            console.log('=== LOGIN FORM SUBMISSION ===');
-            console.log('Email:', formData.get('email'));
-            console.log('Password:', formData.get('password') ? '***' : 'MISSING');
-
-            try {
-                const res = await fetch("/api/login", {
-                    method: "POST",
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        email: formData.get('email'),
-                        password: formData.get('password')
-                    })
-                });
-                
-                const data = await res.json();
-                
-                if (data.success) {
-                    showLoginAlert('Login successful!', 'success');
-                    
-                    // Check if admin or regular user
-                    if (data.admin) {
-                        // Admin login
-                        setTimeout(() => { window.location.href = '/admin'; }, 1000);
-                    } else if (data.user) {
-                        // Regular user login
-                        userLog.textContent = data.user.name[0];
-                        loginNav.style.display = 'none';
-                        holdLogin.style.right = '-10rem';
-                        userLog.style.display = 'flex';
-                        logoutBtn.style.display = 'flex';
-                        loginPage.classList.remove('log');
-                        loginForm.reset();
-                    }
-                } else {
-                    showLoginAlert(data.message || 'Login failed', 'error');
-                }
-            } catch (err) {
-                console.error("Login error", err);
-                showLoginAlert('Login failed. Please try again.', 'error');
-            } finally {
-                // Reset button state
-                submitBtn.classList.remove('loading');
-                submitBtn.value = originalText;
-                submitBtn.disabled = false;
-            }
+// 1. GLOBAL GOOGLE SIGN-IN INITIALIZATION
+function initGoogleSignIn() {
+    const googleBtnContainer = document.getElementById('googleBtn');
+    if (googleBtnContainer && typeof google !== 'undefined') {
+        google.accounts.id.initialize({
+            client_id: "76611260008-a7bke30pvdtu5000mn2a7eguksucrpeu.apps.googleusercontent.com",
+            callback: handleGoogleCredentialResponse,
+            use_fedcm_for_prompt: false // Smooth bypass for localhost port environments
         });
+
+        google.accounts.id.renderButton(
+            googleBtnContainer,
+            { theme: "outline", size: "large", width: "290", text: "signin_with" }
+        );
     }
+}
+
+// 2. GOOGLE OAUTH CALLBACK PATHWAY
+async function handleGoogleCredentialResponse(googleResponse) {
+    const submitBtn = loginForm ? loginForm.querySelector('input[type="submit"]') : null;
+    let originalText = '';
+
+    if (submitBtn) {
+        originalText = submitBtn.value;
+        submitBtn.classList.add('loading');
+        submitBtn.value = 'Signing In with Google...';
+        submitBtn.disabled = true;
+    }
+
+    try {
+        const res = await fetch("/api/login", {
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+                googleToken: googleResponse.credential
+            })
+        });
+
+        const data = await res.json();
+        handleUnifiedLoginResponse(data);
+
+    } catch (err) {
+        console.error("Google login error", err);
+        showLoginAlert('Google authentication failed. Please try again.', 'error');
+    } finally {
+        if (submitBtn) {
+            submitBtn.classList.remove('loading');
+            submitBtn.value = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+}
+
+// 3. CENTRALIZED DATA AND UI ROUTER
+function handleUnifiedLoginResponse(data) {
+    if (data.success) {
+        showLoginAlert('Login successful!', 'success');
+        
+        // Check if admin or regular user
+        if (data.admin) {
+            // Admin routing structure
+            setTimeout(() => { window.location.href = '/admin'; }, 1000);
+        } else if (data.user) {
+            // Regular user DOM state upgrades
+            userLog.textContent = data.user.name[0];
+            loginNav.style.display = 'none';
+            holdLogin.style.right = '-10rem';
+            userLog.style.display = 'flex';
+            logoutBtn.style.display = 'flex';
+            loginPage.classList.remove('log');
+            if (loginForm) loginForm.reset();
+        }
+    } else {
+        showLoginAlert(data.message || 'Login failed', 'error');
+    }
+}
+
+// 4. STANDARD SUBMIT LISTENER MODIFICATION
+if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = loginForm.querySelector('input[type="submit"]');
+        const originalText = submitBtn.value;
+        
+        // Show loading state
+        submitBtn.classList.add('loading');
+        submitBtn.value = 'Signing In...';
+        submitBtn.disabled = true;
+
+        const formData = new FormData(loginForm);
+        
+        // Debug: Log form data
+        console.log('=== LOGIN FORM SUBMISSION ===');
+        console.log('Email:', formData.get('email'));
+        console.log('Password:', formData.get('password') ? '***' : 'MISSING');
+
+        try {
+            const res = await fetch("/api/login", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    email: formData.get('email'),
+                    password: formData.get('password')
+                })
+            });
+            
+            const data = await res.json();
+            // Pass response directly to the unified processor
+            handleUnifiedLoginResponse(data);
+            
+        } catch (err) {
+            console.error("Login error", err);
+            showLoginAlert('Login failed. Please try again.', 'error');
+        } finally {
+            // Reset button state
+            submitBtn.classList.remove('loading');
+            submitBtn.value = originalText;
+            submitBtn.disabled = false;
+        }
+    });
+}
 
     //signup
     // Signup form submission (updated)

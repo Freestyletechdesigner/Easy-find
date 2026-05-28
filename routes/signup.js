@@ -155,30 +155,55 @@ module.exports = function(app) {
     // Login
     app.post('/api/login', authLimiter, async (req, res) => {
         try {
-            const { email, password } = req.body;
-
-            if (!email || !password) {
-                return res.status(400).json({ success: false, message: 'Email and password are required' });
+            const { email, password, googleToken } = req.body;
+            let targetEmail = '';
+    
+            // 1. DETERMINE AUTHENTICATION METHOD
+            if (googleToken) {
+                // GOOGLE OAUTH PATHWAY
+                try {
+                    const ticket = await client.verifyIdToken({
+                        idToken: googleToken,
+                        audience: process.env.GOOGLE_CLIENT_ID,
+                    });
+                    const payload = ticket.getPayload();
+                    
+                    if (!payload || !payload.email) {
+                        return res.status(400).json({ success: false, message: 'Invalid Google token payload' });
+                    }
+                    
+                    targetEmail = payload.email.trim().toLowerCase();
+                } catch (googleError) {
+                    console.error('Google token verification failed:', googleError);
+                    return res.status(401).json({ success: false, message: 'Google authentication failed' });
+                }
+            } else {
+                // STANDARD PASSWORD PATHWAY
+                if (!email || !password) {
+                    return res.status(400).json({ success: false, message: 'Email and password are required' });
+                }
+                targetEmail = email.trim().toLowerCase();
             }
-            
-            //check if user is admin
-            const admin = await ADMIN.findOne({ email: email.trim().toLowerCase() })
+    
+            // 2. CHECK IF ACCOUNT IS AN ADMIN
+            const admin = await ADMIN.findOne({ email: targetEmail });
             if (admin) {
-
-                // Compare password
-                 const isPasswordValid = await admin.comparePassword(password);
-                 if (!isPasswordValid) {
-                     return res.status(401).json({ success: false, message: 'Invalid email or password' });
-                 }
-
-                // Set session
+                // If it's a standard password login, verify the password
+                if (!googleToken) {
+                    const isPasswordValid = await admin.comparePassword(password);
+                    if (!isPasswordValid) {
+                        return res.status(401).json({ success: false, message: 'Invalid email or password' });
+                    }
+                }
+    
+                // Set Admin Session
                 req.session.admin = {
                     id: admin._id,
                     email: admin.email,
                     role: admin.role
                 };
-
-                res.json({
+    
+                return res.json({
                     success: true,
                     message: 'Login successful',
                     admin: {
@@ -187,37 +212,38 @@ module.exports = function(app) {
                         role: admin.role
                     }
                 });
-            } else {
-                 //check if user exists
-                 const user = await User.findOne({ email: email.trim().toLowerCase() });
-
-                 if (!user) {
-                     return res.status(401).json({ success: false, message: 'Invalid email or password' });
-                 }
-
-                 if (user.status !== 'active') {
-                     return res.status(401).json({ success: false, message: 'Account is inactive. Please contact support.' });
-                 }
-
-                 const isPasswordValid = await user.comparePassword(password);
-                 if (!isPasswordValid) {
-                     return res.status(401).json({ success: false, message: 'Invalid email or password' });
-                 }
-
-                 req.session.userId = user._id;
-
-                 user.lastLogin = new Date();
-                 user.loginCount = (user.loginCount || 0) + 1;
-                 await user.save();
-
-                 res.json({
-                     success: true,
-                     message: 'Login successful',
-                     user: { id: user._id, name: user.name, email: user.email }
-                 });
             }
-            
-
+    
+            // 3. CHECK IF ACCOUNT IS A STANDARD USER
+            const user = await User.findOne({ email: targetEmail });
+            if (!user) {
+                return res.status(401).json({ success: false, message: 'Account not found. Please register or check details.' });
+            }
+    
+            if (user.status !== 'active') {
+                return res.status(401).json({ success: false, message: 'Account is inactive. Please contact support.' });
+            }
+    
+            // If it's a standard password login, verify the password
+            if (!googleToken) {
+                const isPasswordValid = await user.comparePassword(password);
+                if (!isPasswordValid) {
+                    return res.status(401).json({ success: false, message: 'Invalid email or password' });
+                }
+            }
+    
+            // Setup User Session and Update Analytics Data
+            req.session.userId = user._id;
+            user.lastLogin = new Date();
+            user.loginCount = (user.loginCount || 0) + 1;
+            await user.save();
+    
+            return res.json({
+                success: true,
+                message: 'Login successful',
+                user: { id: user._id, name: user.name, email: user.email }
+            });
+    
         } catch (error) {
             console.error('Login error:', error);
             res.status(500).json({ success: false, message: 'Server error. Please try again later.' });

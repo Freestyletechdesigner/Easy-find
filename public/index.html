@@ -260,6 +260,7 @@
                 <input type="password" name="password" id="login-password" placeholder="Password" required>
                 <i id="login-eye" class="fa-solid fa-eye"></i>
             </span>
+            <div id="googleBtn"></div>
             <input type="submit" value="Login">
             <div id="link-to-signup">Don't have an account? Sign up</div>
         </form>
@@ -312,8 +313,8 @@
                 
                 <div class="social-links">
                     <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
-                    <a href="#" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
-                    <a href="#" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                    <a href="#" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                    <a href="#" aria-label="Email"><i class="fa-regular fa-envelope"></i></a>
                 </div>
             </div>
 
@@ -365,6 +366,8 @@
 <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
 </script>
+
+<script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleSignIn()"></script>
 
 <script type="text/javascript">
    (function(){

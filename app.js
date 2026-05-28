@@ -45,6 +45,14 @@ app.use(helmet({
     contentSecurityPolicy: process.env.NODE_ENV === 'production'
 }));
 
+// Add these explicit headers or update your existing Helmet configuration
+app.use((req, res, next) => {
+    // Allows Google to communicate with your localhost environment smoothly
+    res.setHeader("Referrer-Policy", "no-referrer-when-downgrade");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+    next();
+});
+
 // Compress all responses — reduces payload size by 60-80%
 app.use(compression());
 

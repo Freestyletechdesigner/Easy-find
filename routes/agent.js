@@ -2,6 +2,8 @@ const multer = require('multer');
 const AgentUser = require('../model/AgentUser.js');
 const { check, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // Strict limiter for Login and OTP
 const authLimiter = rateLimit({
@@ -106,24 +108,51 @@ const agent = (app) => {
         }
     });
 
-    // Login
+    // Login (Handles Password & Google Auth)
     app.post('/api/agent/login', authLimiter, [
-        check('email').isEmail().normalizeEmail().withMessage('Invalid email'),
-        check('password').notEmpty().withMessage('Password is required')
+        check('email').optional({ checkFalsy: true }).isEmail().normalizeEmail().withMessage('Invalid email'),
     ], async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(422).json({ success: false, message: 'Validation failed', errors: errors.array() });
-        }
-
-        const { email, password } = req.body;
-
+        
+        const { email, password, googleToken } = req.body;
+        let targetEmail = email;
+        let googleId = null;
+    
         try {
-            const agent = await AgentUser.findOne({ email });
-            if (!agent) {
-                return res.status(401).json({ success: false, message: 'Invalid email or password' });
+            if (googleToken) {
+                try {
+                    const ticket = await client.verifyIdToken({
+                        idToken: googleToken,
+                        audience: process.env.GOOGLE_CLIENT_ID, 
+                    });
+                    const payload = ticket.getPayload();
+                    
+                    if (!payload.email_verified) {
+                        return res.status(401).json({ success: false, message: 'Unverified Google accounts are not permitted.' });
+                    }
+    
+                    targetEmail = payload.email;
+                    googleId = payload.sub;
+                } catch (jwtError) {
+                    return res.status(401).json({ success: false, message: 'Invalid or expired Google token' });
+                }
+            } else {
+                const errors = validationResult(req);
+                if (!errors.isEmpty() || !password) {
+                    return res.status(422).json({ success: false, message: 'Email and password are required', errors: errors.array() });
+                }
             }
-
+    
+            if (targetEmail) {
+                targetEmail = targetEmail.trim().toLowerCase();
+            }
+    
+            const agent = await AgentUser.findOne({ email: targetEmail });
+            
+            if (!agent) {
+                return res.status(401).json({ success: false, message: 'Account not found. Please register first.' });
+            }
+    
+            // 3. STATUS CHECK: Make sure the account isn't banned or suspended
             if (agent.status !== 'active') {
                 return res.status(403).json({ 
                     success: false, 
@@ -131,15 +160,30 @@ const agent = (app) => {
                     inactive: true 
                 });
             }
-
-            const isPasswordValid = await agent.comparePassword(password);
-            if (!isPasswordValid) {
-                return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    
+            // 4. SECURITY CHECK: Verify Password OR bind/verify Google link mapping
+            if (!googleToken) {
+                const isPasswordValid = await agent.comparePassword(password);
+                if (!isPasswordValid) {
+                    return res.status(401).json({ success: false, message: 'Invalid email or password' });
+                }
+            } else {
+                // SECURITY PATCH: If they already linked a Google ID before, make sure it matches the current one!
+                if (agent.googleId && agent.googleId !== googleId) {
+                    return res.status(401).json({ success: false, message: 'Google account mismatch. Please log in with your password.' });
+                }
+    
+                // Safe to link the identity if it's their first time logging in via Google
+                if (!agent.googleId) {
+                    agent.googleId = googleId;
+                }
             }
-
+    
+            // 5. UPDATE METRICS & SAVE
             agent.lastLogin = new Date();
             await agent.save();
-
+    
+            // 6. ESTABLISH SESSION
             req.session.agent = {
                 id: agent._id,
                 name: agent.name,
@@ -147,15 +191,16 @@ const agent = (app) => {
                 role: agent.role,
                 profilePicture: agent.profilePicture || null
             };
-
-            res.status(200).json({
+    
+            return res.status(200).json({
                 success: true,
                 message: 'Login successful',
                 agent: { name: agent.name, email: agent.email, role: agent.role }
             });
+    
         } catch (err) {
             console.error('Agent login error:', err);
-            res.status(500).json({ success: false, message: 'Server error' });
+            return res.status(500).json({ success: false, message: 'Server error' });
         }
     });
 
