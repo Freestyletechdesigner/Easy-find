@@ -72,7 +72,6 @@ const signup = require('./routes/signup.js');
 const messageAPI = require('./routes/message.js');
 const agent = require('./routes/agent.js');
 const agentProfileUpload = require('./routes/agent-profile-upload.js');
-const profileUpload = require('./routes/profile-upload.js');
 const AGENT_POST = require('./routes/agent-upload.js');
 const VIEW_POST = require('./routes/view-post.js');
 const PAYMENT_FOR_BOOST = require('./routes/payment-for-boost.js');
@@ -327,7 +326,6 @@ signup(app);
 messageAPI(app);
 agent(app);
 agentProfileUpload(app);
-profileUpload(app);
 AGENT_POST(app);
 VIEW_POST(app);
 SEARCH_ENGINE(app);
@@ -335,7 +333,7 @@ PAYMENT_FOR_BOOST(app);
 FEEDBACK(app);
 PROPERTY_REPORT(app);
 
-// Fix 25: Global error handler (must be before 404 handler)
+// Global error handler (must be before 404 handler)
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({ success: false, message: 'Internal server error' });
@@ -345,4 +343,4 @@ app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));
 });
 
-server.listen(process.env.PORT || 9000, '0.0.0.0', () => console.log('http://localhost:',process.env.PORT||9000))
+server.listen(process.env.PORT || 9000, '0.0.0.0', () => console.log(process.env.APP_URL || 'http://localhost:9000'))

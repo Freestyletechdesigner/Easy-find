@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Type toggle (Land hides beds/baths, shows plot) ──────
     const typeSelect = document.getElementById('typeSelect');
-    const groupBeds  = document.getElementById('groupBeds');
+    const groupBeds   = document.getElementById('groupBeds');
     const groupBaths = document.getElementById('groupBaths');
     const landPlot = document.getElementById('groupLand');
     landPlot.style.display = 'none'
@@ -194,8 +194,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 alertBox.error('Invalid File', `${file.name} is not an image file`);
                 return false;
             }
-            if (file.size > 10 * 1024 * 1024) {
-                alertBox.error('File Too Large', `${file.name} exceeds the 20MB limit`);
+            // Reduced to 2MB (2 * 1024 * 1024)
+            if (file.size > 2 * 1024 * 1024) {
+                alertBox.error('File Too Large', `${file.name} exceeds the 2MB limit`);
                 return false;
             }
             return true;
@@ -254,9 +255,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const area     = propertyForm.querySelector('[name="area"]').value.trim();
         const desc     = propertyForm.querySelector('[name="description"]').value.trim();
 
-        if (!title)                                              { alertBox.warning('Missing Field', 'Property title is required'); return; }
+        if (!title)                                               { alertBox.warning('Missing Field', 'Property title is required'); return; }
         if (emojiOrSymbol.test(title) || !textOnly.test(title)) { alertBox.error('Invalid Title', 'Title must not contain emojis or special symbols'); return; }
-        if (!price)                                              { alertBox.warning('Missing Field', 'Price is required'); return; }
+        if (!price)                                               { alertBox.warning('Missing Field', 'Price is required'); return; }
         if (!numbersOnly.test(price))                            { alertBox.error('Invalid Price', 'Price must be numbers only'); return; }
         if (!category)                                           { alertBox.warning('Missing Field', 'Please select a listing category (Sale, Rent, or Short-let)'); return; }
         if (!location)                                           { alertBox.warning('Missing Field', 'Location is required'); return; }
@@ -374,144 +375,144 @@ document.addEventListener('DOMContentLoaded', () => {
         alertBox.success('Link Copied', 'Property link copied to clipboard');
     }
 
-// Keep track of pagination state out of function re-initialization scope
-let currentPropertyPage = 1; 
-let isPropertyLoading = false;
+    // Keep track of pagination state out of function re-initialization scope
+    let currentPropertyPage = 1; 
+    let isPropertyLoading = false;
 
-// ── Skeleton Loader Element ──────────────────────────────────
-function getSkeletonHTML() {
-    return Array(4).fill(`
-        <div class="skeleton-card temporary-skeleton">
-            <div class="skeleton skeleton-img" style="height:200px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
-            <div class="skeleton-body" style="padding:15px;">
-                <div class="skeleton skeleton-line" style="width:60%; height:15px; margin-bottom:10px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
-                <div class="skeleton skeleton-line" style="width:40%; height:12px; margin-bottom:10px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
-                <div class="skeleton skeleton-line" style="width:80%; height:12px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+    // ── Skeleton Loader Element ──────────────────────────────────
+    function getSkeletonHTML() {
+        return Array(4).fill(`
+            <div class="skeleton-card temporary-skeleton">
+                <div class="skeleton skeleton-img" style="height:200px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+                <div class="skeleton-body" style="padding:15px;">
+                    <div class="skeleton skeleton-line" style="width:60%; height:15px; margin-bottom:10px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+                    <div class="skeleton skeleton-line" style="width:40%; height:12px; margin-bottom:10px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+                    <div class="skeleton skeleton-line" style="width:80%; height:12px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
+                </div>
             </div>
-        </div>
-    `).join('');
-}
-
-// ── Properties Grid ───────────────────────────────────
-window.loadProperties = async function (isNewLoad = false) {
-    // Prevent overlapping duplicate API requests if user click-spams
-    if (isPropertyLoading) return; 
-    
-    if (isNewLoad) {
-        currentPropertyPage = 1;
+        `).join('');
     }
 
-    const grid  = document.getElementById('propertiesGrid');
-    const empty = document.getElementById('propertiesEmpty');
-    const count = document.getElementById('property-count');
-
-    isPropertyLoading = true;
-
-    // Inject skeletons carefully without wiping out previous items if appending
-    if (currentPropertyPage === 1) {
-        grid.innerHTML = getSkeletonHTML();
-        empty.style.display = 'none';
-    } else {
-        grid.insertAdjacentHTML('beforeend', `<div id="pagination-skeletons">${getSkeletonHTML()}</div>`);
-    }
-
-    try {
-        const res  = await fetch(`/api/agent/property?page=${currentPropertyPage}`);
-        const data = await res.json();
-
-        // Remove temporary skeletons safely
-        if (currentPropertyPage === 1) {
-            grid.innerHTML = '';
-        } else {
-            const tempSkeletons = document.getElementById('pagination-skeletons');
-            if (tempSkeletons) tempSkeletons.remove();
+    // ── Properties Grid ───────────────────────────────────
+    window.loadProperties = async function (isNewLoad = false) {
+        // Prevent overlapping duplicate API requests if user click-spams
+        if (isPropertyLoading) return; 
+        
+        if (isNewLoad) {
+            currentPropertyPage = 1;
         }
 
-        if (!data.success || !data.property || !data.property.length) {
+        const grid  = document.getElementById('propertiesGrid');
+        const empty = document.getElementById('propertiesEmpty');
+        const count = document.getElementById('property-count');
+
+        isPropertyLoading = true;
+
+        // Inject skeletons carefully without wiping out previous items if appending
+        if (currentPropertyPage === 1) {
+            grid.innerHTML = getSkeletonHTML();
+            empty.style.display = 'none';
+        } else {
+            grid.insertAdjacentHTML('beforeend', `<div id="pagination-skeletons">${getSkeletonHTML()}</div>`);
+        }
+
+        try {
+            const res  = await fetch(`/api/agent/property?page=${currentPropertyPage}`);
+            const data = await res.json();
+
+            // Remove temporary skeletons safely
             if (currentPropertyPage === 1) {
+                grid.innerHTML = '';
+            } else {
+                const tempSkeletons = document.getElementById('pagination-skeletons');
+                if (tempSkeletons) tempSkeletons.remove();
+            }
+
+            if (!data.success || !data.property || !data.property.length) {
+                if (currentPropertyPage === 1) {
+                    empty.style.display = 'block';
+                    count.textContent = '0';
+                }
+                isPropertyLoading = false;
+                return;
+            }
+
+            // Update counts and render cards gracefully
+            if (currentPropertyPage === 1) {
+                count.textContent = data.totalCount || data.property.length; 
+            } else {
+                // If backend provides exact database count, use that, else increment aggregate values
+                count.textContent = parseInt(count.textContent) + data.property.length;
+            }
+
+            // Efficient DOM insertion loop
+            data.property.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
+            
+            // Prepare increment step for the next pagination invocation trigger
+            currentPropertyPage++;
+
+        } catch (err) {
+            console.error("Failed to load properties:", err);
+            if (currentPropertyPage === 1) {
+                grid.innerHTML = '';
                 empty.style.display = 'block';
                 count.textContent = '0';
+            } else {
+                const tempSkeletons = document.getElementById('pagination-skeletons');
+                if (tempSkeletons) tempSkeletons.remove();
             }
+        } finally {
             isPropertyLoading = false;
-            return;
         }
+    };
 
-        // Update counts and render cards gracefully
-        if (currentPropertyPage === 1) {
-            count.textContent = data.totalCount || data.property.length; 
-        } else {
-            // If backend provides exact database count, use that, else increment aggregate values
-            count.textContent = parseInt(count.textContent) + data.property.length;
-        }
+    function propertyCard(p) {
+        const imgSrc = p.imageNames && p.imageNames.length
+            ? `/agent-loged/upload-property/${p.imageNames[0]}`
+            : 'profile.png';
+        const price = Number(p.price).toLocaleString();
+        const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        const isLand = (p.type || '').toLowerCase() === 'land';
+        const isVerified = (p.stand || '').toLowerCase() === 'verified agent';
 
-        // Efficient DOM insertion loop
-        data.property.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
-        
-        // Prepare increment step for the next pagination invocation trigger
-        currentPropertyPage++;
+        // SCALING OPTIMIZATION:
+        return `
+            <div class="property-card" id="card-${p._id}" data-property="${encodeURIComponent(JSON.stringify(p))}">
+                <div class="card-image">
+                    <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
+                    <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
+                    ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
+                    ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-building-shield"></i></span>` : ''}
 
-    } catch (err) {
-        console.error("Failed to load properties:", err);
-        if (currentPropertyPage === 1) {
-            grid.innerHTML = '';
-            empty.style.display = 'block';
-            count.textContent = '0';
-        } else {
-            const tempSkeletons = document.getElementById('pagination-skeletons');
-            if (tempSkeletons) tempSkeletons.remove();
-        }
-    } finally {
-        isPropertyLoading = false;
-    }
-};
-
-function propertyCard(p) {
-    const imgSrc = p.imageNames && p.imageNames.length
-        ? `/agent-loged/upload-property/${p.imageNames[0]}`
-        : 'profile.png';
-    const price = Number(p.price).toLocaleString();
-    const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-    const isLand = (p.type || '').toLowerCase() === 'land';
-    const isVerified = (p.stand || '').toLowerCase() === 'verified agent';
-
-    // SCALING OPTIMIZATION:
-    return `
-        <div class="property-card" id="card-${p._id}" data-property="${encodeURIComponent(JSON.stringify(p))}">
-            <div class="card-image">
-                <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
-                <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
-                ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
-                ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-building-shield"></i></span>` : ''}
-
-                <div class="card-menu-wrap">
-                    <button class="card-menu-btn" onclick="toggleCardMenu('${p._id}')">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <div class="card-menu" id="menu-${p._id}">
-                        <button onclick="deleteProperty('${p._id}')"><i class="fas fa-trash"></i> Delete</button>
-                        <button onclick="shareProperty('${p._id}')"><i class="fas fa-share-alt"></i> Share</button>
-                        <button onclick="editPost('${p._id}')"><i class="fa-solid fa-gear"></i> Edit post</button>
+                    <div class="card-menu-wrap">
+                        <button class="card-menu-btn" onclick="toggleCardMenu('${p._id}')">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <div class="card-menu" id="menu-${p._id}">
+                            <button onclick="deleteProperty('${p._id}')"><i class="fas fa-trash"></i> Delete</button>
+                            <button onclick="shareProperty('${p._id}')"><i class="fas fa-share-alt"></i> Share</button>
+                            <button onclick="editPost('${p._id}')"><i class="fa-solid fa-gear"></i> Edit post</button>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="card-body">
-                <div class="card-price">₦${price}</div>
-                <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
-                <div class="card-stats">
-                    ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
-                    ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
-                    ${isLand ? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>` : ''}
+                <div class="card-body">
+                    <div class="card-price">₦${price}</div>
+                    <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
+                    <div class="card-stats">
+                        ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
+                        ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
+                        ${isLand ? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>` : ''}
+                    </div>
+                    <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} | <i class="fas fa-eye"></i> ${p.view || 0} views</div>
                 </div>
-                <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} | <i class="fas fa-eye"></i> ${p.view || 0} views</div>
+                <div class="card-footer">
+                    <a href="/property?id=${p._id}" class="btn-view-details">
+                        View Details <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
             </div>
-            <div class="card-footer">
-                <a href="/property?id=${p._id}" class="btn-view-details">
-                    View Details <i class="fas fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    `;
-}
+        `;
+    }
 
     //total views
     async function loadTotalViews() {
@@ -522,7 +523,6 @@ function propertyCard(p) {
         }
     }
 
- 
     // Bio
     const bioText     = document.getElementById('bioText');
     const bioEditForm = document.getElementById('bioEditForm');
@@ -684,7 +684,8 @@ function propertyCard(p) {
     };
 
     editFileInput.addEventListener('change', (e) => {
-        const valid = Array.from(e.target.files).filter(f => f.type.startsWith('image/') && f.size <= 10 * 1024 * 1024);
+        // Reduced to 2MB (2 * 1024 * 1024)
+        const valid = Array.from(e.target.files).filter(f => f.type.startsWith('image/') && f.size <= 2 * 1024 * 1024);
         editImages = [...editImages, ...valid];
         updateEditPreview();
     });
@@ -749,17 +750,20 @@ function propertyCard(p) {
         const area     = document.getElementById('editArea').value.trim();
         const desc     = document.getElementById('editDescription').value.trim();
 
-        if (!title)                                              { alertBox.warning('Missing Field', 'Property title is required'); return; }
+        if (!title)                                               { alertBox.warning('Missing Field', 'Property title is required'); return; }
         if (emojiOrSymbol.test(title) || !textOnly.test(title)) { alertBox.error('Invalid Title', 'Title must not contain emojis or special symbols'); return; }
-        if (!price)                                              { alertBox.warning('Missing Field', 'Price is required'); return; }
+        if (!price)                                               { alertBox.warning('Missing Field', 'Price is required'); return; }
         if (!numbersOnly.test(price))                            { alertBox.error('Invalid Price', 'Price must be numbers only'); return; }
         if (!category)                                           { alertBox.warning('Missing Field', 'Please select a listing category'); return; }
         if (!location)                                           { alertBox.warning('Missing Field', 'Location is required'); return; }
         if (emojiOrSymbol.test(location) || !textOnly.test(location)) { alertBox.error('Invalid Location', 'Location must not contain emojis or special symbols'); return; }
+        if (beds  && !numbersOnly.test(beds))                    { alertBox.error('Invalid Bedrooms', 'Bedrooms must be a number only'); return; }
+        if (baths && !numbersOnly.test(baths))                   { alertBox.error('Invalid Bathrooms', 'Bathrooms must be a number only'); return; }
+        if (area  && emojiOrSymbol.test(area))                    { alertBox.error('Invalid Area', 'Area must not contain emojis or special symbols'); return; }
+        if (desc  && emojiOrSymbol.test(desc))                   { alertBox.error('Invalid Description', 'Description must not contain emojis or special symbols'); return; }
 
         const formData = new FormData(editForm);
-        formData.delete('file');
-        existingImages.forEach(name => formData.append('keepImages', name));
+        formData.append('existingImages', JSON.stringify(existingImages));
         editImages.forEach(file => formData.append('file', file));
 
         btn.disabled          = true;
@@ -767,11 +771,11 @@ function propertyCard(p) {
         btnText.style.display = 'none';
 
         try {
-            const res  = await fetch(`/api/edit/post/${currentEditId}`, { method: 'PATCH', body: formData });
+            const res  = await fetch(`/api/agent/property/${currentEditId}`, { method: 'PUT', body: formData });
             const data = await res.json();
 
             if (res.ok && data.success) {
-                alertBox.success('Updated', 'Property updated successfully!', () => {
+                alertBox.success('Updated', 'Property listing updated successfully!', () => {
                     closeEditModal();
                     loadProperties(isNewLoad = true);
                 });
@@ -779,6 +783,7 @@ function propertyCard(p) {
                 alertBox.error('Failed', data.message || 'Failed to update property');
             }
         } catch (err) {
+            console.error(err);
             alertBox.error('Error', 'Something went wrong. Please try again.');
         } finally {
             btn.disabled          = false;
@@ -787,10 +792,15 @@ function propertyCard(p) {
         }
     };
 
-    // Init
-    checkAuth();
-    loadProperties();
-    loadTotalViews();
-    Bio()
+    // ── Document Initialization Callbacks ───────────────────
+    async function initializeDashboard() {
+        const authenticated = await checkAuth();
+        if (authenticated) {
+            loadProperties(isNewLoad = true);
+            loadTotalViews();
+            Bio();
+        }
+    }
 
-}); // end DOMContentLoaded
+    initializeDashboard();
+});

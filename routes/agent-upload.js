@@ -2,25 +2,21 @@ const multer = require('multer');
 const {check, validationResult} = require('express-validator');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 const AgentPost = require('../model/AgentPost.js');
 const AgentUser = require('../model/AgentUser.js');
 
 const ROOT = path.join(__dirname, '..');
+const UPLOAD_DIR = path.join(ROOT, 'agent-loged', 'upload-property');
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadFolder = path.join(ROOT, 'agent-loged', 'upload-property');
-        cb(null, uploadFolder)
-    }, filename: (req, file, cb) => {
-        const agentId = req.session.agent.id;
-        const ext = path.extname(file.originalname);
-        const fileName = `${agentId}_${Date.now()}${ext}`
+// Ensure upload directory exists safely
+if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+}
 
-        cb(null, fileName)
-    }
-});
+// Store in memory buffer so sharp can optimize pixel payloads before writing to disk
+const storage = multer.memoryStorage();
 
-// Fix 6: Replace forbidden list with an allowlist for images only
 const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 const upload = multer({
     storage,
@@ -32,8 +28,8 @@ const upload = multer({
         cb(null, true);
     },
     limits: {
-        fileSize: 20 * 1024 * 1024, // 20MB per file
-        files: 10                    // max 10 files per upload request
+        fileSize: 5 * 1024 * 1024, // 5MB max per raw incoming file
+        files: 10                  // Max 10 files per request
     }
 });
 
@@ -49,7 +45,28 @@ const AGENT_POST = (app) => {
         }
         next();
     }
-// post request
+
+    // Helper function to handle async sharp compression across multiple files
+    async function processAndSaveImages(files, agentId) {
+        const savedFilenames = [];
+        for (const file of files) {
+            const fileName = `${agentId}_${Date.now()}_${Math.floor(Math.random() * 1000)}.webp`;
+            const finalPath = path.join(UPLOAD_DIR, fileName);
+
+            await sharp(file.buffer)
+                .resize({ width: 1200, withoutEnlargement: true }) // Downscale massive resolutions safely
+                .webp({ 
+                    quality: 65, // Drops image file size down aggressively while looking great
+                    effort: 6    // Maximum CPU compression pass to save server disk space
+                })
+                .toFile(finalPath);
+
+            savedFilenames.push(fileName);
+        }
+        return savedFilenames;
+    }
+
+    // Post request
     app.post('/api/agent/post', requireAgent, upload.array('file'), [
         check('title').notEmpty().trim().escape(),
         check('type').notEmpty().trim().escape(),
@@ -61,7 +78,7 @@ const AGENT_POST = (app) => {
         check('area').optional({ checkFalsy: true }).trim(),
         check('description').trim().escape().isLength({ max: 5000 }),
         check('features').trim().escape().isLength({ max: 1000 })
-    ],async (req, res) => {
+    ], async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             console.log('Validation errors:', errors.array());
@@ -69,14 +86,16 @@ const AGENT_POST = (app) => {
                 success: false,
                 message: "Validation failed" 
             });
-        };
+        }
 
         const { title, type, category, price, location, beds, baths, area, description, features } = req.body;
         const isLand = type === 'land';
-        const imageName = req.files.map(file => file.filename);
         const agentId = req.session.agent.id;
 
         try {
+            // Process and compress files through memory buffer loop pipeline
+            const imageNames = req.files && req.files.length ? await processAndSaveImages(req.files, agentId) : [];
+
             const newPost = new AgentPost({
                 agentId,
                 title,
@@ -89,36 +108,35 @@ const AGENT_POST = (app) => {
                 area,
                 description,
                 features,
-                imageNames: imageName,
+                imageNames: imageNames,
                 date: Date.now(),
                 view: 0
             }); 
-            //save data
+            
             await newPost.save();
     
-            //send a res to user
             res.json({
                 success: true,
                 postID: newPost
             });
-        // Broadcast the new property upload via WebSockets
-        setImmediate(() => {
-            const broadcastProperty = req.app.get('broadcastProperty');
-            if (broadcastProperty) {
-                broadcastProperty(newPost);
-            }
-        });
+
+            // Broadcast via WebSockets
+            setImmediate(() => {
+                const broadcastProperty = req.app.get('broadcastProperty');
+                if (broadcastProperty) {
+                    broadcastProperty(newPost);
+                }
+            });
         } catch (error) {
             console.error('Error uploading property:', error);
             res.status(500).json({
                 success: false,
                 message: 'Server Error'
-            })
+            });
         }
-
     });
 
-    //get request for agent only
+    // Get request for agent only
     app.get('/api/agent/property', requireAgent, async (req, res) => {
         const page = parseInt(req.query.page) || 1; 
         const limit = 8;
@@ -127,13 +145,11 @@ const AGENT_POST = (app) => {
         try {
             const agentId = req.session.agent.id;
 
-            // fetch posts and agent stand in parallel
             const [agentPost, agentUser] = await Promise.all([
                 AgentPost.find({ agentId }).sort({ date: -1 }).skip(skip).limit(limit).lean(),
                 AgentUser.findById(agentId).select('stand').lean()
             ]);
 
-            // attach stand to every post so the frontend can show the verified badge
             const stand = agentUser?.stand || '';
             const posts = agentPost.map(p => ({ ...p, stand }));
 
@@ -150,10 +166,7 @@ const AGENT_POST = (app) => {
             const limit = 20;
     
             const pipeline = [
-                // 1. Convert the String ID to an ObjectId first
                 { $addFields: { agentObjId: { $toObjectId: '$agentId' } } },
-                
-                // 2. Perform the Lookup
                 { 
                     $lookup: { 
                         from: 'agentusers', 
@@ -162,40 +175,29 @@ const AGENT_POST = (app) => {
                         as: 'agent' 
                     } 
                 },
-                
-                // 3. Deconstruct the array
                 { $unwind: '$agent' },
-                
-                // 4. Drop posts from inactive agents immediately before heavy calculations
                 { $match: { 'agent.status': 'active' } },
-                
-                // 5. Calculate stand verification and priority values
                 {
                     $addFields: {
-                        isVerified: { $eq: ['$agent.stand', 'Verified Agent'] }, // Simplified boolean condition
+                        isVerified: { $eq: ['$agent.stand', 'Verified Agent'] },
                         priority: {
                             $cond: [
                                 { $and: [{ $eq: ['$boostPost', true] }, { $gt: ['$boostPostExpiry', now] }] }, 
-                                1, // Top Priority: Boosted Post
+                                1, 
                                 { 
                                     $cond: [
                                         { $and: [{ $eq: ['$agent.boostAccount', true] }, { $gt: ['$agent.boostAccountExpiry', now] }] }, 
-                                        2, // Mid Priority: Boosted Agent Account
-                                        3  // Regular Priority
+                                        2, 
+                                        3  
                                     ]
                                 }
                             ]
                         }
                     }
                 },
-                
-                // 6. Sort and Limit payload output
                 { $sort: { priority: 1, _id: -1 } },
                 { $limit: limit },
-                
-                // 7. Promote agentStand before removing the agent join object
                 { $addFields: { stand: '$agent.stand' } },
-                // 8. Project clean response — drop internal join fields
                 { $project: { agent: 0, agentObjId: 0 } }
             ];
     
@@ -233,7 +235,7 @@ const AGENT_POST = (app) => {
         }
     });
 
-    //delete post by agent only 
+    // Delete post by agent only 
     app.delete('/api/agent/property/:id', requireAgent, async (req, res) => {
         try {
             const agentId    = req.session.agent.id;
@@ -249,10 +251,9 @@ const AGENT_POST = (app) => {
                 return res.status(403).json({ success: false, message: 'Not authorized to delete this property' });
             }
 
-            // delete image files
             if (agentPost.imageNames && agentPost.imageNames.length) {
                 agentPost.imageNames.forEach(img => {
-                    const imgPath = path.join(ROOT, 'agent-loged', 'upload-property', img);
+                    const imgPath = path.join(UPLOAD_DIR, img);
                     try { fs.unlinkSync(imgPath); } catch (_) {}
                 });
             }
@@ -263,7 +264,7 @@ const AGENT_POST = (app) => {
         }
     });
 
-    //total view for post
+    // Total view for post
     app.get('/api/agent/views', requireAgent, async (req, res) => {
         const agentId = req.session.agent.id;
         try {
@@ -277,7 +278,7 @@ const AGENT_POST = (app) => {
         }
     });
 
-    //find each property by id params
+    // Find each property by id params
     app.get('/api/view/property/:id', async (req, res) => {
         const id = req.params.id;
         
@@ -291,7 +292,6 @@ const AGENT_POST = (app) => {
                 });
             }
 
-            // fetch agent stand for verified badge
             const agentUser = await AgentUser.findById(agentPost.agentId).select('stand').lean();
             agentPost.stand = agentUser?.stand || '';
             
@@ -300,12 +300,12 @@ const AGENT_POST = (app) => {
             console.error('Error fetching property:', error.message);
             res.status(500).json({
                 success: false,
-                message: 'Error on loading post by id: '
+                message: 'Error on loading post by id'
             });
         }
     });
 
-    //Edit property post
+    // Edit property post
     app.patch('/api/edit/post/:id', requireAgent, upload.array('file'), [
         check('title').notEmpty().trim().escape(),
         check('type').notEmpty().trim().escape(),
@@ -318,11 +318,10 @@ const AGENT_POST = (app) => {
         check('description').trim().escape().isLength({ max: 5000 }),
         check('features').trim().escape().isLength({ max: 1000 })
     ], async (req, res) => {
-        //validation 
         const error = validationResult(req);
         if (!error.isEmpty()) {
             console.error('Validation errors:', error.array());
-            return res.status(403).json({
+            return res.status(422).json({
                 success: false,
                 message: 'Validation failed'
             });
@@ -330,25 +329,28 @@ const AGENT_POST = (app) => {
 
         const { title, type, category, price, location, beds, baths, area, description, features } = req.body;
         const isLand = type === 'land';
-        const newImageNames = req.files.map(file => file.filename);
-        const keepImages    = req.body.keepImages
+        const agentId = req.session.agent.id;
+        
+        const keepImages = req.body.keepImages
             ? (Array.isArray(req.body.keepImages) ? req.body.keepImages : [req.body.keepImages])
             : [];
-        const imageName = [...keepImages, ...newImageNames];
+
         try {
             const id = req.params.id;
             const agentPost = await AgentPost.findById(id);
 
-            // Fix 12: Ownership check - ensure agent owns this post
             if (!agentPost) {
                 return res.status(404).json({ success: false, message: 'Property not found' });
             }
-            if (agentPost.agentId.toString() !== req.session.agent.id.toString()) {
+            if (agentPost.agentId.toString() !== agentId.toString()) {
                 return res.status(403).json({ success: false, message: 'Not authorized' });
             }
 
-            //make the changes 
-            agentPost.title = title ;
+            // Cleanly compress new image files if uploaded during patch update edit requests
+            const newImageNames = req.files && req.files.length ? await processAndSaveImages(req.files, agentId) : [];
+            const imageName = [...keepImages, ...newImageNames];
+
+            agentPost.title = title;
             agentPost.type = type;
             agentPost.category = category;
             agentPost.price = price;
@@ -361,19 +363,18 @@ const AGENT_POST = (app) => {
             agentPost.imageNames = imageName;
             agentPost.date = Date.now();
             
-            //save change
             await agentPost.save();
 
             res.json({
                 success: true,
                 property: agentPost
-            })
+            });
         } catch (error) {
-            console.error('Property edit Error', error)
+            console.error('Property edit Error', error);
             res.status(500).json({
                 success: false,
                 message: 'Error editing post'
-            })
+            });
         }
     });
 
@@ -401,15 +402,11 @@ const AGENT_POST = (app) => {
                 ]
             }).skip(skip).limit(limit).lean();
 
-            // get unique agent IDs from related posts
             const agentIds = [...new Set(related.map(p => p.agentId))];
-
-            // fetch all those agents' stand in one query
             const agents = await AgentUser.find({ _id: { $in: agentIds } }).select('_id stand').lean();
             const standMap = {};
             agents.forEach(a => { standMap[a._id.toString()] = a.stand || ''; });
 
-            // attach each post's own agent stand
             const posts = related.map(p => ({ ...p, stand: standMap[p.agentId] || '' }));
 
             res.json({ success: true, related: posts });
@@ -418,7 +415,6 @@ const AGENT_POST = (app) => {
             res.json({ success: false, message: 'Error loading related' });
         }
     });
-
-}
+};
 
 module.exports = AGENT_POST;

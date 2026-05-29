@@ -5,10 +5,6 @@ node_modules/
 # uploaded images
 agent-loged/upload-property/
 agent-profiles/
-public/uploads/
-
-# database files (contain real user data)
-database/
 
 # OS / editor
 .vscode/

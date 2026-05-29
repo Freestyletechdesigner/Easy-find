@@ -5,7 +5,7 @@ const sharp = require('sharp');
 const AgentUser = require('../model/AgentUser.js');
 const ROOT = path.join(__dirname, '..');
 
-// Switch from diskStorage to memoryStorage to process image in RAM
+// memoryStorage to process image in RAM
 const storage = multer.memoryStorage();
 
 // File filter - only allow images
