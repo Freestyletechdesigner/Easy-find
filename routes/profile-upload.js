@@ -1,9 +1,10 @@
 const fs = require('fs').promises;
 const path = require('path');
 const multer = require('multer');
+const sharp = require('sharp');
 
 // Configure multer for profile picture uploads
-const storage = multer.diskStorage({
+const storage = multer.memoryStorage({
     destination: async (req, file, cb) => {
         const uploadDir = path.join(__dirname, '..', 'public', 'uploads', 'profiles');
         

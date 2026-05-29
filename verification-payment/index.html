@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Verification Payment - Easy Find</title>
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: radial-gradient(circle at 10% 20%, rgba(4, 84, 69, 1) 0%, rgba(2, 43, 35, 1) 90%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 12px;
+        }
+
+        .checkout-container {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+            overflow: hidden;
+            max-width: 900px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 55% 45%;
+            min-height: 550px;
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* LEFT SIDE: VALUE PROPOSITION */
+        .value-panel {
+            padding: 50px 45px;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .value-panel h2 {
+            font-size: 28px;
+            color: #111827;
+            font-weight: 700;
+            margin-bottom: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .value-panel p {
+            color: #4b5563;
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .reason-list {
+            list-style: none;
+        }
+
+        .reason-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .reason-icon {
+            background: rgba(39, 165, 148, 0.1);
+            color: #27a594;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 16px;
+        }
+
+        .reason-text h4 {
+            font-size: 15px;
+            color: #111827;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .reason-text p {
+            font-size: 13.5px;
+            color: #6b7280;
+            line-height: 1.4;
+            margin-bottom: 0;
+        }
+
+        /* RIGHT SIDE: PAYMENT SUMMARY */
+        .payment-panel {
+            background: linear-gradient(135deg, #02473b 0%, #012b24 100%);
+            padding: 50px 40px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .payment-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at bottom left, rgba(102, 234, 234, 0.1), transparent 70%);
+            z-index: -1;
+        }
+
+        .summary-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .summary-header i {
+            font-size: 40px;
+            color: #66eaea;
+            margin-bottom: 15px;
+        }
+
+        .summary-header h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .price-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .price-label {
+            font-size: 13px;
+            color: #9fcfc5;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .price-amount {
+            font-size: 36px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .price-subtext {
+            font-size: 12px;
+            color: #7ba89f;
+            margin-top: 6px;
+        }
+
+        .btn-pay {
+            width: 100%;
+            padding: 16px;
+            background: #27a594;
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 14px rgba(39, 165, 148, 0.3);
+        }
+
+        .btn-pay:hover {
+            background: #2cbfa9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(39, 165, 148, 0.4);
+        }
+
+        .btn-pay:active {
+            transform: translateY(0);
+        }
+
+        .btn-pay:disabled {
+            background: #1b534b;
+            color: #7ba89f;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .secure-notice {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 24px;
+            font-size: 12px;
+            color: #9fcfc5;
+        }
+
+        .secure-notice i {
+            color: #66eaea;
+        }
+
+        /* RESPONSIVE LAYOUT */
+        @media (max-width: 768px) {
+            .checkout-container {
+                grid-template-columns: 1fr;
+                max-width: 480px;
+            }
+            .value-panel {
+                padding: 40px 30px;
+            }
+            .payment-panel {
+                padding: 40px 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="checkout-container">
+        <div class="value-panel">
+            <h2>Verify Your Account</h2>
+            <p>To maintain a high-quality marketplace and protect property seekers on Easy Find, all working agents must go through our identity validation gate.</p>
+            
+            <ul class="reason-list">
+                <li class="reason-item">
+                    <div class="reason-icon"><i class="fas fa-shield-alt"></i></div>
+                    <div class="reason-text">
+                        <h4>Eliminate Scam Listings</h4>
+                        <p>The verification fee directly supports secure integrations like NIN validation and real-time biometric checks, filtering out bad actors.</p>
+                    </div>
+                </li>
+                <li class="reason-item">
+                    <div class="reason-icon"><i class="fas fa-user-check"></i></div>
+                    <div class="reason-text">
+                        <h4>Earn the "Verified Badge"</h4>
+                        <p>Verified agents get a special trust badge next to their listings. Properties with this badge see up to 4x more customer calls.</p>
+                    </div>
+                </li>
+                <li class="reason-item">
+                    <div class="reason-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="reason-text">
+                        <h4>Premium Priority Search Ranking</h4>
+                        <p>Our search logic prioritizes verified agents first, maximizing your exposure to renters and property buyers in Enugu and with one month boosting profile free.</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+
+        <div class="payment-panel">
+            <div class="summary-header">
+                <i class="fas fa-credit-card"></i>
+                <h3>Verification Portal Fee</h3>
+            </div>
+
+            <div class="price-card">
+                <div class="price-label">One-Time Fee</div>
+                <div class="price-amount">₦3,000</div>
+                <div class="price-subtext">Covers NIN check & biometric liveness APIs</div>
+            </div>
+
+            <button id="checkout-pay-btn" class="btn-pay">
+                <span>Proceed to Paystack</span>
+                <i class="fas fa-arrow-right"></i>
+            </button>
+
+            <div class="secure-notice">
+                <i class="fas fa-lock"></i>
+                <span>Secured via Paystack Payment Engine</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('checkout-pay-btn').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Connecting...</span>`;
+
+            try {
+                // Hits your Express backend route to request Paystack initialization link
+                const response = await fetch('/api/payment/initialize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.url) {
+                    // Instantly drop them into Paystack checkout page
+                    window.location.href = data.url;
+                } else {
+                    alert(data.message || 'Could not launch checkout. Please try again.');
+                    resetButton(btn);
+                }
+            } catch (error) {
+                console.error('Payment initialization runtime error:', error);
+                alert('A network connection error occurred. Try again.');
+                resetButton(btn);
+            }
+        });
+
+        function resetButton(btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<span>Proceed to Paystack</span> <i class="fas fa-arrow-right"></i>`;
+        }
+    </script>
+</body>
+</html>
