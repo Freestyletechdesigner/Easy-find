@@ -78,11 +78,22 @@ const PAYMENT_FOR_BOOST = require('./routes/payment-for-boost.js');
 const FEEDBACK = require('./routes/feedback.js');
 const SEARCH_ENGINE = require('./routes/agent-search-engine.js');
 const PROPERTY_REPORT = require('./routes/property-report.js');
+const NIN_VERIFICATION = require('./routes/agent-verification.js');
 
 // Database schema
 const PageViews = require('./model/PageViews.js');
 
-app.use('/api/paystack-webhook', express.raw({ type: 'application/json' }));
+// Add or update this in app.js
+app.use(express.json({
+    verify: (req, res, buf) => {
+        // Capture raw bytes if the route is for verification OR boost webhooks
+        if (req.originalUrl.startsWith('/api/verification/webhook') || 
+            req.originalUrl.startsWith('/api/payment-boost/webhook')) { // Adjust this path to match your exact boost webhook path
+            req.rawBody = buf;
+        }
+    }
+}));
+
 
 // Geocode location via Nominatim — server-side to avoid mobile CORS issues
 app.get('/api/geocode', async (req, res) => {
@@ -289,10 +300,64 @@ app.use('/signup-agent', express.static('public/signup-agent.html', staticOpts))
 app.use('/agent-profile', express.static('public/agent-profile', staticOpts));
 app.use('/agent-loged/upload-profilepicture', express.static('agent-loged/upload-image.html', staticOpts));
 app.use('/agent-loged/setting', express.static('agent-loged/setting.html', staticOpts));
-app.use('/agent-verification', express.static('agent-verification', staticOpts));
 app.use('/appeal', express.static('appeal', staticOpts));
 app.use('/boost-account', express.static('boost-account', staticOpts));
 app.use('/password-reset', express.static('password-reset', staticOpts));
+app.use('/verification-payment', express.static('verification-payment', staticOpts));
+
+// ── Agent Verification page — gate by payment ─────────
+// Case 1: Paystack callback with reference → verify payment, update DB, redirect to page
+// Case 2: Direct visit → check DB, serve page if paid, redirect to payment if not
+app.get('/agent-verification', async (req, res, next) => {
+    const { reference, trxref } = req.query;
+    const paymentRef = reference || trxref;
+
+    // Must be logged in as agent
+    if (!req.session.agent) {
+        return res.redirect('/login-agent');
+    }
+
+    const agentId = req.session.agent.id || req.session.agent._id;
+    const AgentUser = require('./model/AgentUser.js');
+    const axios = require('axios');
+
+    // Case 1: Paystack redirected back with a reference
+    if (paymentRef) {
+        try {
+            const paystackRes = await axios.get(
+                `https://api.paystack.co/transaction/verify/${encodeURIComponent(paymentRef)}`,
+                { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
+            );
+            const txData = paystackRes.data?.data;
+
+            if (txData && txData.status === 'success') {
+                // Update DB
+                await AgentUser.findByIdAndUpdate(agentId, { verifyPayment: true });
+                req.session.agent.verifyPayment = true;
+                // Redirect to clean URL (no query string)
+                return res.redirect('/agent-verification');
+            }
+        } catch (err) {
+            console.error('Paystack verify error:', err.message);
+        }
+        // Payment failed — send back to payment page
+        return res.redirect('/verification-payment');
+    }
+
+    // Case 2: Direct visit — check DB
+    try {
+        const agent = await AgentUser.findById(agentId).select('verifyPayment').lean();
+        if (agent && agent.verifyPayment) {
+            // Paid — serve the verification page
+            return res.sendFile(path.join(__dirname, 'agent-verification', 'index.html'));
+        }
+        // Not paid — redirect to payment
+        return res.redirect('/verification-payment');
+    } catch (err) {
+        console.error('Agent verification check error:', err.message);
+        return res.redirect('/verification-payment');
+    }
+});
 
 // ── Clean admin routes (no .html) ─────────────────────
 const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'file-uploader', 'login', 'reports'];
@@ -332,6 +397,7 @@ SEARCH_ENGINE(app);
 PAYMENT_FOR_BOOST(app);
 FEEDBACK(app);
 PROPERTY_REPORT(app);
+NIN_VERIFICATION(app);
 
 // Global error handler (must be before 404 handler)
 app.use((err, req, res, next) => {

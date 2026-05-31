@@ -591,7 +591,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ── Edit Property ─────────────────────────────────────
+// ── Edit Property ─────────────────────────────────────
     const editTypeSelect  = document.getElementById('editTypeSelect');
     const editGroupBeds   = document.getElementById('editGroupBeds');
     const editGroupBaths  = document.getElementById('editGroupBaths');
@@ -700,7 +700,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.getElementById(`card-${id}`);
             const p    = JSON.parse(decodeURIComponent(card.dataset.property));
 
-            existingImages = Array.isArray(p.imageNames) ? [...p.imageNames] : [];
+            // Support both potential collection schema array field structures
+            existingImages = Array.isArray(p.imageNames) ? [...p.imageNames] : (Array.isArray(p.imageName) ? [...p.imageName] : []);
 
             document.getElementById('editTitle').value       = p.title       || '';
             document.getElementById('editPrice').value       = p.price       || '';
@@ -735,7 +736,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const spinner = btn.querySelector('.spinner');
         const btnText = btn.querySelector('.btn-text');
 
-        if (editImages.length === 0 && existingImages.length === 0) { alertBox.warning('No Images', 'Please keep or upload at least one image'); return; }
+        if (editImages.length === 0 && existingImages.length === 0) { 
+            alertBox.warning('No Images', 'Please keep or upload at least one image'); 
+            return; 
+        }
 
         const emojiOrSymbol = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FEFF}!@#$%^&*()+=\[\]{}<>?\\|`~]/u;
         const textOnly      = /^[a-zA-Z0-9\s,.\-'"\/]+$/;
@@ -754,16 +758,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (emojiOrSymbol.test(title) || !textOnly.test(title)) { alertBox.error('Invalid Title', 'Title must not contain emojis or special symbols'); return; }
         if (!price)                                               { alertBox.warning('Missing Field', 'Price is required'); return; }
         if (!numbersOnly.test(price))                            { alertBox.error('Invalid Price', 'Price must be numbers only'); return; }
-        if (!category)                                           { alertBox.warning('Missing Field', 'Please select a listing category'); return; }
-        if (!location)                                           { alertBox.warning('Missing Field', 'Location is required'); return; }
+        if (!category)                                            { alertBox.warning('Missing Field', 'Please select a listing category'); return; }
+        if (!location)                                            { alertBox.warning('Missing Field', 'Location is required'); return; }
         if (emojiOrSymbol.test(location) || !textOnly.test(location)) { alertBox.error('Invalid Location', 'Location must not contain emojis or special symbols'); return; }
         if (beds  && !numbersOnly.test(beds))                    { alertBox.error('Invalid Bedrooms', 'Bedrooms must be a number only'); return; }
         if (baths && !numbersOnly.test(baths))                   { alertBox.error('Invalid Bathrooms', 'Bathrooms must be a number only'); return; }
         if (area  && emojiOrSymbol.test(area))                    { alertBox.error('Invalid Area', 'Area must not contain emojis or special symbols'); return; }
         if (desc  && emojiOrSymbol.test(desc))                   { alertBox.error('Invalid Description', 'Description must not contain emojis or special symbols'); return; }
 
+        // Setup clean FormData boundary instance wrapper
         const formData = new FormData(editForm);
-        formData.append('existingImages', JSON.stringify(existingImages));
+        
+        // FIX 1: Append with the exact key field name expected by the express router validation check arrays ('keepImages')
+        existingImages.forEach(image => {
+            formData.append('keepImages', image);
+        });
+        
+        // Append actual binary updates safely
         editImages.forEach(file => formData.append('file', file));
 
         btn.disabled          = true;
@@ -771,20 +782,25 @@ document.addEventListener('DOMContentLoaded', () => {
         btnText.style.display = 'none';
 
         try {
-            const res  = await fetch(`/api/agent/property/${currentEditId}`, { method: 'PUT', body: formData });
+            // FIX 2: Correct URL template structure matching your app.patch rules with a PATCH request method
+            const res  = await fetch(`/api/edit/post/${currentEditId}`, { 
+                method: 'PATCH', 
+                body: formData 
+            });
+            
             const data = await res.json();
 
             if (res.ok && data.success) {
                 alertBox.success('Updated', 'Property listing updated successfully!', () => {
                     closeEditModal();
-                    loadProperties(isNewLoad = true);
+                    loadProperties(true);
                 });
             } else {
                 alertBox.error('Failed', data.message || 'Failed to update property');
             }
         } catch (err) {
-            console.error(err);
-            alertBox.error('Error', 'Something went wrong. Please try again.');
+            console.error('Fetch Runtime Crash Sequence:', err);
+            alertBox.error('Error', 'Something went wrong while saving changes. Please review your server logs.');
         } finally {
             btn.disabled          = false;
             spinner.style.display = 'none';

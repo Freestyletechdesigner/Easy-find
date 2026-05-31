@@ -279,7 +279,7 @@ async function loadAgent(agentId) {
             const phone = agent.phone.replace(/\D/g, '');
             const formatted = phone.startsWith('0') ? '234' + phone.slice(1) : phone;
             const postURL = window.location.href;
-            const msg = encodeURIComponent(`Hi ${agent.name},\n\nI am interested in your property listing found here:${postURL}`);
+            const msg = encodeURIComponent(`Hi ${agent.name},\n\nI am interested in your property listing that I found here:${postURL}`);
             window.open(`https://wa.me/${formatted}?text=${msg}`, '_blank');
         });
 
@@ -290,7 +290,7 @@ async function loadAgent(agentId) {
             
             const email = agent.email;
             const subject = encodeURIComponent('Inquiry Regarding Property Listing');
-            const body = encodeURIComponent(`Hi ${agent.name},\n\nI am interested in your property listing found here: ${window.location.href}\n\nPlease provide me with more details.`);
+            const body = encodeURIComponent(`Hi ${agent.name},\n\nI am interested in your property listing that I found here: ${window.location.href}\n\nPlease provide me with more details.`);
             
             // Triggers user's native email application (Mail, Outlook, Gmail app)
             window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;

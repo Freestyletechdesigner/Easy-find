@@ -4,7 +4,6 @@ const bcrypt = require('bcryptjs');
 const agentSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true,
         trim: true
     },
     email: {
@@ -64,6 +63,10 @@ const agentSchema = new mongoose.Schema({
         default: null
     },
     // VERIFICATION FIELDS
+    verifyPayment: {
+        type: Boolean,
+        default: false
+    },
     isVerified: { 
         type: Boolean, 
         default: false 

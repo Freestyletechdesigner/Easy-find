@@ -13,7 +13,7 @@ function requireAgentAuth(req, res, next) {
 
 const BOOST_PACKAGES = {
     post:    950,
-    profile: 7500
+    profile: 3500
 };
 
 function PAYMENT_FOR_BOOST(app) {

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Easy find_Contact us</title>
     <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         footer {
@@ -164,8 +165,28 @@
 <footer>
     <p>&copy; 2026 <a href="/" class="footer-link">Easy Find</a>. All rights reserved. | <a href="/terms.html" class="footer-link">Terms of Service</a></p>
 </footer>
-<script src="logic/logic.js"></script>
 <script>
+
+
+    //nav
+    const nav2 = document.getElementById("nav2");
+    const hamburger = document.getElementById("hamburger");
+    const navX = document.getElementById('navX');
+
+    hamburger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        nav2.classList.toggle('active');
+        hamburger.classList.toggle('active');
+    });
+
+    // Close nav when clicking outside
+    window.addEventListener('click', (e) => {
+        //close nav2 logic
+        if (!hamburger.contains(e.target)) {
+            hamburger.classList.remove('active');
+            nav2.classList.remove('active');
+        }
+    });
     const logAlert = document.getElementById('log-alert');
     // Show alert function
     function showLoginAlert(message, type = 'info') {

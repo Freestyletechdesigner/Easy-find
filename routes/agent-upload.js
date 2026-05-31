@@ -47,17 +47,52 @@ const AGENT_POST = (app) => {
     }
 
     // Helper function to handle async sharp compression across multiple files
-    async function processAndSaveImages(files, agentId) {
+    async function processAndSaveImages(files, agentId, agentName = '') {
         const savedFilenames = [];
+
         for (const file of files) {
             const fileName = `${agentId}_${Date.now()}_${Math.floor(Math.random() * 1000)}.webp`;
             const finalPath = path.join(UPLOAD_DIR, fileName);
 
+            // Get image dimensions first so watermark scales correctly
+            const meta = await sharp(file.buffer).metadata();
+            const imgWidth  = meta.width  || 1200;
+            const imgHeight = meta.height || 800;
+
+            // Build SVG watermark — agent name + domain, centered
+            const safeName   = (agentName || 'Easy Find').replace(/[<>&"]/g, '');
+            const fontSize   = Math.max(18, Math.round(imgWidth * 0.024));
+            const padding    = Math.round(fontSize * 0.8);
+            const lineHeight = Math.round(fontSize * 1.4);
+            const boxH       = lineHeight * 2 + padding * 2;
+            const boxW       = Math.round(imgWidth * 0.45);
+            const boxX       = (imgWidth - boxW) / 2;
+            const boxY       = (imgHeight - boxH) / 2;
+            const textCenterX = boxX + (boxW / 2); 
+            const text1Y     = boxY + padding + fontSize;
+            const text2Y     = text1Y + lineHeight;
+
+            const svgWatermark = Buffer.from(`
+                <svg width="${imgWidth}" height="${imgHeight}" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}"
+                          rx="8" ry="8" fill="rgba(0, 0, 0, 0.45)"/> <text x="${textCenterX}" y="${text1Y}"
+                          text-anchor="middle"
+                          font-family="Arial, sans-serif" font-size="${fontSize}"
+                          font-weight="bold" fill="white" opacity="0.95">${safeName}</text>
+                    
+                    <text x="${textCenterX}" y="${text2Y}"
+                          text-anchor="middle"
+                          font-family="Arial, sans-serif" font-size="${Math.round(fontSize * 0.85)}"
+                          fill="#66eae3" opacity="0.9">easyfind.com.ng</text>
+                </svg>
+            `);
+
             await sharp(file.buffer)
-                .resize({ width: 1200, withoutEnlargement: true }) // Downscale massive resolutions safely
-                .webp({ 
-                    quality: 65, // Drops image file size down aggressively while looking great
-                    effort: 6    // Maximum CPU compression pass to save server disk space
+                .resize({ width: 1200, withoutEnlargement: true })
+                .composite([{ input: svgWatermark, blend: 'over' }])
+                .webp({
+                    quality: 65,
+                    effort: 6
                 })
                 .toFile(finalPath);
 
@@ -90,11 +125,12 @@ const AGENT_POST = (app) => {
 
         const { title, type, category, price, location, beds, baths, area, description, features } = req.body;
         const isLand = type === 'land';
-        const agentId = req.session.agent.id;
+        const agentId   = req.session.agent.id;
+        const agentName = req.session.agent.name || '';
 
         try {
             // Process and compress files through memory buffer loop pipeline
-            const imageNames = req.files && req.files.length ? await processAndSaveImages(req.files, agentId) : [];
+            const imageNames = req.files && req.files.length ? await processAndSaveImages(req.files, agentId, agentName) : [];
 
             const newPost = new AgentPost({
                 agentId,
@@ -307,73 +343,98 @@ const AGENT_POST = (app) => {
 
     // Edit property post
     app.patch('/api/edit/post/:id', requireAgent, upload.array('file'), [
-        check('title').notEmpty().trim().escape(),
-        check('type').notEmpty().trim().escape(),
+        check('title').notEmpty().withMessage('Title is required').trim().escape(),
+        check('type').notEmpty().withMessage('Property type is required').trim().escape(),
         check('category').notEmpty().isIn(['sale', 'rent', 'shortlet']).withMessage('Invalid category'),
-        check('price').notEmpty().isNumeric().isFloat({ min: 0 }),
-        check('location').notEmpty().trim().escape(),
-        check('beds').optional({ checkFalsy: true }).isNumeric().trim().escape(),
-        check('baths').optional({ checkFalsy: true }).isNumeric().trim().escape(),
-        check('area').optional({ checkFalsy: true }).trim(),
+        check('price').notEmpty().isNumeric().isFloat({ min: 0 }).withMessage('Price must be a valid number'),
+        check('location').notEmpty().withMessage('Location is required').trim().escape(),
+        check('beds').optional({ checkFalsy: true }).isNumeric().withMessage('Beds must be a number'),
+        check('baths').optional({ checkFalsy: true }).isNumeric().withMessage('Baths must be a number'),
+        check('area').optional({ checkFalsy: true }).trim().escape(),
         check('description').trim().escape().isLength({ max: 5000 }),
         check('features').trim().escape().isLength({ max: 1000 })
     ], async (req, res) => {
+        
         const error = validationResult(req);
         if (!error.isEmpty()) {
             console.error('Validation errors:', error.array());
             return res.status(422).json({
                 success: false,
-                message: 'Validation failed'
+                message: 'Validation failed',
+                errors: error.array()
             });
         }
-
+    
         const { title, type, category, price, location, beds, baths, area, description, features } = req.body;
         const isLand = type === 'land';
-        const agentId = req.session.agent.id;
         
+        const agentId = req.session.agent.id;
+        if (!agentId) {
+            return res.status(401).json({ success: false, message: 'Session expired. Please log in again.' });
+        }
+        
+        // Ensure keepImages handles multi-input text blocks or arrays correctly
         const keepImages = req.body.keepImages
             ? (Array.isArray(req.body.keepImages) ? req.body.keepImages : [req.body.keepImages])
             : [];
-
+    
         try {
             const id = req.params.id;
             const agentPost = await AgentPost.findById(id);
-
+    
             if (!agentPost) {
                 return res.status(404).json({ success: false, message: 'Property not found' });
             }
+            
             if (agentPost.agentId.toString() !== agentId.toString()) {
-                return res.status(403).json({ success: false, message: 'Not authorized' });
+                return res.status(403).json({ success: false, message: 'Not authorized to edit this listing' });
             }
-
+    
             // Cleanly compress new image files if uploaded during patch update edit requests
-            const newImageNames = req.files && req.files.length ? await processAndSaveImages(req.files, agentId) : [];
-            const imageName = [...keepImages, ...newImageNames];
-
+            const newImageNames = req.files && req.files.length 
+                ? await processAndSaveImages(req.files, agentId, req.session.agent.name || 'Easy Find Agent') 
+                : [];
+                
+            const combinedImages = [...keepImages, ...newImageNames];
+    
+            // Update fields safely
             agentPost.title = title;
             agentPost.type = type;
             agentPost.category = category;
-            agentPost.price = price;
+            agentPost.price = Number(price);
             agentPost.location = location;
-            agentPost.beds = isLand ? null : (beds  || null);
-            agentPost.baths = isLand ? null : (baths || null);
-            agentPost.area = area;
+            
+            // Handle numbers vs land listings safely
+            agentPost.beds = isLand ? null : (beds ? Number(beds) : null);
+            agentPost.baths = isLand ? null : (baths ? Number(baths) : null);
+            
+            agentPost.area = area || null;
             agentPost.description = description;
             agentPost.features = features;
-            agentPost.imageNames = imageName;
+            
+            // Fix: Assign to the correct collection model schema reference field array name
+            // (If your MongoDB model property schema says imageName, use agentPost.imageName instead)
+            if (typeof agentPost.imageName !== 'undefined') {
+                agentPost.imageName = combinedImages;
+            } else {
+                agentPost.imageNames = combinedImages;
+            }
+            
             agentPost.date = Date.now();
             
             await agentPost.save();
-
-            res.json({
+    
+            return res.status(200).json({
                 success: true,
+                message: 'Listing updated successfully!',
                 property: agentPost
             });
+            
         } catch (error) {
-            console.error('Property edit Error', error);
-            res.status(500).json({
+            console.error('Property edit Error:', error);
+            return res.status(500).json({
                 success: false,
-                message: 'Error editing post'
+                message: 'Internal server error processing edits.'
             });
         }
     });

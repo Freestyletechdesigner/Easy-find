@@ -217,7 +217,7 @@ module.exports = function(app) {
             // 3. CHECK IF ACCOUNT IS A STANDARD USER
             const user = await User.findOne({ email: targetEmail });
             if (!user) {
-                return res.status(401).json({ success: false, message: 'Account not found. Please register or check details.' });
+                return res.status(401).json({ success: false, message: 'Invalid email or password.' });
             }
     
             if (user.status !== 'active') {
@@ -290,6 +290,16 @@ module.exports = function(app) {
 
     //Logout 
     app.post('/api/logout', (req, res) => {
+
+        req.session.destroy(() => {
+            res.clearCookie('connect.sid');
+            res.json({ success: true });
+        });
+
+    });
+
+    // Admin Logout 
+    app.post('/api/admin/logout', (req, res) => {
 
         req.session.destroy(() => {
             res.clearCookie('connect.sid');
