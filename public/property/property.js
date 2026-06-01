@@ -418,7 +418,7 @@ function relatedCard(p) {
                 <img src="${imgSrc}" alt="${cleanType}" loading="lazy" onerror="this.onerror=null; this.src='/icon/home icon.png';">
                 <span class="card-type-badge">${cleanType}${p.title ? `, ${p.title}` : ''}</span>
                 ${p.category ? `<span class="related-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
-                ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-building-shield"></i></span>` : ''}
+                ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-circle-check"></i></span>` : ''}
             </div>
             
             <div class="related-card-body">

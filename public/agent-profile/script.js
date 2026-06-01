@@ -161,7 +161,7 @@ function listingCard(p) {
                 <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy" onerror="this.src='/icon/home icon.png'">
                 <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
                 ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
-                ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-building-shield"></i></span>` : ''}
+                ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-circle-check"></i></span>` : ''}
             </div>
             <div class="card-body">
                 <div class="card-price">₦${price}</div>

@@ -301,7 +301,7 @@ window.submitProperty = async function () {
         submitBtn.disabled = true;
         if (spinner) spinner.style.display = 'inline-block';
         if (btnText) {
-            btnText.style.display = 'none';
+            btnText.style.display = 'inline';
             btnText.textContent = 'Checking location...';
         }
 
@@ -368,7 +368,10 @@ window.submitProperty = async function () {
     // 4. Form Data Payload Compilation Track
     submitBtn.disabled        = true;
     if (spinner) spinner.style.display = 'inline-block';
-    if (btnText) btnText.style.display = 'none';
+    if (btnText) {
+        btnText.style.display = 'inline';
+        btnText.textContent = 'Loading'
+    };
 
     const formData = new FormData(currentForm);
     
@@ -387,7 +390,7 @@ window.submitProperty = async function () {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            alertBox.success('Success', 'Property posted successfully!', () => {
+            alertBox.success('Success', 'Property posted successfully! make sure to delete the property after sale', () => {
                 // Clear out map coordinate inputs completely so the next listing is clean
                 if (latInput) latInput.value = '';
                 if (lngInput) lngInput.value = '';
@@ -779,7 +782,7 @@ async function getCoordinatesWithFallback(locationText) {
                     <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
                     <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
                     ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
-                    ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-building-shield"></i></span>` : ''}
+                    ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-circle-check"></i></span>` : ''}
 
                     <div class="card-menu-wrap">
                         <button class="card-menu-btn" onclick="toggleCardMenu('${p._id}')">
@@ -1149,7 +1152,6 @@ async function getCoordinatesWithFallback(locationText) {
 
     window.openMapPicker = function(locationText, onConfirm) {
         mapPickerCallback = onConfirm;
-        document.getElementById('mapPickerLocationText').textContent = locationText || '';
         document.getElementById('mapPickerCoords').textContent = 'Click or drag pin to set location';
         document.getElementById('mapSearchInput').value = locationText || '';
         document.getElementById('mapSearchResults').innerHTML = '';

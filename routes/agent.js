@@ -149,7 +149,7 @@ const agent = (app) => {
             const agent = await AgentUser.findOne({ email: targetEmail });
             
             if (!agent) {
-                return res.status(401).json({ success: false, message: 'Account not found. Please register first.' });
+                return res.status(401).json({ success: false, message: 'Invalid email or password.' });
             }
     
             // 3. STATUS CHECK: Make sure the account isn't banned or suspended
