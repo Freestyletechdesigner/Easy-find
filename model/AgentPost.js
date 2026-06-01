@@ -60,6 +60,14 @@ const postSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+    latitude: {
+        type: Number,
+        default: null
+    },
+    longitude: {
+        type: Number,
+        default: null
+    },
     boostPost: {
         type: Boolean,
         default: false

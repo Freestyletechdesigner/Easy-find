@@ -6,6 +6,7 @@
     <link rel="stylesheet" type="text/css" href="style.css">
     <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <title>Agent Dashboard</title>
 </head>
 <body>
@@ -124,7 +125,7 @@
                         </div>
                         <div class="form-group">
                             <label>Location *</label>
-                            <input type="text" name="location" required placeholder="eg. 1 Street name">
+                            <input type="text" name="location" required placeholder="eg. Street name">
                         </div>
                     </div>
 
@@ -152,6 +153,8 @@
                         <label>Features (Select all that apply)</label>
                         <div class="features-container" id="featuresContainer"></div>
                         <input type="hidden" name="features" id="featuresInput">
+                        <input type="hidden" name="latitude"  id="propLatitude">
+                        <input type="hidden" name="longitude" id="propLongitude">
                     </div>
                 </form>
             </div>
@@ -162,6 +165,40 @@
                     <span class="spinner"></span>
                     <span class="btn-text">Publish Listing</span>
                 </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Map Picker Modal -->
+    <section class="modal-overlay" id="mapPickerOverlay">
+        <div class="modal" style="max-width:680px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-map-marker-alt"></i> Pin Your Property Location</h3>
+                <button class="modal-close" onclick="closeMapPicker()">×</button>
+            </div>
+            <div class="modal-body" style="padding:0;">
+                <div style="padding:14px 16px 10px;background:#f5fdfd;border-bottom:1px solid #e0f7f5;">
+                    <p style="font-size:0.85rem;color:#555;margin:0 0 10px;">
+                        <i class="fas fa-info-circle" style="color:#0d7068;"></i>
+                        We couldn't find "<span id="mapPickerLocationText" style="font-weight:600;"></span>" on the map.
+                        Search for a nearby landmark or drag the pin to your exact location.
+                    </p>
+                    <div style="display:flex;gap:8px;">
+                        <input type="text" id="mapSearchInput" placeholder="Search nearby area (e.g. Agbani Road, Enugu)"
+                               style="flex:1;padding:10px 14px;border:2px solid #e0f7f5;border-radius:10px;font-size:0.9rem;outline:none;">
+                        <button onclick="searchMapLocation()" style="padding:10px 18px;background:#0d7068;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:600;">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                    <div id="mapSearchResults" style="margin-top:8px;max-height:120px;overflow-y:auto;"></div>
+                </div>
+                <div id="mapPickerContainer" style="height:340px;width:100%;"></div>
+                <div style="padding:12px 16px;background:#f5fdfd;border-top:1px solid #e0f7f5;display:flex;justify-content:space-between;align-items:center;">
+                    <span id="mapPickerCoords" style="font-size:0.8rem;color:#888;">Click or drag pin to set location</span>
+                    <button onclick="confirmMapLocation()" style="padding:10px 24px;background:#0d7068;color:#fff;border:none;border-radius:10px;cursor:pointer;font-weight:700;">
+                        <i class="fas fa-check"></i> Confirm Location
+                    </button>
+                </div>
             </div>
         </div>
     </section>
@@ -248,6 +285,8 @@
                         <label>Features (Select all that apply)</label>
                         <div class="features-container" id="editFeaturesContainer"></div>
                         <input type="hidden" name="features" id="editFeaturesInput">
+                        <input type="hidden" id="editLat" name="latitude">
+                        <input type="hidden" id="editLng" name="longitude">
                     </div>
                 </form>
             </div>
@@ -312,6 +351,7 @@
     </footer>
 
     <script src="alert-box.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="logic.js"></script>
 
 </body>

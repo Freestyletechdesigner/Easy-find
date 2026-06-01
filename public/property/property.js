@@ -72,18 +72,18 @@ function renderProperty(p) {
     $('propDate').innerHTML       = `<i class="fa-regular fa-calendar"></i> Listed ${new Date(p.date).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' })}`;
 
 
-    //make some change if is land
+    // make some change if is land
     const quickDetailsList = document.getElementById('quickDetailsList');
     const propStats = document.querySelector('.prop-stats');
 
-    if (p.type.toLowerCase() === 'land') {
-        quickDetailsList.children[2].style.display = 'none';
-        quickDetailsList.children[3].style.display = 'none';
-        propStats.children[0].style.display = 'none';
-        propStats.children[1].style.display = 'none';
+    if (p.type && p.type.toLowerCase() === 'land') {
+        if (quickDetailsList && quickDetailsList.children[2]) quickDetailsList.children[2].style.display = 'none';
+        if (quickDetailsList && quickDetailsList.children[3]) quickDetailsList.children[3].style.display = 'none';
+        if (propStats && propStats.children[0]) propStats.children[0].style.display = 'none';
+        if (propStats && propStats.children[1]) propStats.children[1].style.display = 'none';
     } else {
-        propStats.children[2].style.display = 'none';
-        quickDetailsList.children[4].style.display = 'none'
+        if (propStats && propStats.children[2]) propStats.children[2].style.display = 'none';
+        if (quickDetailsList && quickDetailsList.children[4]) quickDetailsList.children[4].style.display = 'none';
     }
 
 
@@ -112,11 +112,11 @@ function renderProperty(p) {
             features = p.features.split(',').map(f => f.trim()).filter(Boolean);
         }
     }
-    if (features.length) {
+    if (features.length && featuresList) {
         featuresList.innerHTML = features.map(f =>
             `<div class="feature-chip"><i class="fa-solid ${featureIcons[f] || 'fa-check'}"></i> ${f}</div>`
         ).join('');
-    } else {
+    } else if ($('featuresSection')) {
         $('featuresSection').style.display = 'none';
     }
 
@@ -133,26 +133,25 @@ function renderProperty(p) {
     $('qdArea').textContent     = p.area  ? `${p.area.toUpperCase()}` : '—';
     $('qdLocation').textContent = p.location || '—';
 
-    // Map — route through backend to avoid mobile CORS issues
+    // ── INTERACTIVE GOOGLE MAPS IMPLEMENTATION VIA PINNED COORDINATES ──
     const mapFrame   = $('mapFrame');
     const mapSection = mapFrame ? mapFrame.closest('.prop-section') : null;
 
-    if (p.location) {
-        fetch(`/api/geocode?location=${encodeURIComponent(p.location)}`)
-        .then(r => r.json())
-        .then(geo => {
-            if (geo.success) {
-                const { lat, lng } = geo;
-                const delta = 0.008;
-                mapFrame.src = `https://www.openstreetmap.org/export/embed.html?bbox=${lng-delta},${lat-delta},${lng+delta},${lat+delta}&layer=mapnik&marker=${lat},${lng}`;
-                mapFrame.style.display = 'block';
-            } else {
-                showMapFallback(mapSection);
-            }
-        })
-        .catch(() => showMapFallback(mapSection));
-    } else if (mapSection) {
-        mapSection.style.display = 'none';
+    if (p.latitude && p.longitude) {
+        const lat = parseFloat(p.latitude);
+        const lng = parseFloat(p.longitude);
+
+        if (mapFrame && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
+            // Generates a fully functional Google Maps Embed framework focusing directly on coordinates
+            const embedUrl = `https://maps.google.com/maps?q=${lat},${lng}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+            
+            mapFrame.src = embedUrl;
+            mapFrame.style.display = 'block';
+        } else {
+            showMapFallback(mapSection);
+        }
+    } else {
+        showMapFallback(mapSection);
     }
 
     function showMapFallback(section) {
@@ -161,9 +160,9 @@ function renderProperty(p) {
             <h2><i class="fa-solid fa-map-location-dot"></i> Location on Map</h2>
             <div style="background:#f0fdfb;border:1px dashed #0d7068;border-radius:12px;padding:28px 20px;text-align:center;">
                 <i class="fa-solid fa-map-pin" style="font-size:2rem;color:#0d7068;margin-bottom:12px;display:block;"></i>
-                <p style="font-weight:700;color:#333;margin-bottom:6px;">Map Unavailable for This Area</p>
-                <p style="font-size:0.875rem;color:#666;line-height:1.6;">This property is in a newly developing area. Contact the agent for precise directions.</p>
-                <button onclick="document.getElementById('btnContact').click()" style="margin-top:16px;padding:10px 24px;background:#0d7068;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:0.9rem;">
+                <p style="font-weight:700;color:#333;margin-bottom:6px;">Map Pin Location Not Set</p>
+                <p style="font-size:0.875rem;color:#666;line-height:1.6;">Precise map coordinates were not provided for this listing area. Contact the agent for direct route instructions.</p>
+                <button onclick="const btn = document.getElementById('btnContact'); if(btn) btn.click();" style="margin-top:16px;padding:10px 24px;background:#0d7068;color:#fff;border:none;border-radius:10px;font-weight:600;cursor:pointer;font-size:0.9rem;">
                     <i class="fas fa-phone"></i> Contact Agent
                 </button>
             </div>
@@ -171,19 +170,29 @@ function renderProperty(p) {
     }
 
     // Images
-    renderSlider(p.imageNames || []);
+    if (typeof renderSlider === 'function') {
+        renderSlider(p.imageNames || []);
+    }
 
     // Agent
-    loadAgent(p.agentId);
+    if (typeof loadAgent === 'function') {
+        loadAgent(p.agentId);
+    }
 
     // Related properties
     currentPropId = p._id;
     relatedPage   = 1;
-    document.getElementById('relatedGrid').innerHTML = '';
-    loadRelated(p._id, 1);
+    const relatedGrid = document.getElementById('relatedGrid');
+    if (relatedGrid) relatedGrid.innerHTML = '';
+    
+    if (typeof loadRelated === 'function') {
+        loadRelated(p._id, 1);
+    }
 
     // Scroll animations
-    setTimeout(triggerScrollAnim, 100);
+    if (typeof triggerScrollAnim === 'function') {
+        setTimeout(triggerScrollAnim, 100);
+    }
 }
 
 // ── Slider ────────────────────────────────────────────

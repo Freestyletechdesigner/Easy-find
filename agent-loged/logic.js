@@ -1,3 +1,4 @@
+let pendingEditSubmitCallback = null;
 document.addEventListener('DOMContentLoaded', () => {
 
     // ── Auth ──────────────────────────────────────────────
@@ -115,6 +116,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetForm() {
         propertyForm.reset();
         selectedImages = [];
+        // clear pinned coordinates
+        const latInput = document.getElementById('propLatitude');
+        const lngInput = document.getElementById('propLongitude');
+        if (latInput) latInput.value = '';
+        if (lngInput) lngInput.value = '';
         updateImagePreview();
         selectedFeatures.clear();
         updateFeaturesInput();
@@ -228,78 +234,263 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // ── Submit ────────────────────────────────────────────
-    window.submitProperty = async function () {
-        const submitBtn = document.getElementById('submit');
-        if (submitBtn.disabled) return;
+window.submitProperty = async function () {
+    const submitBtn = document.getElementById('submit');
+    
+    // Look up the form directly by its exact DOM element reference
+    const currentForm = document.getElementById('uploadPropertyForm') || document.getElementById('propertyForm');
+    
+    if (!currentForm) {
+        console.error("Property form element could not be found in the DOM.");
+        return;
+    }
 
-        const spinner = submitBtn.querySelector('.spinner');
-        const btnText = submitBtn.querySelector('.btn-text');
+    // Stop execution early if already currently in a loading state
+    if (submitBtn.disabled) return;
 
-        // Image check
-        if (selectedImages.length === 0) {
-            alertBox.warning('No Images', 'Please upload at least one image');
-            return;
+    const spinner = submitBtn.querySelector('.spinner');
+    const btnText = submitBtn.querySelector('.btn-text');
+
+    // 1. Image validation check using your custom alertBox UI file
+    if (!selectedImages || selectedImages.length === 0) {
+        alertBox.warning('No Images', 'Please upload at least one image');
+        return;
+    }
+
+    // 2. Form Input Payload Content Extractor
+    const emojiOrSymbol = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FEFF}!@#$%^&*()+=\[\]{}<>?\\|`~]/u;
+    const textOnly      = /^[a-zA-Z0-9\s,.\-'"\/()]+$/;
+    const numbersOnly   = /^\d+(\.\d+)?$/;
+
+    const title    = currentForm.querySelector('[name="title"]').value.trim();
+    const price    = currentForm.querySelector('[name="price"]').value.trim();
+    const category = currentForm.querySelector('[name="category"]').value;
+    const location = currentForm.querySelector('[name="location"]').value.trim();
+    const beds     = currentForm.querySelector('[name="beds"]').value.trim();
+    const baths    = currentForm.querySelector('[name="baths"]').value.trim();
+    const area     = currentForm.querySelector('[name="area"]').value.trim();
+    const desc     = currentForm.querySelector('[name="description"]').value.trim();
+
+    // Field Validations Execution System
+    if (!title) { alertBox.warning('Missing Field', 'Property title is required'); return; }
+    if (emojiOrSymbol.test(title)) { alertBox.error('Invalid Title', 'Title must not contain emojis or special symbols'); return; }
+    if (!price) { alertBox.warning('Missing Field', 'Price is required'); return; }
+    if (!numbersOnly.test(price)) { alertBox.error('Invalid Price', 'Price must be numbers only'); return; }
+    if (!category) { alertBox.warning('Missing Field', 'Please select a listing category'); return; }
+    if (!location) { alertBox.warning('Missing Field', 'Location is required'); return; }
+    if (emojiOrSymbol.test(location)) { alertBox.error('Invalid Location', 'Location must not contain emojis or special symbols'); return; }
+    
+    const typeValue = currentForm.querySelector('[name="type"]').value;
+    if (typeValue !== 'land') {
+        if (beds && !numbersOnly.test(beds)) { alertBox.error('Invalid Bedrooms', 'Bedrooms must be a number only'); return; }
+        if (baths && !numbersOnly.test(baths)) { alertBox.error('Invalid Bathrooms', 'Bathrooms must be a number only'); return; }
+    }
+    if (area && emojiOrSymbol.test(area)) { alertBox.error('Invalid Area', 'Area must not contain emojis or special symbols'); return; }
+    if (desc && emojiOrSymbol.test(desc)) { alertBox.error('Invalid Description', 'Description must not contain emojis or special symbols'); return; }
+
+    // DUAL-FALLBACK ELEMENT SELECTOR (Checks both ID and Name attributes)
+    const latInput = document.getElementById('propLatitude') || currentForm.querySelector('[name="latitude"]');
+    const lngInput = document.getElementById('propLongitude') || currentForm.querySelector('[name="longitude"]');
+
+    // 3. Geocoding Fallback Checker & Strict Map Coordinates Enforcement
+    const latValue = latInput ? latInput.value.trim() : "";
+    const lngValue = lngInput ? lngInput.value.trim() : "";
+
+    // If coordinates are blank, zero, or missing entirely, halt and trigger map
+    if (!latValue || !lngValue || latValue === "0" || lngValue === "0" || isNaN(latValue) || isNaN(lngValue)) {
+        submitBtn.disabled = true;
+        if (spinner) spinner.style.display = 'inline-block';
+        if (btnText) {
+            btnText.style.display = 'none';
+            btnText.textContent = 'Checking location...';
         }
-
-        // Validation
-        const emojiOrSymbol = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FEFF}!@#$%^&*()+=\[\]{}<>?\\|`~]/u;
-        const textOnly      = /^[a-zA-Z0-9\s,.\-'"\/]+$/;
-        const numbersOnly   = /^\d+(\.\d+)?$/;
-
-        const title    = propertyForm.querySelector('[name="title"]').value.trim();
-        const price    = propertyForm.querySelector('[name="price"]').value.trim();
-        const category = propertyForm.querySelector('[name="category"]').value;
-        const location = propertyForm.querySelector('[name="location"]').value.trim();
-        const beds     = propertyForm.querySelector('[name="beds"]').value.trim();
-        const baths    = propertyForm.querySelector('[name="baths"]').value.trim();
-        const area     = propertyForm.querySelector('[name="area"]').value.trim();
-        const desc     = propertyForm.querySelector('[name="description"]').value.trim();
-
-        if (!title)                                               { alertBox.warning('Missing Field', 'Property title is required'); return; }
-        if (emojiOrSymbol.test(title) || !textOnly.test(title)) { alertBox.error('Invalid Title', 'Title must not contain emojis or special symbols'); return; }
-        if (!price)                                               { alertBox.warning('Missing Field', 'Price is required'); return; }
-        if (!numbersOnly.test(price))                            { alertBox.error('Invalid Price', 'Price must be numbers only'); return; }
-        if (!category)                                           { alertBox.warning('Missing Field', 'Please select a listing category (Sale, Rent, or Short-let)'); return; }
-        if (!location)                                           { alertBox.warning('Missing Field', 'Location is required'); return; }
-        if (emojiOrSymbol.test(location) || !textOnly.test(location)) { alertBox.error('Invalid Location', 'Location must not contain emojis or special symbols'); return; }
-        if (beds  && !numbersOnly.test(beds))                    { alertBox.error('Invalid Bedrooms', 'Bedrooms must be a number only'); return; }
-        if (baths && !numbersOnly.test(baths))                   { alertBox.error('Invalid Bathrooms', 'Bathrooms must be a number only'); return; }
-        if (area  && emojiOrSymbol.test(area))                    { alertBox.error('Invalid Area', 'Area must not contain emojis or special symbols'); return; }
-        if (desc  && emojiOrSymbol.test(desc))                   { alertBox.error('Invalid Description', 'Description must not contain emojis or special symbols'); return; }
-
-        // Build FormData
-        const formData = new FormData(propertyForm);
-        formData.delete('file');
-        selectedImages.forEach(file => formData.append('file', file));
-
-        // Loading state
-        submitBtn.disabled        = true;
-        spinner.style.display     = 'inline-block';
-        btnText.style.display     = 'none';
 
         try {
-            const response = await fetch('/api/agent/post', { method: 'POST', body: formData });
-            const data     = await response.json();
-
-            if (response.ok && data.success) {
-                alertBox.success('Success', 'Property posted successfully!', () => {
-                    closeModal();
-                    loadProperties(isNewLoad = true);
-                });
-               document.getElementById('propertiesEmpty').style.display = 'none';
+            const coords = await getCoordinatesWithFallback(location);
+            
+            if (coords) {
+                if (latInput) latInput.value = coords.lat;
+                if (lngInput) lngInput.value = coords.lon;
+                
+                // Cleanly unlock and let execution fall through naturally to Step 4
+                submitBtn.disabled = false;
+                if (spinner) spinner.style.display = 'none';
+                if (btnText) {
+                    btnText.style.display = 'inline';
+                    btnText.textContent = 'Publish Listing';
+                }
             } else {
-                alertBox.error('Failed', data.message || 'Failed to post property');
-            }
-        } catch (error) {
-            console.error('Submit error:', error);
-            alertBox.error('Error', 'Error posting property. Please try again.');
-        } finally {
-            submitBtn.disabled    = false;
-            spinner.style.display = 'none';
-            btnText.style.display = 'inline';
-        }
-    };
+                // Address could not be found automatically - FORCE manual map pin pick
+                alertBox.error('Location Required', 'Could not locate your address automatically. You must pin the property location manually on the map.', () => {
+                    
+                    submitBtn.disabled = false;
+                    if (spinner) spinner.style.display = 'none';
+                    if (btnText) {
+                        btnText.style.display = 'inline';
+                        btnText.textContent = 'Publish Listing';
+                    }
 
+                    if (typeof openMapPicker === 'function') {
+                        openMapPicker(location, ({ lat, lng }) => {
+                            if (latInput) latInput.value = lat;
+                            if (lngInput) lngInput.value = lng;
+                            
+                            // Programmatically trigger a fresh button click to re-verify safely
+                            submitBtn.click();
+                        });
+                    } else {
+                        console.error("The map function 'openMapPicker' is not accessible globally.");
+                    }
+                });
+                return; // ABSOLUTE HARD STOP: Exits function instantly, prevents API send!
+            }
+        } catch (err) {
+            console.error("Geocoding workflow error:", err);
+            submitBtn.disabled = false;
+            if (spinner) spinner.style.display = 'none';
+            if (btnText) {
+                btnText.style.display = 'inline';
+                btnText.textContent = 'Publish Listing';
+            }
+            alertBox.error('Map Error', 'Could not fetch location data. Please pin manually.');
+            return; 
+        }
+    }
+
+    // 3.5 ABSOLUTE EMERGENCY GUARD RAIL (Will absolutely stop submit if values are missing)
+    const finalLat = latInput ? latInput.value.trim() : "";
+    const finalLng = lngInput ? lngInput.value.trim() : "";
+    if (!finalLat || !finalLng || finalLat === "0" || finalLng === "0") {
+        alertBox.error('Map Pin Required', 'Please choose a location coordinates point on the map picker interface.');
+        return;
+    }
+
+    // 4. Form Data Payload Compilation Track
+    submitBtn.disabled        = true;
+    if (spinner) spinner.style.display = 'inline-block';
+    if (btnText) btnText.style.display = 'none';
+
+    const formData = new FormData(currentForm);
+    
+    // Ensure the values are manually assigned to formData just in case names mismatch in HTML
+    formData.set('latitude', finalLat);
+    formData.set('longitude', finalLng);
+    
+    formData.delete('file'); // Strip empty file input defaults
+    selectedImages.forEach(file => formData.append('file', file)); 
+
+    try {
+        const response = await fetch('/api/agent/post', { 
+            method: 'POST', 
+            body: formData 
+        });
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            alertBox.success('Success', 'Property posted successfully!', () => {
+                // Clear out map coordinate inputs completely so the next listing is clean
+                if (latInput) latInput.value = '';
+                if (lngInput) lngInput.value = '';
+                
+                closeModal();
+                if (typeof loadProperties === 'function') {
+                    loadProperties(true);
+                } else {
+                    window.location.reload();
+                }
+            });
+            const emptyState = document.getElementById('propertiesEmpty');
+            if (emptyState) emptyState.style.display = 'none';
+        } else {
+            alertBox.error('Failed', data.message || 'Failed to post property');
+        }
+    } catch (error) {
+        console.error('Submit API connection error:', error);
+        alertBox.error('Error', 'Error posting property. Please check your network connection.');
+    } finally {
+        // 5. Ultimate Cleanup Lifecycle Reset
+        submitBtn.disabled    = false;
+        if (spinner) spinner.style.display = 'none';
+        if (btnText) {
+            btnText.style.display = 'inline';
+            btnText.textContent   = 'Publish Listing';
+        }
+    }
+};
+
+// ── Geocoding Helper Function ────────────────────────
+// Only auto-accept very close matches.
+// Otherwise force the user to pin manually.
+
+async function getCoordinatesWithFallback(locationText) {
+    if (!locationText) return null;
+
+    try {
+        const searchText = `${locationText}, Enugu, Nigeria`;
+        console.log('🌍 Geocoding:', searchText);
+
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchText)}&limit=5&addressdetails=1`;
+
+        const response = await fetch(url, {
+            headers: {
+                'Accept-Language': 'en'
+            }
+        });
+
+        const data = await response.json();
+        console.log('📦 Nominatim Results:', data);
+
+        if (!data || !data.length) {
+            console.warn('❌ No location results returned');
+            return null;
+        }
+
+        const first = data[0];
+        const displayName = (first.display_name || '').toLowerCase();
+
+        // ── THE FIX: EXTRACT SIGNIFICANT KEYWORDS TO ACCURATELY VALIDATE LOCATIONS ──
+        const cleanWords = (str) => {
+            return str
+                .toLowerCase()
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "") // Strip accents/diacritics
+                .replace(/[^\w\s-]/g, ' ')       // Replace punctuation with whitespace
+                .split(/\s+/)
+                .filter(w => w.length > 1 && !['no', 'no.', 'street', 'road', 'layout', 'lane', 'avenue', 'close', 'enugu', 'nigeria'].includes(w));
+        };
+
+        const searchWords = cleanWords(locationText);
+
+        let matched = false;
+        if (searchWords.length === 0) {
+            // If the query only contained descriptors or place names, trust Nominatim's internal search matches
+            matched = true;
+        } else {
+            // Match succeeds if ANY of the primary area keywords overlap with the returned location profile
+            matched = searchWords.some(word => displayName.includes(word));
+        }
+
+        console.log('🔍 Relaxed Match Check:', {
+            searchWords,
+            result: displayName,
+            matched
+        });
+
+        if (!matched) {
+            console.warn('❌ Result does not match significant keywords of user input');
+            return null;
+        }
+
+        return {
+            lat: parseFloat(first.lat),
+            lon: parseFloat(first.lon)
+        };
+
+    } catch (error) {
+        console.error('❌ Nominatim API connection error:', error);
+        return null;
+    }
+}
     // ── Card Menu ─────────────────────────────────────────
     window.toggleCardMenu = function(id) {
         const menu = document.getElementById(`menu-${id}`);
@@ -375,14 +566,16 @@ document.addEventListener('DOMContentLoaded', () => {
         alertBox.success('Link Copied', 'Property link copied to clipboard');
     }
 
-    // Keep track of pagination state out of function re-initialization scope
+// Keep track of pagination state out of function re-initialization scope
     let currentPropertyPage = 1; 
     let isPropertyLoading = false;
+    let hasMorePropertiesToScroll = true; // Prevents calling the API when the database runs out of listings
+    const loadedPropertyPageCache = {};   // Memory cache bucket storing property parameters by page block index
 
     // ── Skeleton Loader Element ──────────────────────────────────
     function getSkeletonHTML() {
         return Array(4).fill(`
-            <div class="skeleton-card temporary-skeleton">
+            <div class="skeleton-card temporary-skeleton" style="background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 4px 14px rgba(0,0,0,0.06); min-height: 380px;">
                 <div class="skeleton skeleton-img" style="height:200px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
                 <div class="skeleton-body" style="padding:15px;">
                     <div class="skeleton skeleton-line" style="width:60%; height:15px; margin-bottom:10px; background:#e0e0e0; animation: pulse 1.5s infinite ease-in-out;"></div>
@@ -395,12 +588,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Properties Grid ───────────────────────────────────
     window.loadProperties = async function (isNewLoad = false) {
-        // Prevent overlapping duplicate API requests if user click-spams
+        // Prevent overlapping duplicate API requests if user click-spams or scroll triggers fire rapidly
         if (isPropertyLoading) return; 
         
         if (isNewLoad) {
             currentPropertyPage = 1;
+            hasMorePropertiesToScroll = true;
+            // Clear out local property blocks dictionary cache memory
+            Object.keys(loadedPropertyPageCache).forEach(k => delete loadedPropertyPageCache[k]);
+            const gridEl = document.getElementById('propertiesGrid');
+            if (gridEl) gridEl.innerHTML = '';
         }
+
+        // If backend already returned hasMore = false on previous scroll iterations, exit early
+        if (!hasMorePropertiesToScroll) return;
 
         const grid  = document.getElementById('propertiesGrid');
         const empty = document.getElementById('propertiesEmpty');
@@ -408,19 +609,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         isPropertyLoading = true;
 
-        // Inject skeletons carefully without wiping out previous items if appending
+        // Inject skeletons carefully without wiping out previous items if appending downwards
         if (currentPropertyPage === 1) {
             grid.innerHTML = getSkeletonHTML();
             empty.style.display = 'none';
         } else {
-            grid.insertAdjacentHTML('beforeend', `<div id="pagination-skeletons">${getSkeletonHTML()}</div>`);
+            grid.insertAdjacentHTML('beforeend', `<div id="pagination-skeletons" style="display: contents;">${getSkeletonHTML()}</div>`);
         }
 
         try {
             const res  = await fetch(`/api/agent/property?page=${currentPropertyPage}`);
             const data = await res.json();
 
-            // Remove temporary skeletons safely
+            // Remove temporary skeletons safely before determining layout assignments
             if (currentPropertyPage === 1) {
                 grid.innerHTML = '';
             } else {
@@ -433,20 +634,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     empty.style.display = 'block';
                     count.textContent = '0';
                 }
+                hasMorePropertiesToScroll = false;
                 isPropertyLoading = false;
                 return;
             }
 
-            // Update counts and render cards gracefully
+            // Sync the updated flag tracking boundary passed down from your backend controller layout
+            hasMorePropertiesToScroll = Object.prototype.hasOwnProperty.call(data, 'hasMore') ? data.hasMore : true;
+
+            // Update visible list header counters using explicit metrics from totalPosts parameter
             if (currentPropertyPage === 1) {
-                count.textContent = data.totalCount || data.property.length; 
+                count.textContent = data.totalPosts || data.property.length; 
+            } else if (data.totalPosts) {
+                count.textContent = data.totalPosts;
             } else {
-                // If backend provides exact database count, use that, else increment aggregate values
                 count.textContent = parseInt(count.textContent) + data.property.length;
             }
 
-            // Efficient DOM insertion loop
-            data.property.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
+            // Save raw listing objects within client dictionary memory index cache
+            loadedPropertyPageCache[currentPropertyPage] = data.property;
+
+            // Generate a separate virtual block wrapper element inside your native CSS Grid
+            renderVirtualBlockSection(currentPropertyPage, data.property);
             
             // Prepare increment step for the next pagination invocation trigger
             currentPropertyPage++;
@@ -466,6 +675,94 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // ── Virtual DOM Block Group Constructor ────────────────
+    function renderVirtualBlockSection(pageNumber, propertyArray) {
+        const grid = document.getElementById('propertiesGrid');
+        if (!grid) return;
+
+        const blockWrapper = document.createElement('div');
+        blockWrapper.id = `virtual-page-block-${pageNumber}`;
+        blockWrapper.className = 'virtual-page-block';
+        blockWrapper.style.cssText = 'display: contents;'; 
+        blockWrapper.setAttribute('data-status', 'active');
+
+        // Compile HTML strings 
+        let cardsHTML = '';
+        propertyArray.forEach(p => {
+            cardsHTML += propertyCard(p);
+        });
+        blockWrapper.innerHTML = cardsHTML;
+
+        grid.appendChild(blockWrapper);
+
+        // Attach memory recycling Visibility Observer tracking hooks to this specific container row block
+        setupVirtualBlockObserver(blockWrapper, pageNumber);
+    }
+
+    // ── Intersection Memory Balancing Recycler ─────────────
+    function setupVirtualBlockObserver(blockContainer, pageNumber) {
+        let initialized = false;
+        const observerOptions = {
+            root: null, 
+            rootMargin: '800px 0px 800px 0px', 
+            threshold: 0.0
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const propertiesList = loadedPropertyPageCache[pageNumber];
+                if (!propertiesList) return;
+
+                // On first layout computation pass, prevent collapsing standard render nodes
+                if (!initialized) {
+                    initialized = true;
+                    if (!entry.isIntersecting) {
+                        return; 
+                    }
+                }
+
+                if (entry.isIntersecting) {
+                    // ── USER SCROLLED NEAR LISTINGS: Re-render heavy image cards instantly ──
+                    if (blockContainer.getAttribute('data-status') !== 'active') {
+                        let innerCardsHTML = '';
+                        propertiesList.forEach(p => {
+                            innerCardsHTML += propertyCard(p);
+                        });
+                        blockContainer.innerHTML = innerCardsHTML;
+                        blockContainer.setAttribute('data-status', 'active');
+                    }
+                } else {
+                    // ── USER SCROLLED FAR AWAY (UP OR DOWN): Purge content layout elements to prevent crashes ──
+                    if (blockContainer.getAttribute('data-status') === 'active') {
+                        const actualBlockHeight = blockContainer.getBoundingClientRect().height;
+
+                        blockContainer.innerHTML = ''; 
+                        blockContainer.setAttribute('data-status', 'purged');
+
+                        // Create an empty layout filler spacer spanning full widths
+                        const memorySpacer = document.createElement('div');
+                        memorySpacer.className = 'virtual-spacer';
+                        memorySpacer.style.cssText = `grid-column: 1 / -1; height: ${actualBlockHeight || 380}px; width: 100%; display: block;`;
+                        blockContainer.appendChild(memorySpacer);
+                    }
+                }
+            });
+        }, observerOptions);
+
+        observer.observe(blockContainer);
+    }
+
+    // ── Infinite Downwards Scroll Listener ─────────────────
+    window.addEventListener('scroll', () => {
+        // If we are currently communicating with MongoDB or reached absolute totals, stop operations
+        if (isPropertyLoading || !hasMorePropertiesToScroll) return;
+
+        // Fetch the next 8 items whenever the agent scrolls within 400px of the footer page bottom limits
+        if ((window.innerHeight + window.scrollY) >= document.documentElement.scrollHeight - 400) {
+            window.loadProperties(false);
+        }
+    });
+
     function propertyCard(p) {
         const imgSrc = p.imageNames && p.imageNames.length
             ? `/agent-loged/upload-property/${p.imageNames[0]}`
@@ -475,9 +772,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const isLand = (p.type || '').toLowerCase() === 'land';
         const isVerified = (p.stand || '').toLowerCase() === 'verified agent';
 
-        // SCALING OPTIMIZATION:
+        // Explicitly forces opacity and transform values inline to bypass legacy stylesheet classes cleanly
         return `
-            <div class="property-card" id="card-${p._id}" data-property="${encodeURIComponent(JSON.stringify(p))}">
+            <div class="property-card" id="card-${p._id}" data-property="${encodeURIComponent(JSON.stringify(p))}" style="opacity: 1 !important; transform: none !important; visibility: visible !important;">
                 <div class="card-image">
                     <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
                     <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
@@ -695,6 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
         editImages = [];
         existingImages = [];
         updateEditPreview();
+        let pendingEditSubmitCallback = null;
 
         try {
             const card = document.getElementById(`card-${id}`);
@@ -703,25 +1001,36 @@ document.addEventListener('DOMContentLoaded', () => {
             // Support both potential collection schema array field structures
             existingImages = Array.isArray(p.imageNames) ? [...p.imageNames] : (Array.isArray(p.imageName) ? [...p.imageName] : []);
 
-            document.getElementById('editTitle').value       = p.title       || '';
-            document.getElementById('editPrice').value       = p.price       || '';
-            document.getElementById('editLocation').value    = p.location    || '';
-            document.getElementById('editBeds').value        = p.beds        || '';
-            document.getElementById('editBaths').value       = p.baths       || '';
-            document.getElementById('editArea').value        = p.area        || '';
-            document.getElementById('editDescription').value = p.description || '';
-            editTypeSelect.value = (p.type || 'house').toLowerCase();
-            document.getElementById('editCategory').value   = p.category    || '';
-            handleEditTypeChange();
-            initEditFeatures(p.features);
-            updateEditPreview();
+            // Open editing modal directly when edit button is clicked without interruption
+            populateFormAndOpenModal(p);
 
-            document.getElementById('editModalOverlay').classList.add('active');
-            document.body.style.overflow = 'hidden';
         } catch (err) {
             alertBox.error('Error', err.message || 'Failed to open editor. Please try again.');
         }
     };
+
+    // Helper subroutine to populate input fields and open the overlay interface safely
+    function populateFormAndOpenModal(p) {
+        document.getElementById('editTitle').value       = p.title       || '';
+        document.getElementById('editPrice').value       = p.price       || '';
+        document.getElementById('editLocation').value    = p.location    || '';
+        document.getElementById('editBeds').value        = p.beds        || '';
+        document.getElementById('editBaths').value       = p.baths       || '';
+        document.getElementById('editArea').value        = p.area        || '';
+        document.getElementById('editDescription').value = p.description || '';
+        
+        // Populate hidden layout map input fields if they exist in your edit form schema
+        if (document.getElementById('editLat')) document.getElementById('editLat').value = p.lat || '';
+        if (document.getElementById('editLng')) document.getElementById('editLng').value = p.lng || '';
+        
+        editTypeSelect.value = (p.type || 'house').toLowerCase();
+        handleEditTypeChange();
+        initEditFeatures(p.features);
+        updateEditPreview();
+
+        document.getElementById('editModalOverlay').classList.add('active');
+        document.body.style.overflow = 'hidden';
+    }
 
     window.closeEditModal = function() {
         document.getElementById('editModalOverlay').classList.remove('active');
@@ -741,6 +1050,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return; 
         }
 
+        // [Validation logic remains exactly as you had it]
         const emojiOrSymbol = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FEFF}!@#$%^&*()+=\[\]{}<>?\\|`~]/u;
         const textOnly      = /^[a-zA-Z0-9\s,.\-'"\/]+$/;
         const numbersOnly   = /^\d+(\.\d+)?$/;
@@ -754,9 +1064,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const area     = document.getElementById('editArea').value.trim();
         const desc     = document.getElementById('editDescription').value.trim();
 
-        if (!title)                                               { alertBox.warning('Missing Field', 'Property title is required'); return; }
+        if (!title)                                                { alertBox.warning('Missing Field', 'Property title is required'); return; }
         if (emojiOrSymbol.test(title) || !textOnly.test(title)) { alertBox.error('Invalid Title', 'Title must not contain emojis or special symbols'); return; }
-        if (!price)                                               { alertBox.warning('Missing Field', 'Price is required'); return; }
+        if (!price)                                                { alertBox.warning('Missing Field', 'Price is required'); return; }
         if (!numbersOnly.test(price))                            { alertBox.error('Invalid Price', 'Price must be numbers only'); return; }
         if (!category)                                            { alertBox.warning('Missing Field', 'Please select a listing category'); return; }
         if (!location)                                            { alertBox.warning('Missing Field', 'Location is required'); return; }
@@ -766,15 +1076,40 @@ document.addEventListener('DOMContentLoaded', () => {
         if (area  && emojiOrSymbol.test(area))                    { alertBox.error('Invalid Area', 'Area must not contain emojis or special symbols'); return; }
         if (desc  && emojiOrSymbol.test(desc))                   { alertBox.error('Invalid Description', 'Description must not contain emojis or special symbols'); return; }
 
-        // Setup clean FormData boundary instance wrapper
+        // ── MAP AREA SUBMIT VALIDATION CHECK ──
+        const editLatEl = document.getElementById('editLat');
+        const editLngEl = document.getElementById('editLng');
+        const latVal = editLatEl ? parseFloat(editLatEl.value) : 0;
+        const lngVal = editLngEl ? parseFloat(editLngEl.value) : 0;
+        const locationIsOnMap = !isNaN(latVal) && !isNaN(lngVal) && latVal !== 0 && lngVal !== 0;
+
+        if (!locationIsOnMap) {
+            alertBox.warning('Map Confirmation Required', 'Please confirm this property location on the map.');
+            
+            document.getElementById('editModalOverlay').classList.remove('active');
+            document.body.style.overflow = 'auto';
+
+            // Store the callback globally instead of passing it as an argument
+            pendingEditSubmitCallback = (confirmedCoords) => {
+                if (editLatEl) editLatEl.value = confirmedCoords.lat;
+                if (editLngEl) editLngEl.value = confirmedCoords.lng;
+                
+                document.getElementById('editModalOverlay').classList.add('active');
+                document.body.style.overflow = 'hidden';
+                
+                // Clear the global before calling
+                pendingEditSubmitCallback = null;
+                window.submitEdit();
+            };
+
+            // Open picker with NO argument (to prevent stringification)
+            window.openMapPicker(); 
+            return;
+        }
+
+        // [Proceed with FormData and submission...]
         const formData = new FormData(editForm);
-        
-        // FIX 1: Append with the exact key field name expected by the express router validation check arrays ('keepImages')
-        existingImages.forEach(image => {
-            formData.append('keepImages', image);
-        });
-        
-        // Append actual binary updates safely
+        existingImages.forEach(image => formData.append('keepImages', image));
         editImages.forEach(file => formData.append('file', file));
 
         btn.disabled          = true;
@@ -782,12 +1117,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnText.style.display = 'none';
 
         try {
-            // FIX 2: Correct URL template structure matching your app.patch rules with a PATCH request method
             const res  = await fetch(`/api/edit/post/${currentEditId}`, { 
                 method: 'PATCH', 
                 body: formData 
             });
-            
             const data = await res.json();
 
             if (res.ok && data.success) {
@@ -799,14 +1132,199 @@ document.addEventListener('DOMContentLoaded', () => {
                 alertBox.error('Failed', data.message || 'Failed to update property');
             }
         } catch (err) {
-            console.error('Fetch Runtime Crash Sequence:', err);
-            alertBox.error('Error', 'Something went wrong while saving changes. Please review your server logs.');
+            alertBox.error('Error', 'Something went wrong while saving changes.');
         } finally {
             btn.disabled          = false;
             spinner.style.display = 'none';
             btnText.style.display = 'inline';
         }
     };
+
+    // ── Map Picker ────────────────────────────────────────
+    let mapPickerInstance = null;
+    let mapPickerMarker   = null;
+    let mapPickerLat      = null;
+    let mapPickerLng      = null;
+    let mapPickerCallback = null; // called with { lat, lng } when confirmed
+
+    window.openMapPicker = function(locationText, onConfirm) {
+        mapPickerCallback = onConfirm;
+        document.getElementById('mapPickerLocationText').textContent = locationText || '';
+        document.getElementById('mapPickerCoords').textContent = 'Click or drag pin to set location';
+        document.getElementById('mapSearchInput').value = locationText || '';
+        document.getElementById('mapSearchResults').innerHTML = '';
+        document.getElementById('mapPickerOverlay').classList.add('active');
+        document.body.style.overflow = 'hidden';
+
+        // Initialize map centered on Enugu, Nigeria
+        setTimeout(() => {
+            if (!mapPickerInstance) {
+                mapPickerInstance = L.map('mapPickerContainer').setView([6.4584, 7.5464], 13);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(mapPickerInstance);
+
+                mapPickerInstance.on('click', (e) => {
+                    placeMapPin(e.latlng.lat, e.latlng.lng);
+                });
+            } else {
+                mapPickerInstance.invalidateSize();
+            }
+
+            // Auto-search the location text to center the map
+            if (locationText) searchMapLocation(locationText);
+        }, 100);
+    };
+
+window.closeMapPicker = function () {
+
+    document
+        .getElementById('mapPickerOverlay')
+        .classList.remove('active');
+
+    document.body.style.overflow = 'auto';
+
+    console.log('🧹 Resetting Map Picker State');
+
+    mapPickerLat = null;
+    mapPickerLng = null;
+
+    if (mapPickerMarker) {
+        mapPickerInstance.removeLayer(mapPickerMarker);
+        mapPickerMarker = null;
+    }
+};
+
+    function placeMapPin(lat, lng) {
+        mapPickerLat = lat;
+        mapPickerLng = lng;
+
+        if (mapPickerMarker) {
+            mapPickerMarker.setLatLng([lat, lng]);
+        } else {
+            mapPickerMarker = L.marker([lat, lng], { draggable: true }).addTo(mapPickerInstance);
+            mapPickerMarker.on('dragend', (e) => {
+                const pos = e.target.getLatLng();
+                placeMapPin(pos.lat, pos.lng);
+            });
+        }
+
+        document.getElementById('mapPickerCoords').textContent =
+            `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+    }
+
+    window.searchMapLocation = async function(query) {
+        const input = query || document.getElementById('mapSearchInput').value.trim();
+        if (!input) return;
+
+        const resultsEl = document.getElementById('mapSearchResults');
+        resultsEl.innerHTML = '<p style="font-size:0.8rem;color:#888;padding:4px;">Searching...</p>';
+
+        try {
+            const res  = await fetch(
+                `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(input + ', Enugu, Nigeria')}&limit=5`,
+                { headers: { 'User-Agent': 'EasyFind-Property-Marketplace' } }
+            );
+            const data = await res.json();
+
+            if (!data.length) {
+                resultsEl.innerHTML = '<p style="font-size:0.8rem;color:#e55;padding:4px;">No results found. Try a nearby landmark.</p>';
+                return;
+            }
+
+            resultsEl.innerHTML = data.map((r, i) => `
+                <div onclick="selectMapResult(${r.lat}, ${r.lon}, '${r.display_name.replace(/'/g, '').slice(0, 60)}')"
+                     style="padding:7px 10px;cursor:pointer;font-size:0.82rem;border-bottom:1px solid #eee;hover:background:#f0fdfb;">
+                    <i class="fas fa-map-marker-alt" style="color:#0d7068;margin-right:6px;"></i>${r.display_name.slice(0, 70)}
+                </div>
+            `).join('');
+
+            // Auto-center on first result
+            mapPickerInstance.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 15);
+            placeMapPin(parseFloat(data[0].lat), parseFloat(data[0].lon));
+        } catch (err) {
+            resultsEl.innerHTML = '<p style="font-size:0.8rem;color:#e55;padding:4px;">Search failed. Check your connection.</p>';
+        }
+    };
+
+window.selectMapResult = function(lat, lon, name) {
+    // 1. Update the visual map position
+    mapPickerInstance.setView([lat, lon], 16);
+    placeMapPin(lat, lon);
+    
+    // 2. IMPORTANT: Fill the hidden inputs so submitProperty passes its check
+    const latInput = document.getElementById('propLatitude') || document.querySelector('[name="latitude"]');
+    const lngInput = document.getElementById('propLongitude') || document.querySelector('[name="longitude"]');
+    
+    if (latInput) latInput.value = lat;
+    if (lngInput) lngInput.value = lon;
+
+    // 3. UI Cleanup
+    document.getElementById('mapSearchResults').innerHTML = '';
+    document.getElementById('mapSearchInput').value = name;
+};
+
+window.confirmMapLocation = function () {
+
+    if (
+        mapPickerLat === null ||
+        mapPickerLng === null
+    ) {
+        alertBox.warning(
+            'Location Missing',
+            'Please place a pin on the map first.'
+        );
+        return;
+    }
+
+    console.log('📍 Confirmed Coordinates:', {
+        lat: mapPickerLat,
+        lng: mapPickerLng
+    });
+
+    const propLat =
+        document.getElementById('propLatitude');
+
+    const propLng =
+        document.getElementById('propLongitude');
+
+    if (propLat) propLat.value = mapPickerLat;
+    if (propLng) propLng.value = mapPickerLng;
+
+    const editLat =
+        document.getElementById('editLat');
+
+    const editLng =
+        document.getElementById('editLng');
+
+    if (editLat) editLat.value = mapPickerLat;
+    if (editLng) editLng.value = mapPickerLng;
+
+    if (typeof pendingEditSubmitCallback === 'function') {
+
+        pendingEditSubmitCallback({
+            lat: mapPickerLat,
+            lng: mapPickerLng
+        });
+
+        pendingEditSubmitCallback = null;
+    }
+
+    if (typeof mapPickerCallback === 'function') {
+
+        mapPickerCallback({
+            lat: mapPickerLat,
+            lng: mapPickerLng
+        });
+    }
+
+    closeMapPicker();
+};
+
+    // Enter key on map search
+    document.getElementById('mapSearchInput')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); searchMapLocation(); }
+    });
 
     // ── Document Initialization Callbacks ───────────────────
     async function initializeDashboard() {

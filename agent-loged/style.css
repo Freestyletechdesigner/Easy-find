@@ -924,8 +924,21 @@ header {
     background: white;
     border-radius: 16px;
     overflow: hidden;
+    opacity: 1;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Force elements within virtual page blocks to preserve standard layout rules */
+.virtual-page-block {
+    display: contents !important;
+}
+
+/* Light weight performance spacer tracking rule rules */
+.virtual-spacer {
+    grid-column: 1 / -1;
+    width: 100%;
+    content-visibility: auto;
 }
 
 .card-image {

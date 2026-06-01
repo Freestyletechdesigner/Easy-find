@@ -46,22 +46,38 @@ const AGENT_POST = (app) => {
         next();
     }
 
-    // Helper function to handle async sharp compression across multiple files
-    async function processAndSaveImages(files, agentId, agentName = '') {
-        const savedFilenames = [];
+// Helper function to handle async sharp compression across multiple files
+async function processAndSaveImages(files, agentId, agentName = '') {
+    const savedFilenames = [];
 
-        for (const file of files) {
-            const fileName = `${agentId}_${Date.now()}_${Math.floor(Math.random() * 1000)}.webp`;
-            const finalPath = path.join(UPLOAD_DIR, fileName);
+    for (const file of files) {
+        if (!file || !file.buffer) {
+            console.warn("Skipping an invalid or empty file block in stream pipeline.");
+            continue;
+        }
 
-            // Get image dimensions first so watermark scales correctly
+        const fileName = `${agentId}_${Date.now()}_${Math.floor(Math.random() * 1000)}.webp`;
+        const finalPath = path.join(UPLOAD_DIR, fileName);
+
+        try {
+            // 1. Get raw metadata details safely
             const meta = await sharp(file.buffer).metadata();
-            const imgWidth  = meta.width  || 1200;
-            const imgHeight = meta.height || 800;
+            const origWidth = meta.width || 1200;
+            const origHeight = meta.height || 800;
 
-            // Build SVG watermark — agent name + domain, centered
+            // 2. Compute true post-resize target dimensions (matching width: 1200, withoutEnlargement: true)
+            let imgWidth = origWidth;
+            let imgHeight = origHeight;
+
+            if (origWidth > 1200) {
+                imgWidth = 1200;
+                // Maintain identical aspect ratio for scaled heights
+                imgHeight = Math.round((1200 / origWidth) * origHeight);
+            }
+
+            // 3. Build SVG watermark dynamically scaling off the actual canvas output
             const safeName   = (agentName || 'Easy Find').replace(/[<>&"]/g, '');
-            const fontSize   = Math.max(18, Math.round(imgWidth * 0.024));
+            const fontSize   = Math.max(16, Math.round(imgWidth * 0.024));
             const padding    = Math.round(fontSize * 0.8);
             const lineHeight = Math.round(fontSize * 1.4);
             const boxH       = lineHeight * 2 + padding * 2;
@@ -75,10 +91,11 @@ const AGENT_POST = (app) => {
             const svgWatermark = Buffer.from(`
                 <svg width="${imgWidth}" height="${imgHeight}" xmlns="http://www.w3.org/2000/svg">
                     <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}"
-                          rx="8" ry="8" fill="rgba(0, 0, 0, 0.45)"/> <text x="${textCenterX}" y="${text1Y}"
+                          rx="8" ry="8" fill="rgba(0, 0, 0, 0.45)"/> 
+                    <text x="${textCenterX}" y="${text1Y}"
                           text-anchor="middle"
                           font-family="Arial, sans-serif" font-size="${fontSize}"
-                          font-weight="bold" fill="white" opacity="0.95">${safeName}</text>
+                          font-weight="bold" fill="white" opacity="0.95">@${safeName}</text>
                     
                     <text x="${textCenterX}" y="${text2Y}"
                           text-anchor="middle"
@@ -87,6 +104,7 @@ const AGENT_POST = (app) => {
                 </svg>
             `);
 
+            // 4. Resize and composite layers using matching layouts
             await sharp(file.buffer)
                 .resize({ width: 1200, withoutEnlargement: true })
                 .composite([{ input: svgWatermark, blend: 'over' }])
@@ -97,9 +115,12 @@ const AGENT_POST = (app) => {
                 .toFile(finalPath);
 
             savedFilenames.push(fileName);
+        } catch (sharpError) {
+            console.error("Failed processing individual image with Sharp:", sharpError);
         }
-        return savedFilenames;
     }
+    return savedFilenames;
+}
 
     // Post request
     app.post('/api/agent/post', requireAgent, upload.array('file'), [
@@ -112,7 +133,9 @@ const AGENT_POST = (app) => {
         check('baths').optional({ checkFalsy: true }).isNumeric().trim().escape(),
         check('area').optional({ checkFalsy: true }).trim(),
         check('description').trim().escape().isLength({ max: 5000 }),
-        check('features').trim().escape().isLength({ max: 1000 })
+        check('features').trim().escape().isLength({ max: 1000 }),
+        check('latitude').notEmpty().withMessage('Map coordinates are required. Please pin your property on the map.'),
+        check('longitude').notEmpty().withMessage('Map coordinates are required. Please pin your property on the map.')
     ], async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -146,7 +169,9 @@ const AGENT_POST = (app) => {
                 features,
                 imageNames: imageNames,
                 date: Date.now(),
-                view: 0
+                view: 0,
+                latitude:  req.body.latitude  ? parseFloat(req.body.latitude)  : null,
+                longitude: req.body.longitude ? parseFloat(req.body.longitude) : null
             }); 
             
             await newPost.save();
@@ -172,7 +197,7 @@ const AGENT_POST = (app) => {
         }
     });
 
-    // Get request for agent only
+    // Get request for agent only (With memory-safe boundary tracking)
     app.get('/api/agent/property', requireAgent, async (req, res) => {
         const page = parseInt(req.query.page) || 1; 
         const limit = 8;
@@ -181,15 +206,25 @@ const AGENT_POST = (app) => {
         try {
             const agentId = req.session.agent.id;
 
-            const [agentPost, agentUser] = await Promise.all([
+            // Run total count along with the paginated query to calculate limits
+            const [agentPost, agentUser, totalCount] = await Promise.all([
                 AgentPost.find({ agentId }).sort({ date: -1 }).skip(skip).limit(limit).lean(),
-                AgentUser.findById(agentId).select('stand').lean()
+                AgentUser.findById(agentId).select('stand').lean(),
+                AgentPost.countDocuments({ agentId })
             ]);
 
             const stand = agentUser?.stand || '';
             const posts = agentPost.map(p => ({ ...p, stand }));
 
-            res.json({ success: true, property: posts });
+            // Determine if there are more posts waiting on a next page slice
+            const hasMore = skip + posts.length < totalCount;
+
+            res.json({ 
+                success: true, 
+                property: posts, 
+                totalPosts: totalCount,
+                hasMore: hasMore 
+            });
         } catch(err) {
             res.status(500).json({ success: false, message: 'Error loading properties' });
         }
@@ -365,7 +400,7 @@ const AGENT_POST = (app) => {
             });
         }
     
-        const { title, type, category, price, location, beds, baths, area, description, features } = req.body;
+        const { title, type, category, price, location, beds, baths, area, description, features, latitude, longitude } = req.body;
         const isLand = type === 'land';
         
         const agentId = req.session.agent.id;
@@ -411,9 +446,12 @@ const AGENT_POST = (app) => {
             agentPost.area = area || null;
             agentPost.description = description;
             agentPost.features = features;
+
+            // Update Map Coordinates safely!
+            agentPost.latitude = latitude ? parseFloat(latitude) : null;
+            agentPost.longitude = longitude ? parseFloat(longitude) : null;
             
             // Fix: Assign to the correct collection model schema reference field array name
-            // (If your MongoDB model property schema says imageName, use agentPost.imageName instead)
             if (typeof agentPost.imageName !== 'undefined') {
                 agentPost.imageName = combinedImages;
             } else {
