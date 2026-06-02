@@ -3,6 +3,7 @@ const {check, validationResult} = require('express-validator');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
+const rateLimit = require('express-rate-limit');
 const AgentPost = require('../model/AgentPost.js');
 const AgentUser = require('../model/AgentUser.js');
 
@@ -33,6 +34,19 @@ const upload = multer({
     }
 });
 
+// Strict limiter for Login and OTP
+const authLimiter = rateLimit({
+    windowMs: 4 * 60 * 1000,
+    max: 10, // 
+    message: {
+        success: false, 
+        message: 'Our AI writer is handling high traffic right now. Please type a short description for now, or wait 5 minutes to auto-generate again.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'development' // skip in dev
+});
+
 const AGENT_POST = (app) => {
 
     // Middleware to require agent authentication
@@ -45,6 +59,79 @@ const AGENT_POST = (app) => {
         }
         next();
     }
+
+    // ── BRAND NEW: AI Gemini Real Estate Description Generator Route ──
+    app.post('/api/ai/generate-description', requireAgent, authLimiter, async (req, res) => {
+        const { title, type, category, price, location, beds, baths, area, features } = req.body;
+        
+        // Build properties details prompt parameters
+        const details = [];
+        if (title) details.push(`Title: ${title}`);
+        if (type) details.push(`Property Type: ${type}`);
+        if (category) details.push(`Listing Category: For ${category === "rent" ? "Rent" : category === "shortlet" ? "Short-let" : "Sale"}`);
+        if (price) details.push(`Price: ₦${Number(price).toLocaleString()}`);
+        if (location) details.push(`Location Landmarks: ${location}`);
+        if (beds && type !== 'land') details.push(`Bedrooms: ${beds}`);
+        if (baths && type !== 'land') details.push(`Bathrooms: ${baths}`);
+        if (area) details.push(`Plot Area: ${area}`);
+        if (features) details.push(`Aesthetic Features/Amenities: ${features}`);
+        
+        const prompt = `Write a highly compelling, professional, engaging, and elegant real estate property description for this property listing. 
+
+Here are the specification details:
+${details.map(d => `- ${d}`).join('\n')}
+
+Guidelines:
+1. Tone: Sophisticated, persuasive, welcoming, and polished real estate dialect.
+2. Structure: A single, continuous paragraph.
+3. Length: Approximately 100 to 140 words.
+4. Output ONLY the raw descriptive write-up. Absolutely DO NOT wrap in quotes, DO NOT prepend introductions like "Here is...", and DO NOT use markdown headers or lists. Start right with the text.`;
+
+        try {
+            const apiKey = process.env.GEMINI_API_KEY;
+            if (!apiKey) {
+                return res.status(500).json({
+                    success: false,
+                    message: "GEMINI_API_KEY is not configured in the server's environment variables."
+                });
+            }
+
+            // Standard, robust HTTP Call to Google Gemini Web Service using the modern gemini-2.5-flash model
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }]
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+                const description = data.candidates[0].content.parts[0].text.trim();
+                res.json({
+                    success: true,
+                    description: description
+                });
+            } else {
+                console.error("Gemini Response Error Stack:", data);
+                res.status(500).json({
+                    success: false,
+                    message: "Failed to compile description from Gemini AI. Check limits."
+                });
+            }
+        } catch (error) {
+            console.error("Gemini Connection Error:", error);
+            res.status(500).json({
+                success: false,
+                message: "Error connecting to AI details service: " + error.message
+            });
+        }
+    });
 
 // Helper function to handle async sharp compression across multiple files
 async function processAndSaveImages(files, agentId, agentName = '') {

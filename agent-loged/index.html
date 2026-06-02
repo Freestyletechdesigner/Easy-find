@@ -19,6 +19,7 @@
             <p id="agent-name">Loading...</p>
             <span class="upload-pic">Upload profile picture!</span>
             <span class="verify"><i class="fa-solid fa-circle-check"></i></span>
+            <span class="verifyText">verified agent</span>
         </div>
         
          <nav class="links">
@@ -56,10 +57,11 @@
         <div class="hold-hero-text">
             <p>Welcome to your</p>
             <h1>PORTFOLIO</h1>
+            <span>Instantly manage properties, copy share links, <br> track analytics, and 
+                generate beautiful property descriptions using our AI.
+            </span>
             <a onclick="openModal()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
+                <i class="fa-solid fa-plus"></i>
                 Upload properties
             </a>
         </div>
@@ -144,9 +146,15 @@
                         </div>
                     </div>
 
+                    <!-- Description Form Group updated with AI prompt trigger button -->
                     <div class="form-group">
-                        <label>Description</label>
-                        <textarea name="description" rows="3" placeholder="Describe the unique features of this property..."></textarea>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <label style="margin-bottom: 0;">Description</label>
+                            <button type="button" id="btnAiPost" onclick="generateAIDescription('post')" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(126, 34, 206, 0.25); transition: all 0.2s;">
+                                <i class="fas fa-magic"></i> Write with AI
+                            </button>
+                        </div>
+                        <textarea name="description" id="postDescription" rows="3" placeholder="Describe the unique features of this property..."></textarea>
                     </div>
 
                     <div class="form-group">
@@ -275,8 +283,14 @@
                         </div>
                     </div>
 
+                    <!-- Edit Modal Description layout updated with AI Prompt trigger button -->
                     <div class="form-group">
-                        <label>Description</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <label style="margin-bottom: 0;">Description</label>
+                            <button type="button" id="btnAiEdit" onclick="generateAIDescription('edit')" style="background: linear-gradient(135deg, #247a6c 0%, #06613e 100%); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 0.78rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(126, 34, 206, 0.25); transition: all 0.2s;">
+                                <i class="fas fa-magic"></i> Write with AI
+                            </button>
+                        </div>
                         <textarea name="description" id="editDescription" rows="3" placeholder="Describe the property..."></textarea>
                     </div>
 

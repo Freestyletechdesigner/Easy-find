@@ -245,6 +245,15 @@ header {
     display: none;
 }
 
+.verifyText {
+    position: absolute;
+    top: 70%;
+    right: 0%;
+    font-size: 0.69rem;
+    color: #000000c7;
+    display: none;
+}
+
 /* ===== HERO SECTION ===== */
 .hero {
     position: relative;
@@ -270,6 +279,17 @@ header {
     font-size: 2rem;
     font-weight: bold;
     text-shadow: 2px 2px 6px #fff;
+}
+
+.hold-hero-text span {
+    font-size: 1rem;
+    color: #ffffff;
+    font-weight: bold;
+    text-shadow: 2px 2px 6px #000000b2;
+    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .hold-hero-text h1 {

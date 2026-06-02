@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch('/api/agent/profile', { credentials: 'include' });
             const data = await response.json();
             const verify = document.querySelector('.verify')
+            const verifyText = document.querySelector('.verifyText')
             if (!data.agent) {
                 window.location.href = '/login-agent';
                 return false;
@@ -21,8 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     el.style.display = 'none';
                 });
                 verify.style.display = 'flex'
+                verifyText.style.display = 'flex'
             } else {
                 verify.style.display = 'none'
+                verifyText.style.display = 'none'
             }
             return true;
         } catch (error) {
@@ -1340,3 +1343,63 @@ window.confirmMapLocation = function () {
 
     initializeDashboard();
 });
+
+// ── BRAND NEW: AI Gemini Real Estate Description Generator Executor ──
+window.generateAIDescription = async function(mode) {
+    const isEdit = mode === 'edit';
+    const btn = document.getElementById(isEdit ? 'btnAiEdit' : 'btnAiPost');
+    const textarea = document.getElementById(isEdit ? 'editDescription' : 'postDescription');
+    
+    // Select correct form layout block
+    const form = isEdit ? document.getElementById('editPropertyForm') : (document.getElementById('uploadPropertyForm') || document.getElementById('propertyForm'));
+    if (!form) {
+        alertBox.error('Form Error', 'Form element context was not found.');
+        return;
+    }
+
+    // Capture property input values for contextual description mapping
+    const title = form.querySelector('[name="title"]')?.value.trim();
+    const type = form.querySelector('[name="type"]')?.value;
+    const category = form.querySelector('[name="category"]')?.value;
+    const price = form.querySelector('[name="price"]')?.value.trim();
+    const location = form.querySelector('[name="location"]')?.value.trim();
+    const beds = form.querySelector('[name="beds"]')?.value.trim();
+    const baths = form.querySelector('[name="baths"]')?.value.trim();
+    const area = form.querySelector('[name="area"]')?.value.trim();
+    const featuresInput = isEdit ? (document.getElementById('editFeaturesInput')?.value || "") : (document.getElementById('featuresInput')?.value || "");
+
+    // Require essential landmark parameters to prevent shallow description generation
+    if (!title || !price || !location) {
+        alertBox.warning('Form Incomplete', 'Please fill in Title, Price, and Location landmarks to write a contextual description.');
+        return;
+    }
+
+    // Toggle CSS Spinner Loading State
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<i class="fas fa-spinner spin-icon"></i> Generating...`;
+
+    try {
+        const response = await fetch('/api/ai/generate-description', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                title, type, category, price, location, beds, baths, area, features: featuresInput
+            })
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            textarea.value = data.description;
+            alertBox.success('AI Success', 'Description compiled successfully!');
+        } else {
+            alertBox.error('AI Error', data.message || 'Could not compile description write-up.');
+        }
+    } catch (err) {
+        console.error("AI Description compiling failed:", err);
+        alertBox.error('Network Error', 'Failed to communicate with description endpoint.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    }
+};
