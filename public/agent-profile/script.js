@@ -43,13 +43,16 @@ function getSkeletonHTML() {
     `).join('');
 }
 
-// ── Load profile + listings ───────────────────────────
+// Add this variable at the top of script.js with your other state variables
+let hasMorePropertiesToScroll = true; 
+
 async function loadProfile(isNewLoad = false) {
     if (isPropertyLoading) return;
     isPropertyLoading = true;
 
-    if (!isNewLoad) currentPropertyPage = 1;
+    if (isNewLoad) currentPropertyPage = 1;
 
+    // Skeleton handling
     if (currentPropertyPage === 1) {
         grid.innerHTML = getSkeletonHTML();
         empty.style.display = 'none';
@@ -60,21 +63,23 @@ async function loadProfile(isNewLoad = false) {
     try {
         const isFirstPage = currentPropertyPage === 1;
 
-        const fetches = [fetch(`/api/get/postForPublicAgentProfile/${agentId}?page=${currentPropertyPage}`)];
-        if (isFirstPage) fetches.push(fetch(`/api/agent/public/${agentId}`));
+        // Fetch properties from the endpoint matching your route
+        const postsRes = await fetch(`/api/get/postForPublicAgentProfile/${agentId}?page=${currentPropertyPage}`);
+        const postsData = await postsRes.json();
+        
+        // Use the 'property' key from your backend response
+        const posts = postsData.success ? (postsData.property || []) : [];
 
-        const results   = await Promise.all(fetches);
-        const postsData = await results[0].json();
-        const posts     = postsData.success ? (postsData.property || []) : [];
-
+        // Fetch agent info only on first load
         if (isFirstPage) {
-            const agentData = await results[1].json();
-            if (!agentData.success) { showError('Agent not found.'); return; }
-            const totalViews = posts.reduce((sum, p) => sum + (p.view || 0), 0);
-            renderProfile(agentData.agent, posts.length, totalViews);
+            const agentRes = await fetch(`/api/agent/public/${agentId}`);
+            const agentData = await agentRes.json();
+            if (agentData.success) {
+                renderProfile(agentData.agent, postsData.totalPosts || 0, posts.reduce((sum, p) => sum + (p.view || 0), 0));
+            }
         }
 
-        // remove skeletons
+        // Remove skeletons
         document.getElementById('pagination-skeletons')?.remove();
         if (isFirstPage) grid.innerHTML = '';
 
@@ -86,24 +91,38 @@ async function loadProfile(isNewLoad = false) {
             count.textContent = grid.querySelectorAll('.listing-card').length;
         }
 
-        const loadMoreBtn = document.getElementById('loadMoreProfileBtn');
-        if (loadMoreBtn) loadMoreBtn.style.display = posts.length === 8 ? 'block' : 'none';
-
-        currentPropertyPage++;
+        // Update pagination state from backend response
+        hasMorePropertiesToScroll = postsData.hasMore;
+        if (hasMorePropertiesToScroll) {
+            currentPropertyPage++;
+        }
+        
         triggerScrollAnim();
 
     } catch (e) {
         console.error('Failed to load profile:', e);
         document.getElementById('pagination-skeletons')?.remove();
-        if (currentPropertyPage === 1) {
-            grid.innerHTML = '';
-            empty.style.display = 'block';
-            count.textContent = '0';
-        }
     } finally {
         isPropertyLoading = false;
     }
 }
+
+// ── Optimized Scroll Listener ──────────────────────────
+let scrollTimeout;
+window.addEventListener('scroll', () => {
+    // Clear previous timeout to ensure we don't trigger too often
+    clearTimeout(scrollTimeout);
+    
+    scrollTimeout = setTimeout(() => {
+        // Check if user is near bottom
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+            // Only load if not currently loading and there are more properties
+            if (!isPropertyLoading && hasMorePropertiesToScroll) {
+                loadProfile();
+            }
+        }
+    }, 200); // Wait 200ms after scroll stops
+});
 
 // ── Render profile card ───────────────────────────────
 function renderProfile(agent, listingCount, totalViews) {

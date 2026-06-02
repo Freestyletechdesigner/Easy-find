@@ -376,9 +376,10 @@ async function processAndSaveImages(files, agentId, agentName = '') {
         const skip = (page - 1) * limit;
         
         try {
-            const [property, agentUser] = await Promise.all([
+            const [property, agentUser, totalCount] = await Promise.all([
                 AgentPost.find({ agentId: id }).sort({ date: -1 }).skip(skip).limit(limit).lean(),
-                AgentUser.findById(id).select('stand').lean()
+                AgentUser.findById(id).select('stand').lean(),
+                AgentPost.countDocuments({ agentId: id })
             ]);
 
             if (!property) return res.json({ success: false, message: 'No property listed' });
@@ -386,7 +387,15 @@ async function processAndSaveImages(files, agentId, agentName = '') {
             const stand = agentUser?.stand || '';
             const posts = property.map(p => ({ ...p, stand }));
 
-            res.json({ success: true, property: posts });
+            // Determine if there are more posts waiting on a next page slice
+            const hasMore = skip + posts.length < totalCount;
+
+            res.json({ 
+                success: true, 
+                property: posts,
+                totalPosts: totalCount,
+                hasMore: hasMore 
+            });
         } catch (error) {
             console.error('Error Loading public agent post:', error);
             res.json({ success: false, message: 'Error loading property' });
