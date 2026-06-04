@@ -43,7 +43,7 @@ async function sendSMS(phone, message) {
 
 async function sendOTP(phone) {
     const otp     = generateOTP();
-    const message = `Your Easy Find login pin is ${otp}. Expires in 10 minutes. Do not share.`;
+    const message = `Your Easy Find login pin is ${otp}. Expires in 10 minutes. Do not share this code to any body that claim to be a member of Easy Find.`;
     const result  = await sendSMS(phone, message);
     if (result.success) {
         console.log(' [OTP GENERATED]:', otp, '- Use this to test!');

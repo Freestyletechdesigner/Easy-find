@@ -472,8 +472,8 @@
       try {
         const compressedBlob = await compressImageOnFrontend(file, 1200, 0.7);
         
-        if (compressedBlob.size > 5 * 1024 * 1024) {
-          showAlert('Optimized file size is still too large. Must be under 5MB.', 'error');
+        if (compressedBlob.size > 6 * 1024 * 1024) {
+          showAlert('Optimized file size is still too large. Must be under 9MB.', 'error');
           uploadBtn.disabled = true;
           uploadBtn.innerHTML = '<i class="fas fa-upload"></i> Upload Picture';
           return;

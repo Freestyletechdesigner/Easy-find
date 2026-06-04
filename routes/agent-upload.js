@@ -29,7 +29,7 @@ const upload = multer({
         cb(null, true);
     },
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB max per raw incoming file
+        fileSize: 6 * 1024 * 1024, // 6MB max per raw incoming file
         files: 10                  // Max 10 files per request
     }
 });
@@ -60,7 +60,7 @@ const AGENT_POST = (app) => {
         next();
     }
 
-    // ── BRAND NEW: AI Gemini Real Estate Description Generator Route ──
+    // AI Gemini Description Generator Route ──
     app.post('/api/ai/generate-description', requireAgent, authLimiter, async (req, res) => {
         const { title, type, category, price, location, beds, baths, area, features } = req.body;
         
@@ -92,7 +92,7 @@ Guidelines:
             if (!apiKey) {
                 return res.status(500).json({
                     success: false,
-                    message: "GEMINI_API_KEY is not configured in the server's environment variables."
+                    message: "Failed to connect with the AI. please try again later."
                 });
             }
 
@@ -121,14 +121,14 @@ Guidelines:
                 console.error("Gemini Response Error Stack:", data);
                 res.status(500).json({
                     success: false,
-                    message: "Failed to compile description from Gemini AI. Check limits."
+                    message: "Our AI writer is handling high traffic right now. Please type a short description for now, or wait 5 minutes to auto-generate again."
                 });
             }
         } catch (error) {
             console.error("Gemini Connection Error:", error);
             res.status(500).json({
                 success: false,
-                message: "Error connecting to AI details service: " + error.message
+                message: "Failed to connect with the AI. please try again later."
             });
         }
     });
