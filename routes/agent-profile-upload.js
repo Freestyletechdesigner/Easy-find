@@ -23,7 +23,7 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 6 * 1024 * 1024 // 5MB max file size
+        fileSize: 6 * 1024 * 1024 // 6MB max file size
     }
 });
 
@@ -176,7 +176,7 @@ const agentProfileUpload = (app) => {
             if (err.code === 'LIMIT_FILE_SIZE') {
                 return res.status(400).json({
                     success: false,
-                    message: 'File is too large. Maximum size allowed is 5MB.'
+                    message: 'Image is too large. Maximum size allowed is 5MB.'
                 });
             }
         }

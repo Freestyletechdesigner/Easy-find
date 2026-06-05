@@ -197,22 +197,39 @@ document.addEventListener('DOMContentLoaded', () => {
     imagedrop.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
     imageInput.addEventListener('change', (e) => handleFiles(e.target.files));
 
-    function handleFiles(files) {
-        const validFiles = Array.from(files).filter(file => {
-            if (!file.type.startsWith('image/')) {
-                alertBox.error('Invalid File', `${file.name} is not an image file`);
-                return false;
+ async function handleFiles(files) {
+    const newFiles = [];
+
+    for (const file of Array.from(files)) {
+        // 1. Validation: Is it an image?
+        if (!file.type.startsWith('image/')) {
+            alertBox.error('Invalid File', `${file.name} is not an image file`);
+            continue;
+        }
+
+        // 2. Pre-processing: Attempt compression first
+        let fileToProcess = file;
+        if (file.size > 1 * 1024 * 1024) {
+            try {
+                fileToProcess = await compressImage(file);
+            } catch (err) {
+                console.error("Compression failed, using original:", err);
             }
-            // Reduced to 2MB (2 * 1024 * 1024)
-            if (file.size > 2 * 1024 * 1024) {
-                alertBox.error('File Too Large', `${file.name} exceeds the 2MB limit`);
-                return false;
-            }
-            return true;
-        });
-        selectedImages = [...selectedImages, ...validFiles];
-        updateImagePreview();
+        }
+
+        // 3. Validation: Check if the file (or compressed result) is still too large
+        if (fileToProcess.size > 6 * 1024 * 1024) {
+            alertBox.error('File Too Large', `${file.name} remains above 6MB even after compression.`);
+            continue; 
+        }
+
+        newFiles.push(fileToProcess);
     }
+
+    // 4. Update state
+    selectedImages = [...selectedImages, ...newFiles];
+    updateImagePreview();
+}
 
     function updateImagePreview() {
         imagePreviewContainer.innerHTML = '';
@@ -235,6 +252,48 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedImages.splice(index, 1);
         updateImagePreview();
     };
+
+// Add this helper function to your logic.js
+async function compressImage(file, maxWidth = 1000, quality = 0.6) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                
+                // 1. Lower the maxWidth for 25MB+ files to significantly reduce pixel count
+                let width = img.width;
+                let height = img.height;
+                const scale = Math.min(maxWidth / width, 1);
+                canvas.width = width * scale;
+                canvas.height = height * scale;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                // 2. Export as Blob
+                canvas.toBlob((blob) => {
+                    if (!blob) return reject(new Error('Canvas conversion failed'));
+                    
+                    // If the result is still > 1MB, try a lower quality recursively
+                    if (blob.size > 1024 * 1024 && quality > 0.3) {
+                        return resolve(compressImage(file, maxWidth * 0.8, quality - 0.2));
+                    }
+
+                    resolve(new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now(),
+                    }));
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = reject;
+        };
+        reader.onerror = reject;
+    });
+}
 
     // ── Submit ────────────────────────────────────────────
 window.submitProperty = async function () {
@@ -986,12 +1045,39 @@ async function getCoordinatesWithFallback(locationText) {
         updateEditPreview();
     };
 
-    editFileInput.addEventListener('change', (e) => {
-        // Reduced to 2MB (2 * 1024 * 1024)
-        const valid = Array.from(e.target.files).filter(f => f.type.startsWith('image/') && f.size <= 2 * 1024 * 1024);
-        editImages = [...editImages, ...valid];
-        updateEditPreview();
-    });
+editFileInput.addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    
+    for (const file of files) {
+        // 1. Validation: Is it an image?
+        if (!file.type.startsWith('image/')) {
+            alertBox.error('Invalid File', `${file.name} is not an image file`);
+            continue;
+        }
+
+        // 2. Pre-processing: Attempt compression if > 1MB
+        let fileToProcess = file;
+        if (file.size > 1 * 1024 * 1024) {
+            try {
+                // Using the same helper function used for new posts
+                fileToProcess = await compressImage(file);
+            } catch (err) {
+                console.error("Compression failed, using original:", err);
+            }
+        }
+
+        // 3. Validation: Enforce the 6MB limit
+        if (fileToProcess.size > 6 * 1024 * 1024) {
+            alertBox.error('File Too Large', `${file.name} remains above 6MB even after compression.`);
+            continue;
+        }
+
+        // 4. Add to state
+        editImages.push(fileToProcess);
+    }
+    
+    updateEditPreview();
+});
 
     window.editPost = async function(id) {
         currentEditId = id;
@@ -1120,7 +1206,8 @@ async function getCoordinatesWithFallback(locationText) {
 
         btn.disabled          = true;
         spinner.style.display = 'inline-block';
-        btnText.style.display = 'none';
+        btnText.style.display = 'inline';
+        btnText.textContent = 'Loading ...'
 
         try {
             const res  = await fetch(`/api/edit/post/${currentEditId}`, { 

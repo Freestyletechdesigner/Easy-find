@@ -16,7 +16,16 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 }
 
 // Store in memory buffer so sharp can optimize pixel payloads before writing to disk
-const storage = multer.memoryStorage();
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        // Ensure this folder exists!
+        cb(null, UPLOAD_DIR); 
+    },
+    filename: (req, file, cb) => {
+        // Generate a unique filename
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
 
 const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 const upload = multer({
@@ -29,7 +38,7 @@ const upload = multer({
         cb(null, true);
     },
     limits: {
-        fileSize: 6 * 1024 * 1024, // 6MB max per raw incoming file
+        fileSize: 30 * 1024 * 1024, // 6MB max per raw incoming file
         files: 10                  // Max 10 files per request
     }
 });
@@ -133,13 +142,14 @@ Guidelines:
         }
     });
 
-// Helper function to handle async sharp compression across multiple files
 async function processAndSaveImages(files, agentId, agentName = '') {
     const savedFilenames = [];
 
+    // 'files' comes from req.files, which now contain a .path property
     for (const file of files) {
-        if (!file || !file.buffer) {
-            console.warn("Skipping an invalid or empty file block in stream pipeline.");
+        // With diskStorage, we check for file.path instead of file.buffer
+        if (!file || !file.path) {
+            console.warn("Skipping an invalid file: no path found.");
             continue;
         }
 
@@ -147,63 +157,42 @@ async function processAndSaveImages(files, agentId, agentName = '') {
         const finalPath = path.join(UPLOAD_DIR, fileName);
 
         try {
-            // 1. Get raw metadata details safely
-            const meta = await sharp(file.buffer).metadata();
+            // 1. Get metadata from the saved disk file
+            const meta = await sharp(file.path).metadata();
             const origWidth = meta.width || 1200;
             const origHeight = meta.height || 800;
 
-            // 2. Compute true post-resize target dimensions (matching width: 1200, withoutEnlargement: true)
-            let imgWidth = origWidth;
-            let imgHeight = origHeight;
+            let imgWidth = origWidth > 1200 ? 1200 : origWidth;
+            let imgHeight = Math.round((imgWidth / origWidth) * origHeight);
 
-            if (origWidth > 1200) {
-                imgWidth = 1200;
-                // Maintain identical aspect ratio for scaled heights
-                imgHeight = Math.round((1200 / origWidth) * origHeight);
-            }
-
-            // 3. Build SVG watermark dynamically scaling off the actual canvas output
-            const safeName   = (agentName || 'Easy Find').replace(/[<>&"]/g, '');
-            const fontSize   = Math.max(16, Math.round(imgWidth * 0.024));
-            const padding    = Math.round(fontSize * 0.8);
+            // 2. SVG Watermark (your existing logic)
+            const safeName = (agentName || 'Easy Find').replace(/[<>&"]/g, '');
+            const fontSize = Math.max(16, Math.round(imgWidth * 0.024));
+            const padding = Math.round(fontSize * 0.8);
             const lineHeight = Math.round(fontSize * 1.4);
-            const boxH       = lineHeight * 2 + padding * 2;
-            const boxW       = Math.round(imgWidth * 0.45);
-            const boxX       = (imgWidth - boxW) / 2;
-            const boxY       = (imgHeight - boxH) / 2;
-            const textCenterX = boxX + (boxW / 2); 
-            const text1Y     = boxY + padding + fontSize;
-            const text2Y     = text1Y + lineHeight;
+            const boxH = lineHeight * 2 + padding * 2;
+            const boxW = Math.round(imgWidth * 0.45);
+            const boxX = (imgWidth - boxW) / 2;
+            const boxY = (imgHeight - boxH) / 2;
 
             const svgWatermark = Buffer.from(`
                 <svg width="${imgWidth}" height="${imgHeight}" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}"
-                          rx="8" ry="8" fill="rgba(0, 0, 0, 0.45)"/> 
-                    <text x="${textCenterX}" y="${text1Y}"
-                          text-anchor="middle"
-                          font-family="Arial, sans-serif" font-size="${fontSize}"
-                          font-weight="bold" fill="white" opacity="0.95">@${safeName}</text>
-                    
-                    <text x="${textCenterX}" y="${text2Y}"
-                          text-anchor="middle"
-                          font-family="Arial, sans-serif" font-size="${Math.round(fontSize * 0.85)}"
-                          fill="#66eae3" opacity="0.9">easyfind.com.ng</text>
+                    <rect x="${boxX}" y="${boxY}" width="${boxW}" height="${boxH}" rx="8" ry="8" fill="rgba(0, 0, 0, 0.45)"/> 
+                    <text x="${imgWidth/2}" y="${boxY + padding + fontSize}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${fontSize}" font-weight="bold" fill="white" opacity="0.95">@${safeName}</text>
+                    <text x="${imgWidth/2}" y="${boxY + padding + fontSize + lineHeight}" text-anchor="middle" font-family="Arial, sans-serif" font-size="${Math.round(fontSize * 0.85)}" fill="#66eae3" opacity="0.9">easyfind.com.ng</text>
                 </svg>
             `);
 
-            // 4. Resize and composite layers using matching layouts
-            await sharp(file.buffer)
+            // 3. Process using the disk file path
+            await sharp(file.path)
                 .resize({ width: 1200, withoutEnlargement: true })
                 .composite([{ input: svgWatermark, blend: 'over' }])
-                .webp({
-                    quality: 65,
-                    effort: 6
-                })
+                .webp({ quality: 65, effort: 6 })
                 .toFile(finalPath);
 
             savedFilenames.push(fileName);
         } catch (sharpError) {
-            console.error("Failed processing individual image with Sharp:", sharpError);
+            console.error("Sharp processing error:", sharpError);
         }
     }
     return savedFilenames;
@@ -526,7 +515,7 @@ async function processAndSaveImages(files, agentId, agentName = '') {
                 ? await processAndSaveImages(req.files, agentId, req.session.agent.name || 'Easy Find Agent') 
                 : [];
                 
-            const combinedImages = [...keepImages, ...newImageNames];
+           const combinedImages = [...new Set([...keepImages, ...newImageNames])];
     
             // Update fields safely
             agentPost.title = title;
@@ -610,6 +599,49 @@ async function processAndSaveImages(files, agentId, agentName = '') {
             res.json({ success: false, message: 'Error loading related' });
         }
     });
+
+    app.use((err, req, res, next) => {
+        if (err instanceof multer.MulterError) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Images is too large. Maximum size allowed is 30 MB.'
+                });
+            }
+        }
+        if (err) {
+            return res.status(400).json({
+                success: false,
+                message: err.message
+            });
+        }
+        next();
+    });
+
 };
 
 module.exports = AGENT_POST;
+
+// Delete the original that is not .webp
+setInterval(() => {
+    fs.readdir(UPLOAD_DIR, (err, files) => {
+        if (err) return;
+
+        files.forEach(file => {
+            // Only act on files that are NOT your final .webp format
+            if (!file.endsWith('.webp')) {
+                const filePath = path.join(UPLOAD_DIR, file);
+                
+                // Check if file is at least 5 minutes old before deleting
+                fs.stat(filePath, (err, stats) => {
+                    if (err) return;
+                    const fiveMinutes = 5 * 60 * 1000;
+                    if (Date.now() - stats.ctime.getTime() > fiveMinutes) {
+                        // Silent deletion: if it fails (due to lock), do nothing.
+                        fs.unlink(filePath, () => {}); 
+                    }
+                });
+            }
+        });
+    });
+}, 60 * 1000);
