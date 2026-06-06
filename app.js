@@ -82,6 +82,7 @@ const NIN_VERIFICATION = require('./routes/agent-verification.js');
 
 // Database schema
 const PageViews = require('./model/PageViews.js');
+const VisitorLog = require('./model/VisitorLog.js');
 
 // Add or update this in app.js
 app.use(express.json({
@@ -164,101 +165,91 @@ function requireAdmin(req, res, next) {
 }
 
 // Get page views — uses $inc for atomic concurrent-safe updates
-app.get('/api/views', requireAdmin, async (req, res) => {
+app.get('/api/views', async (req, res) => {
     try {
-        const ip    = req.ip || req.socket?.remoteAddress;
+        // Use 'x-forwarded-for' if behind a proxy like Nginx or Cloudflare
+        const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip || req.socket?.remoteAddress;
         const today = new Date().toISOString().slice(0, 10);
 
-        await PageViews.updateOne(
-            { date: today },
-            {
-                $inc: { count: 1 },
-                $addToSet: { ips: ip }
-            },
+        // 1. Try to record unique IP. 
+        // The 'unique' index in VisitorLog prevents duplicate entries per day.
+        const isNewVisitor = await VisitorLog.updateOne(
+            { date: today, ip: ip },
+            { $setOnInsert: { date: today, ip: ip } },
             { upsert: true }
         );
 
+        // 2. Increment stats in PageViews
         const record = await PageViews.findOneAndUpdate(
             { date: today },
-            [
-                {$set: { uniqueVisitors: { $size: "$ips" } }}
-            ],
-            { new: true }
-        )
+            { 
+                $inc: { 
+                    count: 1, 
+                    uniqueVisitors: isNewVisitor.upsertedCount > 0 ? 1 : 0 
+                } 
+            },
+            { upsert: true, new: true }
+        );
 
         res.json({
             success: true,
             views: record.count,
-            uniqueVisitors: record.ips.length
+            uniqueVisitors: record.uniqueVisitors
         });
     } catch (err) {
         console.error('Error tracking views:', err);
-        res.status(500).json({ success: false, message: 'Error tracking views', views: 0 });
+        res.status(500).json({ success: false, message: 'Error tracking views' });
     }
 });
 
 // Get views statistics for analytics dashboard
 app.get('/api/views/stats', requireAdmin, async (req, res) => {
     try {
-        // fetch last 14 days of records in one query
         const cutoff = new Date();
         cutoff.setDate(cutoff.getDate() - 14);
         const cutoffStr = cutoff.toISOString().slice(0, 10);
 
         const records = await PageViews.find({ date: { $gte: cutoffStr } }).lean();
-        const byDate  = {};
+        const byDate = {};
         records.forEach(r => { byDate[r.date] = r; });
 
-        // build this week (last 7 days)
+        // Build data using the pre-calculated 'uniqueVisitors' field
         const days = [];
         for (let i = 6; i >= 0; i--) {
             const d = new Date();
             d.setDate(d.getDate() - i);
-            const key   = d.toISOString().slice(0, 10);
-            const label = d.toLocaleDateString('en-GB', { weekday: 'short' });
-            days.push({ label, count: byDate[key]?.count || 0 });
-        }
-
-        // previous week (days 8-14)
-        const prevDays = [];
-        for (let i = 13; i >= 7; i--) {
-            const d = new Date();
-            d.setDate(d.getDate() - i);
             const key = d.toISOString().slice(0, 10);
-            prevDays.push(byDate[key]?.count || 0);
+            days.push({ 
+                label: d.toLocaleDateString('en-GB', { weekday: 'short' }), 
+                count: byDate[key]?.count || 0 
+            });
         }
 
-        const totalViews     = records.reduce((s, r) => s + r.count, 0);
-        const uniqueVisitors = new Set(records.flatMap(r => r.ips)).size;
+        const totalViews = records.reduce((s, r) => s + r.count, 0);
+        const totalUnique = records.reduce((s, r) => s + r.uniqueVisitors, 0);
 
         res.json({
             success: true,
             totalViews,
-            uniqueVisitors,
-            lastUpdated: new Date(),
-            daily:        days,
-            previousDaily: prevDays
+            uniqueVisitors: totalUnique,
+            daily: days
         });
     } catch (err) {
         console.error('Error getting view stats:', err);
-        res.status(500).json({ success: false, message: 'Error getting view statistics' });
+        res.status(500).json({ success: false, message: 'Error' });
     }
 });
 
 // Serve term and service to the user as first visit
 app.get('/api/first-visit', async (req, res) => {
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.ip || req.socket.remoteAddress;
     try {
-        const User = await PageViews.findOne({ ips: ip });
-        if (!User) return res.json({ firstVisit: true });
-
-        res.json({
-            firstVisit: false
-        });
-
+        // Look for ANY entry with this IP in the logs
+        const exists = await VisitorLog.findOne({ ip: ip });
+        res.json({ firstVisit: !exists });
     } catch (error) {
-        console.error('Error checking first visit: ', error);
-        res.status(500).json({ message: 'Error checking first visit' });
+        console.error('First visitor error:', error)
+        res.status(500).json({ message: 'Error' });
     }
 });
 

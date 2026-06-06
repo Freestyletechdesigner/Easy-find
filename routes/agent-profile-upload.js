@@ -4,9 +4,19 @@ const multer = require('multer');
 const sharp = require('sharp');
 const AgentUser = require('../model/AgentUser.js');
 const ROOT = path.join(__dirname, '..');
+const uploadDir = path.join(ROOT, 'agent-profiles');
 
 // memoryStorage to process image in RAM
-const storage = multer.memoryStorage();
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        // Ensure this folder exists!
+        cb(null, uploadDir); 
+    },
+    filename: (req, file, cb) => {
+        // Generate a unique filename
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
 
 // File filter - only allow images
 const fileFilter = (req, file, cb) => {
@@ -72,7 +82,7 @@ const agentProfileUpload = (app) => {
 
             // UNIFIED WEBP CONVERSION ENGINE
             // pixel data is optimized
-            await sharp(req.file.buffer)
+            await sharp(req.file.path)
                 .webp({ 
                     quality: 65, // Drops image file size down aggressively while looking great
                     effort: 6    // Maximum CPU compression pass to save server disk space
@@ -191,3 +201,27 @@ const agentProfileUpload = (app) => {
 };
 
 module.exports = agentProfileUpload;
+
+// Delete the original that is not .webp
+setInterval(async () => {
+    try {
+        const files = await fs.readdir(uploadDir);
+        for (const file of files) {
+            // Only clean up non-webp files
+            if (!file.endsWith('.webp')) {
+                const filePath = path.join(uploadDir, file);
+                try {
+                    const stats = await fs.stat(filePath);
+                    // 5 minute grace period (prevents deleting files currently being processed)
+                    if (Date.now() - stats.ctime.getTime() > 5 * 60 * 1000) {
+                        await fs.unlink(filePath);
+                    }
+                } catch (e) {
+                    // Silently ignore locked files; they will be caught in the next cycle
+                }
+            }
+        }
+    } catch (err) {
+        // Silently ignore directory read errors
+    }
+}, 60 * 1000); // Runs every 60 seconds

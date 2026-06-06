@@ -13,10 +13,6 @@ const viewsSchema = new mongoose.Schema({
     uniqueVisitors: { 
         type: Number, 
         default: 0 
-    },
-    ips: { 
-        type: [String], 
-        default: [] 
     }
 });
 

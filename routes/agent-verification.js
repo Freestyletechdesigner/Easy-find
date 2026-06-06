@@ -186,6 +186,8 @@ function NIN_VERIFICATION(app) {
             }
 
             const event = req.body;
+            const expiry = new Date();
+            expiry.setDate(expiry.getDate() + 30);
 
             if (event.event === 'charge.success') {
                 const metadata = event.data?.metadata;
@@ -197,7 +199,11 @@ function NIN_VERIFICATION(app) {
                     
                     const updatedAgent = await AgentUser.findByIdAndUpdate(
                         cleanAgentId, 
-                        { verifyPayment: true },
+                        {
+                            verifyPayment: true,
+                            boostAccount: true,
+                            boostAccountExpiry: expiry
+                        },
                         { new: true }
                     );
 

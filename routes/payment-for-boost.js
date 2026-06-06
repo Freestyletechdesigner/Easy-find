@@ -1,5 +1,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
+const cron = require('node-cron');
 const { check, validationResult } = require('express-validator');
 const AgentUser = require('../model/AgentUser.js');
 const AgentPost = require('../model/AgentPost.js');
@@ -162,3 +163,32 @@ function PAYMENT_FOR_BOOST(app) {
 }
 
 module.exports = PAYMENT_FOR_BOOST;
+
+// Runs every day at midnight: '0 0 * * *'
+// Or for testing, use '* * * * *' to run every minute
+cron.schedule('0 0 * * *', async () => {
+    try {
+        const now = new Date();
+
+        // 1. Expire Agent Accounts
+        const expiredAgents = await AgentUser.updateMany(
+            { boostAccount: true, boostAccountExpiry: { $lt: now } },
+            { $set: { boostAccount: false, boostAccountExpiry: null } }
+        );
+        if (expiredAgents.modifiedCount > 0) {
+            console.log(`Cleaned up ${expiredAgents.modifiedCount} expired agent boosts.`);
+        }
+
+        // 2. Expire Individual Post Boosts
+        const expiredPosts = await AgentPost.updateMany(
+            { boostPost: true, boostPostExpiry: { $lt: now } },
+            { $set: { boostPost: false, boostPostExpiry: null } }
+        );
+        if (expiredPosts.modifiedCount > 0) {
+            console.log(`Cleaned up ${expiredPosts.modifiedCount} expired post boosts.`);
+        }
+
+    } catch (err) {
+        console.error('CRON JOB ERROR: Failed to expire boosts', err);
+    }
+});

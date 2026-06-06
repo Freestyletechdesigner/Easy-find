@@ -225,14 +225,36 @@ header {
 .upload-pic {
     position: absolute;
     top: 90%;
-    left: 0%;
-    background: #ffffff;
-    color: #001b1abd;
-    font-size: 15px;
-    font-weight: bolder;
+    left: 10px; /* Offset from edge */
+    background: #00615c;
+    color: #fdfdfd; /* Darker green for contrast */
+    font-size: 14px;
+    font-weight: 600;
     padding: 7px 10px;
-    border-radius: 9px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.349); /* Adds a "pop" effect */
     display: none;
+    z-index: 10;
+    cursor: pointer;
+    border: 1px solid #e0e0e0;
+    transition: transform 0.2s ease;
+}
+
+/* The "pointer" triangle */
+.upload-pic::after {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 20px;
+    width: 0;
+    height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 8px solid #00615c;
+}
+
+.upload-pic:hover {
+    transform: translateY(-2px);
 }
 
 .verify {

@@ -1467,7 +1467,6 @@ if (loginForm) {
     // Global tracking state for notifications
     let toastQuery = [];
     let isToastActive = false;
-    const notificationSound = new Audio('/sounds/notification.mp3');
     // Real-time Property Upload Notifications
     const showPropertyToast = (p) => {
         let container = document.getElementById('realtime-toast-container');
@@ -1550,7 +1549,6 @@ if (loginForm) {
                     // 1. Show premium notification toast
                     toastQuery.push(p)
                     processNextToast()
-                    notificationSound.play().catch(e => console.log("Audio autoplay blocked by browser"));
                     
                     // 2. Prepend the card dynamically to the main listings container
                     const cardsContainer = document.getElementById('cardsContainer');
