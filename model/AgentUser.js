@@ -1,11 +1,9 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+﻿const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const agentSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true,
-        unique: true,
         trim: true
     },
     email: {
@@ -31,10 +29,12 @@ const agentSchema = new mongoose.Schema({
         trim: true
     },
     profilePicture: {
-        type: String,
-        unique: true
+        type: String
     },
     status: {
+        type: String
+    },
+    stand: {
         type: String
     },
     bio: {
@@ -53,6 +53,47 @@ const agentSchema = new mongoose.Schema({
     },
     ipAddress: {
         type: String,
+    },
+    boostAccount: {
+        type: Boolean,
+        default: false
+    },
+    boostAccountExpiry: {
+        type: Date,
+        default: null
+    },
+    // VERIFICATION FIELDS
+    verifyPayment: {
+        type: Boolean,
+        default: false
+    },
+    isVerified: { 
+        type: Boolean, 
+        default: false 
+    },
+
+    // The data returned from Dojah/NIMC after Face ID & NIN check
+    verificationData: {
+        firstName: { type: String },
+        lastName: { type: String },
+        dob: { type: String },
+        vNIN: { type: String }, // Virtual NIN provided
+        gender: { type: String },
+        
+        // Photos for scam protection
+        nimcPhoto: { type: String },   // The official government photo
+        selfiePhoto: { type: String }, // The "moving face" photo from the live session
+        
+        // Audit trail
+        referenceId: { type: String, unique: true, sparse: true },
+        livenessScore: { type: Number },
+        verifiedAt: { type: Date }
+    },
+
+    // Security flags for managing potential scammers
+    isBlacklisted: { 
+        type: Boolean, 
+        default: false 
     }
 });
 
@@ -66,6 +107,11 @@ agentSchema.methods.comparePassword = async function(candidatePassword) {
     return await bcrypt.compare(candidatePassword, this.password);
 };
 
+// Indexes — before model creation
+agentSchema.index({ stand: 1, status: 1 }); // verified agents public listing
+agentSchema.index({ status: 1 });            // active agent filter in property feed
+// email already indexed via unique: true
+
 const AgentUser = mongoose.model('AgentUser', agentSchema);
 
-module.exports = AgentUser
+module.exports = AgentUser;

@@ -1,0 +1,125 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boost Account - Easy Find</title>
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+<body>
+
+<div class="container">
+
+    <!-- LEFT -->
+    <div class="left">
+        <div class="icon"><i class="fas fa-rocket"></i></div>
+        <h1>Boost Your Visibility</h1>
+        <p>Get your listings in front of more buyers and renters. Choose a plan that works for you.</p>
+        <ul>
+            <li><i class="fas fa-bolt"></i> Posts appear every 1 minutes at the top</li>
+            <li><i class="fas fa-users"></i> Reach more active buyers</li>
+            <li><i class="fas fa-shield-alt"></i> Secure payment processing</li>
+            <li><i class="fas fa-clock"></i> Boost activates instantly</li>
+        </ul>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+        <div class="right-header">
+            <h2 id="stepTitle">Choose a Plan</h2>
+            <p id="stepSub">Select the boost that fits your goal</p>
+        </div>
+
+        <div class="steps">
+            <div class="step active" id="dot1"></div>
+            <div class="step" id="dot2"></div>
+            <div class="step" id="dot3"></div>
+        </div>
+
+        <!-- Post Picker Panel -->
+        <div class="post-picker-overlay" id="postPickerOverlay">
+            <div class="post-picker">
+                <div class="post-picker-header">
+                    <h3>Select a Post to Boost</h3>
+                    <button onclick="closePostPicker()"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="post-picker-list" id="postPickerList">
+                    <div class="post-picker-loading"><i class="fas fa-spinner spin-icon"></i> Loading your posts...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 1 — Plan -->
+        <div class="view active" id="view1">
+            <div class="plan-card selected" onclick="selectPlan('post', 950, this)">
+                <div class="plan-icon"><i class="fas fa-bolt"></i></div>
+                <div class="plan-info">
+                    <b>Boost Single Post</b>
+                    <span>3 Days • Priority in search results</span>
+                </div>
+                <div class="plan-price">₦950</div>
+            </div>
+
+            <div class="plan-card" onclick="selectPlan('profile', 3500, this)">
+                <div class="plan-icon"><i class="fas fa-award"></i></div>
+                <div class="plan-info">
+                    <b>Boost Profile</b>
+                    <span>1 Month • Featured Agent badge</span>
+                </div>
+                <div class="plan-price">₦3,500</div>
+            </div>
+
+            <button class="btn btn-primary" style="margin-top: 8px;" onclick="nextStep()">
+                Continue <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- STEP 2 — Payment -->
+        <div class="view" id="view2">
+            <div class="summary-box">
+                <div class="label" id="summaryName">Single Post Boost</div>
+                <div class="amount" id="summaryAmount">₦950</div>
+            </div>
+
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" id="payerEmail" placeholder="your@email.com">
+            </div>
+
+            <button class="btn btn-primary" id="payBtn" onclick="processPayment()">
+                Pay <span id="payAmount">₦950</span>
+            </button>
+            <button class="btn btn-ghost" onclick="prevStep()">
+                <i class="fas fa-arrow-left"></i> Go Back
+            </button>
+        </div>
+
+        <!-- STEP 3 — Success -->
+        <div class="view" id="view3">
+            <div class="success-screen">
+                <div class="success-icon"><i class="fas fa-check"></i></div>
+                <h2>Boost Active!</h2>
+                <p>Your visibility has been upgraded. Your listings will now appear at the top of search results.</p>
+                <button class="btn btn-primary" onclick="window.location.href='/agent-loged'">
+                    <i class="fas fa-home"></i> Back to Dashboard
+                </button>
+            </div>
+        </div>
+
+        <div class="back-home">
+            <a href="/agent-loged"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+        </div>
+        <div style="text-align: center; margin-top: 15px; font-size: 12px; color: rgba(0,0,0,0.4);">
+            By choosing a plan, you agree to our <a href="/terms.html" style="color: #27a594; text-decoration: none; font-weight: 600;">Terms of Service</a>
+        </div>
+    </div>
+</div>
+
+<script src="/alert-box.js"></script>
+<script src="logic.js"></script>
+
+</body>
+</html>

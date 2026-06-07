@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
@@ -13,7 +13,7 @@
     <div class="load">
         <h1>
             <span class="mark1">E<span class="mark-bg"></span></span>
-            <span class="mark2">asy find</span>
+            <span class="mark2">asy Find</span>
         </h1>
     </div>
 
@@ -21,41 +21,37 @@
 
     <header>
          <a href="#top" class="logo"><span>E</span>asy Find</a>
-         <a href="#available-home" class="notification-link">
-            <i class="fa-solid fa-house"></i>
-            <span class="notification">Top Home</span>
-         </a>
          <nav class="links">
              <a href="#top">Home</a>
              <a href="#search-bar">Search</a>
              <a href="#about">About</a>
-             <a href="#available-home">Available home</a>
-             <a href="#agents">Our Agents</a>
-             <a href="#contact">Contact us</a>
+             <a href="#available-homes">Available properties</a>
+             <a href="/our-agent">Our Agents</a>
+             <a href="/contact">Contact us</a>
          </nav>
+
+            <div class="nav2" id="nav2">
+               <div class="top-nav">
+                   <a href="#top" class="logo"><span>E</span>asy Find</a>
+               </div>
+               <a href="#top"><i class="fa-solid fa-house"></i> Home</a>
+               <a href="#search-bar"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+               <a href="#about"><i class="fa-regular fa-address-card"></i> About</a>
+               <a href="#available-homes"><i class="fa-solid fa-building"></i> Available properties</a>
+               <a href="/our-agent"><i class="fa-solid fa-user-tie"></i> Our Agents</a>
+               <a href="/contact"><i class="fa-solid fa-envelope"></i> Contact us</a>
+            </div>
+
             <div class="hamburger" id="hamburger">
-             <div id="hand" class="hand"></div>
-             <div id="hand" class="hand"></div>
-             <div id="hand" class="hand"></div>
-             </div>
+              <div id="hand" class="hand"></div>
+              <div id="hand" class="hand"></div>
+              <div id="hand" class="hand"></div>
+            </div>
     </header>
-             <div class="nav2" id="nav2">
-             <a href="#top"><i class="fa-solid fa-house"></i> Home</a>
-             <a href="#search"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
-             <a href="#about"><i class="fa-regular fa-address-card"></i> About</a>
-             <a href="#available-home"><i class="fa-solid fa-building"></i> Available home</a>
-             <a href="#agents"><i class="fa-solid fa-user-tie"></i> Our Agents</a>
-             <a href="#contact"><i class="fa-solid fa-envelope"></i> Contact us</a>
-             </div>
 
     <div id="alert"></div>
 
 <section class="hero">
-<div id="login-nav">Login</div>
-<div class="hold-login">
-    <div id="login-btn">as client</div>
-    <a href="/login-agent" id="login-agent-btn">as Agent</a>
-</div>
 
 <div id="user-log"></div>
 <a href="/" class="btn-logout" title="Logout">
@@ -67,9 +63,12 @@
 </a>
     <div class="hold-hero-text">
         <p>Welcome to</p>
-        <h1><span>E</span>asy find</h1>
-        <p>To find your dream Home</p>
-        <a href="#search-bar"><i class="fa-solid fa-magnifying-glass"></i> Search for house</a>
+        <h1><span>E</span>asy Find</h1>
+        <p class="hero-text"> To discover the property you’ve been looking for. </p>
+        <div class="hero-actions">
+            <a href="#search-bar" class="hero-search-icon"><i class="fa-solid fa-magnifying-glass"></i></a>
+            <div id="login-nav-hero">Login</div><div class="hold-login"><div id="login-btn">as client</div><a href="/login-agent" id="login-agent-btn">as Agent</a></div>
+        </div>
     </div>
 
     <!-- RESPONSIVE BRAND SHAPE -->
@@ -95,11 +94,11 @@
     <div id="full-search-property">
         <div class="item-search">
             <label>LOCATION</label>
-            <input id="location-house" type="text" name="" placeholder="eg.Kenneth Road">
+            <input id="location-house" type="text" name="" placeholder="eg. 1 Street name">
         </div>
         <div class="item-search">
             <label>PROPERTY TYPE</label>
-            <input id="property-house" type="text" name="" placeholder="eg.Kenneth Road">
+            <input id="property-house" type="text" name="" placeholder="eg.House or Land">
         </div>
         <div class="item-search">
             <label>AMOUNT</label>
@@ -113,17 +112,14 @@
                 <button class="room-add-house">+</button>
             </span>
         </div>
-        <a href="#available-home" class="search-btn" id="search-btn-house"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
+        <a href="#available-homes" class="search-btn" id="search-btn-house"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
     </div>
 
 
 <!-- full-search-hotel -->
     <div id="full-search-hotel">
-        <a href="#available-home" class="hotel-link">Roya</a>
-        <a href="#available-home" class="hotel-link">Roya</a>
-        <a href="#available-home" class="hotel-link">Roya</a>
-        <a href="#available-home" class="hotel-link">Roya</a>
-        <a href="#available-home" class="hotel-link">Roya</a>
+        <div style="color: rgb(0, 72, 85);">Booking of hotel is not available for now.</div>
+        <span style="font-size: 15px; color: rgba(0, 0, 0, 0.329);">Try again later.</span>
     </div>
 
 </section>
@@ -131,7 +127,7 @@
 <section id="about" class="about">
     <div class="about-left">
         <h1>About</h1>
-        <p>Welcome to Ease Find, your premier destination for finding the perfect rental home in Ease Find. Our website is dedicated to providing a comprehensive and user-friendly platform for individuals and families to search, browse, and rent houses across the state.</p>
+        <p>Welcome to Easy Find, your prestige destination for finding the perfect rental home with Easy Find. Our website is dedicated to providing a comprehensive and user-friendly platform for individuals and families to search, browse, and rent houses across the state.</p>
     </div>
     <div class="about-right">
         <ul>
@@ -151,76 +147,35 @@
                 <span class="left">
                     <img src="icon/IMG_7337.jpg" loading="lazy" alt="Convenient Payment">
                 </span>
-                <span class="right section"><h1>Convenient Payment Options:</h1><p>Enjoy a hassle-free payment experience with our secure and flexible payment methods, tailored to meet your needs.</p></span>
+                <span class="right section"><h1>Safe Offline Payments:</h1><p>No card details required online. Finalize your payment securely in person or via direct bank transfer straight to the verified owner or agent. Enjoy a transparent, traditional payment process backed by our verified agent network.</p></span>
             </li>
         </ul>
     </div>
 </section>
 
 <section id="search-bar" class="search-bar">
-      <div class="search-text">
-          <p>Search by street name, house location, price range, or agent name to quickly find the perfect home.</p>
-      </div>
-   <div class="hold-search">
-       <i class="fa-solid fa-magnifying-glass"></i> 
-       <input list="search-list" type="search" id="search" placeholder="Search for houses">
-       <datalist id="search-list">
-        <option value="Kenneth Road"></option>
-        <option value="Lady Alice Nnaona Street"></option>
-        <option value="Meniru Street / Meniru"></option>
-        <option value="Mount Street / Mount Close / Mount Crescent"></option>
-        <option value="Ugo Street"></option>
-       </datalist>
-   </div>
-
+    <div class="search-inner">
+        <p class="search-tagline">Find your perfect property — search by location, price, or agent</p>
+        <div class="search-field-wrap">
+            <div class="search-field">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="search" placeholder="Street, location, price, or agent name...">
+                <button class="search-clear" id="searchClear" style="display:none;" onclick="document.getElementById('search').value='';document.getElementById('searchClear').style.display='none';document.getElementById('search-agent-list').style.display='none';">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div id="search-agent-list"></div>
+        </div>
+    </div>
 </section>
 
-<section id="available-home">
+<section id="available-homes">
     <div class="listings" id="cardsContainer">
 
     </div>
     <button id="loadMoreBtn" class="load-more-btn">Load More</button>
 </section>
 
-
-<!-- ===== HOTEL ROOM SECTION ===== -->
-<section class="hotel-rooms">
-    <h2>Our Rooms</h2>
-
-    <div class="room-list">
-
-        <div class="h-room section">
-            <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2" loading="lazy" alt="Standard Room">
-            <div class="room-content">
-                <h3>Standard Room</h3>
-                <p>Comfortable room with free Wi-Fi, TV, and air conditioning.</p>
-                <div class="h-price">₦1000 per night</div>
-                <button class="book-btn" data-bookprice='1000'>Book Now</button>
-            </div>
-        </div>
-
-        <div class="h-room section">
-            <img src="https://images.unsplash.com/photo-1505691938895-1758d7feb511" loading="lazy" alt="Deluxe Room">
-            <div class="room-content">
-                <h3>Deluxe Room</h3>
-                <p>Spacious deluxe room with balcony and premium amenities.</p>
-                <div class="h-price">₦1500 per night</div>
-                <button class="book-btn" data-bookprice='1500'>Book Now</button>
-            </div>
-        </div>
-
-        <div class="h-room section">
-            <img src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267" loading="lazy" alt="Suite">
-            <div class="room-content">
-                <h3>Luxury Suite</h3>
-                <p>Luxury suite with living area, minibar, and ocean view.</p>
-                <div class="h-price">₦2000 per night</div>
-                <button class="book-btn" data-bookprice='2000'>Book Now</button>
-            </div>
-        </div>
-
-    </div>
-</section>
 
 <section class="book-room">
     <form id="book-form">
@@ -260,343 +215,35 @@
 
 <!-- ===== SERVICES SECTION ===== -->
 
-<section id="services" class="services">
-    <h1 class="services-title section2">Our Core Services</h1>
-
-    <div class="services-container">
-
-        <!-- PROPERTY SALES -->
-        <div class="service-box section">
-            <div class="service-icon">
-                <i class="fa-solid fa-building"></i>
-            </div>
-            <h2>Property Sales</h2>
-            <ul>
-                <li>Land Sales (Verified & Secure)</li>
-                <li>House & Apartment Sales</li>
-                <li>Full Property Documentation</li>
-            </ul>
-            <a href="#available-home" class="service-btn">Explore Sales</a>
-        </div>
-
-        <!-- RENTALS -->
-        <div class="service-box section highlight">
-            <div class="service-icon">
-                <i class="fa-solid fa-key"></i>
-            </div>
-            <h2>Rentals</h2>
-            <ul>
-                <li>House & Apartment Rentals</li>
-                <li>Shop & Office Rentals</li>
-                <li>Short & Long Term Options</li>
-            </ul>
-            <a href="#available-home" class="service-btn">Find Rentals</a>
-        </div>
-
-        <!-- COMMERCIAL -->
-        <div class="service-box section">
-            <div class="service-icon">
-                <i class="fa-solid fa-store"></i>
-            </div>
-            <h2>Commercial Properties</h2>
-            <ul>
-                <li>Shop Sales</li>
-                <li>Business Outlets</li>
-                <li>High-Traffic Locations</li>
-            </ul>
-            <a href="#available-home" class="service-btn">View Commercial</a>
-        </div>
-
-    </div>
-</section>
-
-
-
-<section id="agents" class="agents-hold">
-
-<div class="agents-section">
-    <h2 class="agents-title">Our Agents</h2>
-
-    <div class="agents-container">
-
-        <!-- Agent 1 -->
-        <div class="agent-card">
-            <img src="image/Untitled-1 (2).jpg" loading="lazy" alt="Agent">
-            <h3>John Doe</h3>
-            <p>Real Estate Specialist</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 2 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Amara Wilson</h3>
-            <p>Luxury Home Agent</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 3 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Michael Smith</h3>
-            <p>Property Consultant</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 1 -->
-        <div class="agent-card">
-            <img src="image/Untitled-1 (2).jpg" loading="lazy" alt="Agent">
-            <h3>John Doe</h3>
-            <p>Real Estate Specialist</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 2 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Amara Wilson</h3>
-            <p>Luxury Home Agent</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 3 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Michael Smith</h3>
-            <p>Property Consultant</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 1 -->
-        <div class="agent-card">
-            <img src="image/Untitled-1 (2).jpg" loading="lazy" alt="Agent">
-            <h3>John Doe</h3>
-            <p>Real Estate Specialist</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 2 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Amara Wilson</h3>
-            <p>Luxury Home Agent</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-
-        <!-- Agent 3 -->
-        <div class="agent-card">
-            <img src="https://via.placeholder.com/150" loading="lazy" alt="Agent">
-            <h3>Michael Smith</h3>
-            <p>Property Consultant</p>
-            <a href="agent-profile.html" class="agent-btn">View Profile</a>
-        </div>
-    </div>
-</div>
-
-<div class="join-agent">
-    <h1 class=" section2">Join Our Agent Community</h1>
-
-    <p>
-        Become a part of one of the fastest-growing agent platforms designed to help agents close 
-        more deals, reach more clients, and grow their business with ease. At <strong>Easy Find</strong>, we give you
-        the tools, visibility, and support you need to succeed in today’s competitive market.
-    </p>
-
-    <ul class="agent-benefits section">
-        <li>✔️ Get daily client leads directly to your phone</li>
-        <li>✔️ Showcase your listed properties to thousands of users</li>
-        <li>✔️ Enjoy fast and secure commission payments</li>
-        <li>✔️ Join a community of real agents growing together</li>
-        <li>✔️ You can also rent, sale or short let any of your property even if you are not an agent</li>
-    </ul>
-
-    <p>
-        Whether you’re an experienced agent or just starting out, Easy Find gives you the platform and 
-        exposure you need to maximize your income. Don't miss the opportunity—grow your reach and 
-        boost your sales today!
-    </p>
-
-    <div class="link-to-join section">
-        <a href="">Chat us on WhatsApp to join <i class="fa-solid fa-hand-point-left"></i></a>
-        <img src="icon/whatsapp icon.png" loading="lazy" alt="WhatsApp">
-    </div>
-</div>
-
-
-</section>
-
-<section class="trust-stats">
-    <div class="stats-box">
-        <h2 class="anime-count1">10,000+</h2>
-        <p>Verified Properties</p>
-    </div>
-    <div class="stats-box">
-        <h2 class="anime-count2">3,200+</h2>
-        <p>Happy Clients</p>
-    </div>
-    <div class="stats-box">
-        <h2 class="anime-count3">500+</h2>
-        <p>Trusted Agents</p>
-    </div>
-    <div class="stats-box">
-        <h2 class="anime-count4">8+</h2>
-        <p>Years Experience</p>
-    </div>
-</section>
-
-<section class="why-us">
-    <h1 class=" section2">Why Choose Easy Find?</h1>
-    <div class="why-container">
-        <div class="why-box section">
-            <i class="fa-solid fa-shield-halved"></i>
-            <h3>Verified Listings</h3>
-            <p>Every property is inspected and verified before listing.</p>
-        </div>
-        <div class="why-box section">
-            <i class="fa-solid fa-user-check"></i>
-            <h3>Trusted Agents</h3>
-            <p>We work only with professional and certified agents.</p>
-        </div>
-        <div class="why-box section">
-            <i class="fa-solid fa-clock"></i>
-            <h3>Fast Process</h3>
-            <p>Find and rent a home in days, not weeks.</p>
-        </div>
-    </div>
-</section>
-
 
 
 <section class="map">
     <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d126868.29328949029!2d7.4302333414811965!3d6.441002532401546!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1044a3cf887d1a25%3A0x9e342e82908e0c3d!2sEnugu!5e0!3m2!1sen!2sng!4v1764622449824!5m2!1sen!2sng" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
 </section>
 
-<section class="contact-section" id="contact">
-    <div class="contact-container">
-        
-        <!-- Contact Badge -->
-        <div class="contact-badge">
-            <span class="badge-icon">✉️</span>
-            <span class="badge-text">Get In Touch</span>
+<section class="clients-feedback" id="feedbackPanel">
+    <div class="feedback-panel">
+        <div class="feedback-header">
+            <h3><i class="fas fa-comments"></i> What people say</h3>
+            <button class="feedback-close" id="feedbackClose"><i class="fas fa-times"></i></button>
         </div>
-
-        <!-- Contact Info -->
-        <div class="contact-info">
-            <h2>Contact Us</h2>
-            <p class="contact-subtitle">We're always here to assist you. Reach out to us through any of the channels below.</p>
-
-            <!-- Info Cards -->
-            <div class="info-cards">
-                <div class="info-card">
-                    <div class="card-icon phone-icon">
-                        <i class="fas fa-phone"></i>
-                    </div>
-                    <div class="card-content">
-                        <h4>Call Us</h4>
-                        <p>Call us for inquiries, support, or partnership opportunities.</p>
-                        <a href="tel:+12345567654" class="contact-link">+1 234 5567 654</a>
-                    </div>
-                </div>
-
-                <div class="info-card">
-                    <div class="card-icon email-icon">
-                        <i class="fa-regular fa-message"></i>
-                    </div>
-                    <div class="card-content">
-                        <h4>Email Us</h4>
-                        <p>Send us an email and our support team will respond within minutes.</p>
-                        <a href="mailto:email@email.com" class="contact-link">email@email.com</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Social Links -->
-            <div class="social-links-section">
-                <h4>Follow Us</h4>
-                <div class="info-link">
-                    <a href="" class="social-icon facebook">
-                        <img src="icon/facebook icon.png" loading="lazy" alt="Facebook">
-                    </a>
-                    <a href="" class="social-icon whatsapp">
-                        <img src="icon/whatsapp icon.png" loading="lazy" alt="WhatsApp">
-                    </a>
-                    <a href="" class="social-icon email">
-                        <img src="icon/email icon.png" loading="lazy" alt="Email">
-                    </a>
-                </div>
-            </div>
+        <div class="clients-container" id="feedbackList">
+            <div class="feedback-loading"><i class="fas fa-spinner spin-icon" class="fas fa-spinner spin-icon"></i></div>
         </div>
-
-        <!-- Contact Form -->
-        <form class="contact-form">
-            <div class="form-header">
-                <h2>Send a Message</h2>
-                <p>Fill out the form below and we'll get back to you shortly</p>
+        <div class="feedback-form">
+            <div class="feedback-stars" id="feedbackStars">
+                <i class="fas fa-star" data-v="1"></i>
+                <i class="fas fa-star" data-v="2"></i>
+                <i class="fas fa-star" data-v="3"></i>
+                <i class="fas fa-star" data-v="4"></i>
+                <i class="fas fa-star" data-v="5"></i>
             </div>
-
-            <div class="form-grid">
-                <div class="form-group">
-                    <label for="name">
-                        <i class="fas fa-user"></i> Full Name
-                    </label>
-                    <input id="name" type="text" placeholder="Enter Your Name" required>
-                    <div id="name-err" class="error-message"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="email">
-                        <i class="fas fa-envelope"></i> Email Address
-                    </label>
-                    <input id="email" type="email" placeholder="Enter Your Email" required>
-                    <div id="email-err" class="error-message"></div>
-                </div>
-
-                <div class="form-group">
-                    <label for="subjet">
-                        <i class="fas fa-tag"></i> Subject
-                    </label>
-                    <input id="subjet" type="text" placeholder="Subject">
-                </div>
-
-                <div class="form-group">
-                    <label for="phone-number">
-                        <i class="fas fa-phone"></i> Phone Number
-                    </label>
-                    <input id="phone-number" type="tel" placeholder="Enter your phone number">
-                    <div id="phone-err" class="error-message"></div>
-                </div>
+            <input type="text" id="feedbackName" placeholder="Your name (optional)" maxlength="50">
+            <textarea id="feedbackMsg" placeholder="Share your experience..." maxlength="300" rows="3"></textarea>
+            <div class="feedback-form-footer">
+                <span id="feedbackCharCount">0/300</span>
+                <button id="feedbackSubmit"><i class="fas fa-paper-plane"></i> Send</button>
             </div>
-
-            <div class="form-group full-width">
-                <label for="text">
-                    <i class="fas fa-comment-dots"></i> Your Message
-                </label>
-                <textarea id="text" placeholder="Your Message" required></textarea>
-                <div id="text-err" class="error-message"></div>
-            </div>
-
-            <button id="submit" type="submit" class="submit-btn">
-                <span class="btn-text">Send Message</span>
-                <span class="btn-icon">→</span>
-            </button>
-        </form>
-
-    </div>
-</section>
-<section class="clients-feedback">
-
-    <div class="clients-container">
-        <div class="clients-feed">
-            <h4>Landlord</h4>
-            <p>“Posting my property was quick and straightforward. I received serious inquiries within a short time, and the platform helped me connect with genuine tenants. I’m very satisfied with the results.”</p>
-        </div>
-        <div class="clients-feed">
-            <h4>Ifeoma</h4>
-            <p>“User-friendly, fast, and trustworthy. Highly recommended for anyone looking to rent a house.”</p>
-        </div>
-        <div class="clients-feed">
-            <h4>Tenant</h4>
-            <p>“I found my rental house within two days using this website. The photos and descriptions were accurate, and contacting the landlord was simple. The process saved me a lot of time compared to other platforms.”</p>
         </div>
     </div>
     <p id="client-btn">FeedBack</p>
@@ -613,6 +260,7 @@
                 <input type="password" name="password" id="login-password" placeholder="Password" required>
                 <i id="login-eye" class="fa-solid fa-eye"></i>
             </span>
+            <div id="googleBtn"></div>
             <input type="submit" value="Login">
             <div id="link-to-signup">Don't have an account? Sign up</div>
         </form>
@@ -624,6 +272,12 @@
                 <input type="password" name="password" id="signup-password" placeholder="Password" required>
                 <i id="signup-eye" class="fa-solid fa-eye"></i>
             </span>
+            <div class="terms-checkbox">
+                <input type="checkbox" id="terms" name="terms" required>
+                <label for="terms">
+                    I agree to the <a href="/terms.html" target="_blank">Terms of Service</a>
+                </label>
+            </div>
             <input type="submit" value="Sign Up">
             <div id="link-to-login">Already have an account? Sign in</div>
         </form>
@@ -631,33 +285,89 @@
 
 <div id="log-alert"></div>
 
+<div class="bgf"></div>
 
-
-<section class="feeling">
-    <h3>How was your experience?</h3>
-    <div class="f-container">
-        <span class="f"><i class="fa-solid fa-face-angry"></i></span>
-        <span class="f"><i class="fa-solid fa-face-sad-tear"></i></i></span>
-        <span class="f"><i class="fa-regular fa-face-meh"></i></span>
-        <span class="f"><i class="fa-regular fa-face-grin-beam"></i></span>
-    </div>
-</section>
-<div class="bgf">
-    <i class="fa-solid fa-xmark"></i>
+<div class="serve-terms">
+    <input type="checkbox" id="serveTerms" name="terms" required>
+    <label for="terms">
+        I agree to the <a href="/terms.html" target="_blank">Terms of Service</a>
+    </label>
 </div>
 
 <section class="chat-us-wa">
     <div class="wa-link"><span><i class="fa-brands fa-whatsapp"></i></span><span> Need help</span></div>
 </section>
 
-<footer>
-    <p>&copy; 2026 <a href="#top" style="color: #050;text-decoration:none;">Easy find</a>. All rights reserved.</p>
-</footer>
+    <footer class="easyfind-footer">
+        <!-- Giant Logo Header Section -->
+        <div class="footer-logo-wrap">
+            <h1 class="giant-logo">easy find</h1>
+        </div>
+
+        <!-- Footer Content Links Section -->
+        <div class="footer-content">
+            <!-- Brand Column -->
+            <div class="footer-col brand-col">
+                <h2 class="brand-statement">Discover spaces.<br>Built for living.</h2>
+                <p class="brand-subtext">Seamless property hunting, verified listings,<br>and expert real estate management.</p>
+                
+                <div class="social-links">
+                    <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                    <a href="#" aria-label="Email"><i class="fa-regular fa-envelope"></i></a>
+                </div>
+            </div>
+
+            <!-- Marketplace Links -->
+            <div class="footer-col">
+                <h3>Marketplace</h3>
+                <ul>
+                    <li><a href="#">Verified Properties</a></li>
+                    <li><a href="#">About the Platform</a></li>
+                    <li><a href="#">Contact Support</a></li>
+                </ul>
+            </div>
+
+            <!-- Partner & Agent Links -->
+            <div class="footer-col">
+                <h3>Agents & Partners</h3>
+                <ul>
+                    <li><a href="#">Agent Registration</a></li>
+                    <li><a href="#">Identity Verification (KYC)</a></li>
+                    <li><a href="#">Property Boosting</a></li>
+                </ul>
+            </div>
+
+            <!-- Region Focus Links -->
+            <div class="footer-col">
+                <h3>Regional Focus</h3>
+                <ul>
+                    <li><a href="#">Enugu Real Estate</a></li>
+                    <li><a href="#">Urban Residential</a></li>
+                    <li><a href="#">Commercial Properties</a></li>
+                </ul>
+            </div>
+
+            <!-- Verified Badge Placement -->
+            <div class="footer-col badge-col">
+                <div class="verified-badge">
+                    <img src="logo/logo.JPEG" alt="">
+                </div>
+            </div>
+        </div>
+
+        <!-- Copyright Line -->
+        <div class="footer-bottom">
+            <p>&copy; 2026 Easy Find Marketplace. Rooted in trust, refined through time.</p>
+        </div>
+    </footer>
 </main>
 
 <script type="text/javascript"
         src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js">
 </script>
+
+<script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleSignIn()"></script>
 
 <script type="text/javascript">
    (function(){
@@ -667,8 +377,8 @@
    })();
 </script>
 
-<script src="alert-box.js"></script>
-<script src="logic.js"></script>
+<script src="logic/alert-box.js"></script>
+<script src="logic/logic.js"></script>
 
 <script>
 // Check for payment success on page load

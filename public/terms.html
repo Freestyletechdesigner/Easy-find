@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service | Easy Find</title>
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+
+        @font-face {
+          font-family: "HyperTrack";
+          src: url("fonts/Hyper-Track-BF6923fcf16dfa7.otf") format("opentype");
+          font-weight: normal;
+          font-style: normal;
+        }
+        @font-face {
+          font-family: "Logo";
+          src: url("fonts/LeagueSpartan-Bold.otf") format("opentype");
+          font-weight: normal;
+          font-style: normal;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: #ddd;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #2c3e2e;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ── HEADER ─────────────────────────── */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            width: 90%;
+            margin: 1% auto;
+            padding: 5px 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0%;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 1rem;
+            font-family: "HyperTrack";
+            text-decoration: none;
+            color: #000;
+        }
+        .logo span {
+            color: #fff;
+            background: #050;
+            padding:  0 7px;
+            margin-right: 6px;
+            border-radius: 8px;
+            font-size: 2.2rem;
+            font-family: "Logo";
+        }
+
+        header nav a {
+            text-decoration: none;
+            color: #050;
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        header nav a:hover {
+            background: #e6f4ea;
+        }
+
+        /* ── CONTENT CONTAINER ──────────────── */
+        .container {
+            max-width: 900px;
+            margin: 40px auto 80px;
+            padding: 0 20px;
+        }
+
+        .terms-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0, 80, 0, 0.08);
+        }
+
+        .terms-header {
+            border-bottom: 2px solid #e6f4ea;
+            padding-bottom: 24px;
+            margin-bottom: 30px;
+        }
+
+        .terms-header h1 {
+            color: #050;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .last-updated {
+            font-size: 0.85rem;
+            color: #667e69;
+            font-weight: 600;
+        }
+
+        /* ── ALERT BOX ──────────────────────── */
+        .legal-notice {
+            background: #fdecea;
+            border-left: 4px solid #c0392b;
+            color: #721c24;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 32px;
+            font-size: 0.95rem;
+        }
+        .legal-notice strong {
+            display: block;
+            margin-bottom: 4px;
+            color: #c0392b;
+        }
+
+        /* ── SECTIONS ───────────────────────── */
+        section {
+            margin-bottom: 28px;
+        }
+
+        section h2 {
+            color: #050;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-left: 3px solid #050;
+            padding-left: 12px;
+        }
+
+        section p {
+            color: #4a5c4d;
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 14px;
+            text-align: justify;
+        }
+
+        section ul {
+            margin-left: 24px;
+            margin-bottom: 14px;
+            color: #4a5c4d;
+            font-size: 0.95rem;
+        }
+
+        section li {
+            margin-bottom: 6px;
+        }
+
+        .accent-box {
+            background: #f4faf6;
+            border-left: 3px solid #050;
+            padding: 14px 18px;
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+        }
+
+        .accent-box p {
+            margin-bottom: 0;
+            font-style: italic;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e6f4ea;
+            font-size: 0.85rem;
+            color: #777;
+        }
+
+        @media (max-width: 600px) {
+            .terms-card {
+                padding: 24px;
+            }
+            .terms-header h1 {
+                font-size: 1.7rem;
+            }
+            .container {
+                margin: 20px auto 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="/" class="logo"><span>E</span>asy Find</a>
+        <nav>
+            <a href="/"><i class="fa-solid fa-arrow-left"></i> Home</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="terms-card">
+            
+            <div class="terms-header">
+                <h1>Terms of Service</h1>
+                <p class="last-updated">Last Updated: May 19, 2026</p>
+            </div>
+
+            <div class="legal-notice">
+                <strong>IMPORTANT NOTICE FOR ALL USERS</strong>
+                Please read these Terms of Service carefully. By using the Easy Find platform, you explicitly agree to these terms, which limit our liability, exclude warranties, and indemnify us in case of disputes, transaction failures, or fraudulent agent listings.
+            </div>
+
+            <!-- Section 1 -->
+            <section>
+                <h2>1. Easy Find is an Intermediary Platform</h2>
+                <p>Easy Find (operated by Freestyletechdesigner and the Squad Energy tech team) is an online marketplace connecting independent property agents with prospective renters, buyers, and guests. Easy Find is <strong>not</strong> a real estate agency, broker, developer, or owner of any listings.</p>
+                <div class="accent-box">
+                    <p>We do not participate in, control, or take responsibility for any transactions, viewings, negotiations, lease agreements, or financial interactions between users and agents. Any dealings are strictly at your own risk.</p>
+                </div>
+            </section>
+
+            <!-- Section 2 -->
+            <section>
+                <h2>2. Listing "As-Is" Disclaimer</h2>
+                <p>All property listings, descriptions, pictures, prices, location coordinates, amenities, and available dates are supplied entirely by independent third-party agents. Easy Find makes no warranties or representations regarding:</p>
+                <ul>
+                    <li>The accuracy, completeness, or legitimacy of any listings on the platform.</li>
+                    <li>The structural condition, security, legality, or suitability of any listed properties.</li>
+                    <li>The ownership rights or authorization of agents to sell or lease listed properties.</li>
+                </ul>
+            </section>
+
+            <!-- Section 3 -->
+            <section>
+                <h2>3. Agent Identity Verification Disclaimer</h2>
+                <p>Easy Find provides a secure verification portal for agents (utilizing NIN, selfie, and biometrics via third-party service Dojah). However, this security verification is solely to verify the <strong>identity</strong> of the individual agent to mitigate baseline fraud. It does <strong>not</strong> constitute:</p>
+                <ul>
+                    <li>An endorsement, backing, or guarantee of the agent's professional status, moral character, or legal authority.</li>
+                    <li>A check of their credit score, licensing status, or history of commercial integrity.</li>
+                </ul>
+                <p>Users must perform their own commercial due diligence, verify agent credentials, and inspect properties in person before making any payments.</p>
+            </section>
+
+            <!-- Section 4 -->
+            <section>
+                <h2>4. Disclaimer of All Warranties</h2>
+                <p><strong>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE EASY FIND PLATFORM IS PROVIDED ON AN "AS IS" AND "AS AVAILABLE" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. FREESTYLETECHDESIGNER EXPLICITLY DISCLAIMS ANY AND ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, OR THAT THE PLATFORM WILL OPERATE UNINTERRUPTED, SECURE, OR ERROR-FREE. ANY RELIANCE ON CONTENT, LISTINGS, OR INTERACTIONS WITH AGENTS IS STRICTLY AT YOUR OWN RISK.</strong></p>
+            </section>
+
+            <!-- Section 5 -->
+            <section>
+                <h2>5. Absolute Limitation of Liability</h2>
+                <p><strong>TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL FREESTYLETECHDESIGNER, EASY FIND, ITS FOUNDERS, DIRECTORS, AFFILIATES, AGENTS, OR EMPLOYEES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES WHATSOEVER. THIS INCLUDES, WITHOUT LIMITATION, DAMAGES OR LOSSES RESULTING FROM:</strong></p>
+                <ul>
+                    <li><strong>ANY FINANCIAL SCAMS, RENTAL FRAUD, DEPOSIT THEFT, OR MISREPRESENTATIONS COMMITTED BY THIRD-PARTY AGENTS OR USERS.</strong></li>
+                    <li><strong>THE LOSS OF ANY RENTS, DEPOSITS, BOOKING FEES, OR ACCOUNT BOOSTING PAYMENTS.</strong></li>
+                    <li><strong>ANY PHYSICAL INJURY, BODILY HARM, PROPERTY DAMAGE, OR CRIMINAL ACTIONS ARISING DURING LISTING VIEWINGS, INSPECTIONS, OR TENANCIES.</strong></li>
+                    <li><strong>TEMPORARY PLATFORM INTERRUPTIONS, DOWNTIME, OR DATA TRANSMISSION ERRORS.</strong></li>
+                </ul>
+            </section>
+
+            <!-- Section 6 -->
+            <section>
+                <h2>6. User Indemnification</h2>
+                <p>You agree to fully defend, indemnify, and hold harmless Easy Find, Freestyletechdesigner, and its directors, employees, and licensing partners from and against any and all claims, damages, liabilities, losses, costs, or debt, including legal fees, arising from your use of the platform, any properties you lease/buy/sell, any listings you post, or your violation of these Terms of Service.</p>
+            </section>
+
+            <!-- Section 7 -->
+            <section>
+                <h2>7. Payment Gateways & Booking Refunds</h2>
+                <p>All payment transactions (such as boosting accounts or hotel bookings) are routed securely through licensed third-party processors (e.g. Paystack). Easy Find is not liable for gateway failures, chargebacks, or unauthorized cards. All refunds, cancellations, and disputes must be resolved directly with the corresponding agent or hotel provider according to their local policy.</p>
+            </section>
+
+            <!-- Section 8 -->
+            <section>
+                <h2>8. Governing Law</h2>
+                <p>These terms and any disputes arising directly from your use of the Easy Find platform shall be governed by and construed in accordance with the laws of the Federal Republic of Nigeria, without regard to its conflict of law principles.</p>
+            </section>
+
+            <!-- Section 9 -->
+            <section>
+                <h2>9. Dispute Resolution & Binding Arbitration</h2>
+                <p>Any dispute, controversy, or claim arising out of or relating to these Terms, including its formation, validity, breach, or termination, shall be referred to and finally resolved by binding arbitration in accordance with the Arbitration Laws of the Federal Republic of Nigeria. The arbitration shall be conducted by a single arbitrator, and the venue of arbitration shall be Enugu or Lagos, Nigeria. The proceedings shall be confidential and conducted in English.</p>
+            </section>
+
+            <!-- Section 10 -->
+            <section>
+                <h2>10. Class Action Waiver</h2>
+                <p>YOU AGREE THAT ANY CLAIMS OR ARBITRATION SHALL BE CONDUCTED SOLELY ON AN INDIVIDUAL BASIS. YOU EXPLICITLY WAIVE ANY RIGHT TO PARTICIPATE IN A CLASS ACTION LAWSUIT, CLASS-WIDE ARBITRATION, OR REPRESENTATIVE PROCEEDING AGAINST FREESTYLETECHDESIGNER OR EASY FIND.</p>
+            </section>
+
+            <!-- Section 11 -->
+            <section>
+                <h2>11. Severability</h2>
+                <p>If any provision of these Terms of Service is found by a court or arbitrator of competent jurisdiction to be invalid, illegal, or unenforceable, the remaining provisions of these Terms shall remain in full force and effect.</p>
+            </section>
+
+            <footer>
+                <p>&copy; 2026 <a href="/" style="color: #050;text-decoration:none; font-weight: bold;">Easy find</a>. All rights reserved. | <a href="/terms.html" style="color: #050;text-decoration:none; font-weight: bold;">Terms of Service</a></p>
+            </footer>
+
+        </div>
+    </div>
+
+</body>
+</html>

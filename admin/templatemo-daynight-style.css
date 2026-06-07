@@ -341,6 +341,7 @@ input, select, textarea {
     border-radius: 8px;
     color: var(--text-secondary);
     transition: var(--transition);
+    cursor: pointer;
 }
 
 .btn-logout:hover {

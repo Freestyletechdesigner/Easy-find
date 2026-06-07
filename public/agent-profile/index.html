@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agent Profile – Easy Find</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="/style.css">
     <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -14,15 +15,18 @@
     <a href="/" class="logo"><span>E</span>asy Find</a>
     <nav class="links">
         <a href="/">Home</a>
-        <a href="/#available-home">Listings</a>
-        <a href="/#agents">Agents</a>
-        <a href="/#contact">Contact</a>
+        <a href="/#available-home">Available properties</a>
+        <a href="/our-agent">Agents</a>
+        <a href="/contact">Contact</a>
     </nav>
     <div class="nav2" id="nav2">
+        <div class="top-nav">
+            <a href="#top" class="logo"><span>E</span>asy Find</a>
+        </div>
         <a href="/"><i class="fa-solid fa-house"></i> Home</a>
-        <a href="/#available-home"><i class="fa-solid fa-building"></i> Listings</a>
-        <a href="/#agents"><i class="fa-solid fa-user-tie"></i> Agents</a>
-        <a href="/#contact"><i class="fa-solid fa-envelope"></i> Contact</a>
+        <a href="#available-homes"><i class="fa-solid fa-building"></i> Available properties</a>
+        <a href="/our-agent"><i class="fa-solid fa-user-tie"></i> Agents</a>
+        <a href="/contact"><i class="fa-solid fa-envelope"></i> Contact</a>
     </div>
     <div class="hamburger" id="hamburger">
         <div class="hand"></div>
@@ -43,7 +47,7 @@
         </div>
         <div class="profile-info">
             <h1 id="agentName">Loading...</h1>
-            <p class="agent-role"><i class="fa-solid fa-circle-check"></i> Verified Agent</p>
+            <p class="agent-role" id="agent-stand"><i class="fa-solid fa-circle-check"></i> Verified Agent</p>
             <p class="agent-joined" id="agentJoined"></p>
             <div class="profile-stats">
                 <div class="stat">
@@ -55,6 +59,9 @@
                     <small>Total Views</small>
                 </div>
             </div>
+            <a href="#" id="whatsappBtn" class="whatsapp-btn" style="display:none;" target="_blank">
+                <i class="fa-brands fa-whatsapp"></i> Contact on WhatsApp
+            </a>
         </div>
     </section>
 
@@ -80,7 +87,7 @@
 </main>
 
 <footer>
-    <p>&copy; 2026 <a href="/" class="footer-link">Easy Find</a>. All rights reserved.</p>
+    <p>&copy; 2026 <a href="/" class="footer-link">Easy Find</a>. All rights reserved. | <a href="/terms.html" class="footer-link">Terms of Service</a></p>
 </footer>
 
 <script src="/alert-box.js"></script>

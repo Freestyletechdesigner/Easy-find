@@ -1,0 +1,12 @@
+node_modules/
+.env
+*.log
+
+# uploaded images
+agent-loged/upload-property/
+agent-profiles/
+
+# OS / editor
+.vscode/
+.DS_Store
+Thumbs.db

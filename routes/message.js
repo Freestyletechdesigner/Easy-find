@@ -1,27 +1,11 @@
-const fs = require('fs').promises;
-const path = require('path');
-const multer = require('multer');
 const { check, validationResult } = require('express-validator');
+const message = require('../model/message.js');
 
-const upload = multer();
 
-const message = (app) => {
-    const MESSAGES_FILE = path.join(__dirname, '..', 'database', 'messages.json');
-
-    // Initialize messages file
-    async function initMessagesFile() {
-        try {
-            await fs.access(MESSAGES_FILE);
-        } catch {
-            await fs.writeFile(MESSAGES_FILE, JSON.stringify([], null, 2));
-        }
-    }
-
-    initMessagesFile();
+const messageAPI = (app) => {
 
     // Submit contact form message
     app.post('/api/contact/submit',
-        upload.none(),
         [
             check('name').trim().isLength({ min: 4 }).withMessage('Name must be at least 4 characters'),
             check('email').isEmail().normalizeEmail().withMessage('Invalid email address'),
@@ -41,13 +25,9 @@ const message = (app) => {
             const { name, email, subjet, phoneNumber, text } = req.body;
 
             try {
-                // Read existing messages
-                const data = await fs.readFile(MESSAGES_FILE, 'utf8');
-                const messages = JSON.parse(data);
 
                 // Create new message
-                const newMessage = {
-                    id: `MSG_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                const newMessage = new message({
                     name,
                     email,
                     subject: subjet || 'No Subject',
@@ -56,18 +36,15 @@ const message = (app) => {
                     status: 'unread',
                     createdAt: new Date().toISOString(),
                     readAt: null
-                };
-
-                // Add to messages array
-                messages.unshift(newMessage); // Add to beginning
+                });
 
                 // Save to file
-                await fs.writeFile(MESSAGES_FILE, JSON.stringify(messages, null, 2));
+                await newMessage.save()
 
                 res.status(200).json({
                     success: true,
                     message: 'Message sent successfully',
-                    messageId: newMessage.id
+                    messageId: newMessage._id
                 });
             } catch (err) {
                 console.error('Error saving message:', err);
@@ -82,17 +59,14 @@ const message = (app) => {
     // Get all messages (admin only)
     app.get('/api/messages', requireAdmin, async (req, res) => {
         try {
-            const data = await fs.readFile(MESSAGES_FILE, 'utf8');
-            const messages = JSON.parse(data);
-
-            // Count unread messages
-            const unreadCount = messages.filter(msg => msg.status === 'unread').length;
+            const messageDB = await message.find().sort({ createdAt: -1 }).lean();
+            const unreadCount = messageDB.filter(m => m.status === 'unread').length;
 
             res.json({
                 success: true,
-                messages,
+                messages: messageDB,
                 unreadCount,
-                totalCount: messages.length
+                totalCount: messageDB.length
             });
         } catch (err) {
             console.error('Error fetching messages:', err);
@@ -106,12 +80,10 @@ const message = (app) => {
     // Get single message by ID (admin only)
     app.get('/api/messages/:id', requireAdmin, async (req, res) => {
         try {
-            const data = await fs.readFile(MESSAGES_FILE, 'utf8');
-            const messages = JSON.parse(data);
+            const id = req.params.id
+            const messageDB = await message.findById(id)
 
-            const message = messages.find(msg => msg.id === req.params.id);
-
-            if (!message) {
+            if (!messageDB) {
                 return res.status(404).json({
                     success: false,
                     message: 'Message not found'
@@ -120,7 +92,7 @@ const message = (app) => {
 
             res.json({
                 success: true,
-                message
+                message: messageDB
             });
         } catch (err) {
             console.error('Error fetching message:', err);
@@ -134,23 +106,21 @@ const message = (app) => {
     // Mark message as read (admin only)
     app.patch('/api/messages/:id/read', requireAdmin, async (req, res) => {
         try {
-            const data = await fs.readFile(MESSAGES_FILE, 'utf8');
-            const messages = JSON.parse(data);
+            const id = req.params.id;
+            const messageDB = await message.findByIdAndUpdate(
+                id,
+                {status: 'read'},
+                {new: true}
+            );
 
-            const messageIndex = messages.findIndex(msg => msg.id === req.params.id);
-
-            if (messageIndex === -1) {
+            if (!messageDB) {
                 return res.status(404).json({
                     success: false,
                     message: 'Message not found'
                 });
             }
 
-            // Update message status
-            messages[messageIndex].status = 'read';
-            messages[messageIndex].readAt = new Date().toISOString();
-
-            await fs.writeFile(MESSAGES_FILE, JSON.stringify(messages, null, 2));
+            await messageDB.save()
 
             res.json({
                 success: true,
@@ -168,22 +138,16 @@ const message = (app) => {
     // Delete message (admin only)
     app.delete('/api/messages/:id', requireAdmin, async (req, res) => {
         try {
-            const data = await fs.readFile(MESSAGES_FILE, 'utf8');
-            let messages = JSON.parse(data);
+            const id = req.params.id;
 
-            const messageIndex = messages.findIndex(msg => msg.id === req.params.id);
+            const messageDB = await message.findByIdAndDelete(id)
 
-            if (messageIndex === -1) {
+            if (!messageDB) {
                 return res.status(404).json({
                     success: false,
                     message: 'Message not found'
                 });
             }
-
-            // Remove message
-            messages.splice(messageIndex, 1);
-
-            await fs.writeFile(MESSAGES_FILE, JSON.stringify(messages, null, 2));
 
             res.json({
                 success: true,
@@ -210,4 +174,4 @@ const message = (app) => {
     }
 };
 
-module.exports = message;
+module.exports = messageAPI;

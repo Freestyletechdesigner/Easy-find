@@ -1,0 +1,499 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Reports - Admin</title>
+    <script>
+        if (localStorage.getItem('daynight-theme') === 'carbon') {
+            document.documentElement.classList.add('carbon');
+        }
+    </script>
+    <link rel="stylesheet" href="templatemo-daynight-style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <style>
+        .feedback-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        .feedback-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: box-shadow 0.2s;
+        }
+        .feedback-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+        .feedback-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+        .feedback-name { font-weight: 700; font-size: 0.95rem; color: var(--text-primary); }
+        .feedback-date { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .feedback-msg { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.6; flex: 1; }
+        .btn-delete-fb {
+            padding: 8px 16px;
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-delete-fb:hover { background: #dc2626; color: #fff; border-color: #dc2626; }
+        .feedback-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            grid-column: 1 / -1;
+        }
+        .feedback-empty i { font-size: 2.5rem; margin-bottom: 12px; display: block; opacity: 0.4; }
+        
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .badge-yellow { background: #fef3c7; color: #d97706; }
+        .badge-red { background: #fee2e2; color: #dc2626; }
+        
+        .btn-view-prop {
+            padding: 6px 12px;
+            background: #e0faf9;
+            color: #0d7068;
+            border: 1px solid #9eebe6;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .btn-view-prop:hover { background: #0d7068; color: #fff; }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay"></div>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu">
+        <div class="mobile-menu-header">
+            <a href="/admin/dashboard" class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </div>
+                Admin
+            </a>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <nav class="mobile-menu-nav">
+            <a href="/admin/dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/admin/projects">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                Projects
+            </a>
+            <a href="/admin/inbox">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                Inbox
+            </a>
+            <a href="/admin/analytics">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                Analytics
+            </a>
+            <a href="/admin/agents">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Agents
+            </a>
+            <a href="/admin/feedback">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Feedback
+            </a>
+            <a href="/admin/reports" class="active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                    <line x1="4" y1="22" x2="4" y2="15"/>
+                </svg>
+                Reports
+            </a>
+            <a href="/admin/settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                Settings
+            </a>
+        </nav>
+        <div class="mobile-menu-footer">
+            <a href="/admin/login" class="mobile-logout-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Logout
+            </a>
+            <div class="theme-toggle">
+                <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                </button>
+                <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="nav-container">
+                <div class="nav-left">
+                    <a href="/admin/dashboard" class="logo">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                        </div>
+                        Admin
+                    </a>
+                    <div class="nav-menu">
+                        <div class="nav-item">
+                            <a href="/admin/dashboard" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                                </svg>
+                                Dashboard
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/projects" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Projects
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/inbox" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                                Inbox
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/analytics" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="20" x2="18" y2="10"/>
+                                    <line x1="12" y1="20" x2="12" y2="4"/>
+                                    <line x1="6" y1="20" x2="6" y2="14"/>
+                                </svg>
+                                Analytics
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/agents" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                </svg>
+                                Agents
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/feedback" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Feedback
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/reports" class="nav-link active">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                                    <line x1="4" y1="22" x2="4" y2="15"/>
+                                </svg>
+                                Reports
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/settings" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="3"/>
+                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                                </svg>
+                                Settings
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="nav-right">
+                    <div class="theme-toggle">
+                        <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/>
+                                <line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                            </svg>
+                        </button>
+                        <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="user-menu">
+                        <div class="user-avatar">F</div>
+                        <span class="user-name">Freedom</span>
+                    </button>
+                    <a href="/admin/login" class="btn-logout" title="Logout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                    </a>
+                    <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h1 class="greeting">Property Reports</h1>
+                <p class="greeting-sub">Cross-check flagged listings and protect user safety.</p>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Reports</div>
+                    <div class="stat-value" id="repTotal">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Unique Flagged Posts</div>
+                    <div class="stat-value" id="repUnique">—</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Critical Alerts (Fraud)</div>
+                    <div class="stat-value" id="repCritical">—</div>
+                </div>
+            </div>
+
+            <!-- Reports grid -->
+            <div class="card" style="margin-top:1.5rem;">
+                <div class="card-header">
+                    <h3 class="card-title">All Flags</h3>
+                </div>
+                <div class="feedback-grid" id="reportsGrid">
+                    <div class="feedback-empty">
+                        <i class="fas fa-spinner spin-icon"></i>
+                        <p>Loading reports...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 <a href="/" style="color:#050;text-decoration:none;">Easy Find</a>. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="templatemo-daynight-script.js"></script>
+    <script>
+        async function loadReports() {
+            const grid = document.getElementById('reportsGrid');
+            try {
+                const res  = await fetch('/api/admin/reports', { credentials: 'include' });
+                const data = await res.json();
+
+                if (!data.success || !data.reports.length) {
+                    grid.innerHTML = '<div class="feedback-empty"><i class="fas fa-flag-slash"></i><p>No property reports submitted yet.</p></div>';
+                    return;
+                }
+
+                // Calculate stats
+                document.getElementById('repTotal').textContent = data.reports.length;
+                const uniqueIds = new Set(data.reports.map(r => r.propertyId));
+                document.getElementById('repUnique').textContent = uniqueIds.size;
+                const criticalCount = data.reports.filter(r => r.reason === 'fraudulent').length;
+                document.getElementById('repCritical').textContent = criticalCount;
+
+                grid.innerHTML = data.reports.map(r => {
+                    const propId = r.propertyId;
+                    const propertyLink = propId 
+                        ? `<a href="/property?id=${propId}" target="_blank" class="btn-view-prop"><i class="fas fa-external-link-alt"></i> View Property & Cross-Check</a>`
+                        : '<span style="color:var(--text-muted); font-style:italic;"><i class="fas fa-ban"></i> Listing Already Deleted</span>';
+                    
+                    // Formatting reason badge
+                    let reasonBadge = '';
+                    if (r.reason === 'spam') reasonBadge = '<span class="badge badge-yellow">Spam</span>';
+                    else if (r.reason === 'incorrect_details') reasonBadge = '<span class="badge badge-yellow">Incorrect Details</span>';
+                    else if (r.reason === 'fraudulent') reasonBadge = '<span class="badge badge-red">Fraudulent</span>';
+                    else if (r.reason === 'offensive') reasonBadge = '<span class="badge badge-red">Offensive</span>';
+                    else reasonBadge = '<span class="badge">Other</span>';
+
+                    return `
+                        <div class="feedback-card" id="rep-${r._id}">
+                            <div class="feedback-card-header">
+                                <div>
+                                    <div class="feedback-name">${r.reporterName}</div>
+                                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+                                        <i class="far fa-envelope"></i> ${r.reporterEmail}
+                                    </div>
+                                    <div class="feedback-date">${new Date(r.date).toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</div>
+                                </div>
+                                <div>${reasonBadge}</div>
+                            </div>
+                            <div style="margin: 4px 0;">
+                                <p style="font-size:0.875rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Reported Listing:</p>
+                                <div style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:10px; font-weight:500;">${r.propertyTitle}</div>
+                                ${propertyLink}
+                            </div>
+                            <div style="background: rgba(0,0,0,0.03); padding: 12px; border-radius: 8px; border-left: 3px solid #ff5252; margin-top: 4px; flex: 1;">
+                                <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:4px; text-transform:uppercase;">Reporter Comments:</div>
+                                <p class="feedback-msg" style="font-style:italic;">${r.description || 'No additional comments provided.'}</p>
+                            </div>
+                            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:14px; border-top: 1px solid var(--border); padding-top: 12px;">
+                                <button class="btn-delete-fb" style="background:#e0faf9; color:#0d7068; border-color:#9eebe6;" onclick="dismissReport('${r._id}')">
+                                    <i class="fas fa-check"></i> Dismiss Report
+                                </button>
+                                ${propId ? `
+                                <button class="btn-delete-fb" onclick="deleteProperty('${propId}', '${r._id}')">
+                                    <i class="fas fa-trash"></i> Delete Property
+                                </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                grid.innerHTML = '<div class="feedback-empty"><i class="fas fa-exclamation-circle"></i><p>Failed to load property reports.</p></div>';
+            }
+        }
+
+        async function dismissReport(id) {
+            if (!confirm('Dismiss this warning? The listing will remain active.')) return;
+            try {
+                const res  = await fetch(`/api/admin/reports/${id}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById(`rep-${id}`)?.remove();
+                    const remaining = document.querySelectorAll('.feedback-card').length;
+                    document.getElementById('repTotal').textContent = remaining;
+                    if (!remaining) {
+                        document.getElementById('reportsGrid').innerHTML =
+                            '<div class="feedback-empty"><i class="fas fa-flag-slash"></i><p>No property reports submitted yet.</p></div>';
+                    }
+                } else {
+                    alert(data.message || 'Could not dismiss');
+                }
+            } catch (err) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        async function deleteProperty(propertyId, reportId) {
+            if (!confirm('Delete this property post? This will permanently delete the listing and resolve all associated reports.')) return;
+            try {
+                const res  = await fetch(`/api/admin/properties/${propertyId}`, { method: 'DELETE' });
+                const data = await res.json();
+                if (data.success) {
+                    alert(data.message || 'Property deleted successfully.');
+                    // Reload to update stats and clean cards
+                    loadReports();
+                } else {
+                    alert(data.message || 'Could not delete property post.');
+                }
+            } catch (err) {
+                alert('Network error. Please try again.');
+            }
+        }
+
+        loadReports();
+    </script>
+</body>
+</html>

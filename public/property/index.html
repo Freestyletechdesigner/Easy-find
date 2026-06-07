@@ -12,21 +12,25 @@
 
 <header>
     <a href="/" class="logo"><span>E</span>asy Find</a>
+    <div class="verify">Verified <i class="fa-regular fa-circle-check"></i></div>
     <nav class="links">
         <a href="/">Home</a>
         <a href="/#search-bar">Search</a>
         <a href="/#about">About</a>
         <a href="/#available-home">Available Homes</a>
-        <a href="/#agents">Our Agents</a>
-        <a href="/#contact">Contact</a>
+        <a href="/our-agent">Our Agents</a>
+        <a href="/contact">Contact</a>
     </nav>
     <div class="nav2" id="nav2">
+        <div class="top-nav">
+            <a href="#top" class="logo"><span>E</span>asy Find</a>
+        </div>
         <a href="/"><i class="fa-solid fa-house"></i> Home</a>
         <a href="/#search-bar"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
         <a href="/#about"><i class="fa-regular fa-address-card"></i> About</a>
-        <a href="/#available-home"><i class="fa-solid fa-building"></i> Available Homes</a>
-        <a href="/#agents"><i class="fa-solid fa-user-tie"></i> Our Agents</a>
-        <a href="/#contact"><i class="fa-solid fa-envelope"></i> Contact</a>
+        <a href="#relatedSection"><i class="fa-solid fa-building"></i> Related Properties</a>
+        <a href="/our-agent"><i class="fa-solid fa-user-tie"></i> Our Agents</a>
+        <a href="/contact"><i class="fa-solid fa-envelope"></i> Contact</a>
     </div>
     <div class="hamburger" id="hamburger">
         <div class="hand"></div>
@@ -88,7 +92,7 @@
                 <div class="stat-item">
                     <i class="fa-solid fa-ruler-combined"></i>
                     <span id="statArea">—</span>
-                    <small>sqft</small>
+                    <small>plot</small>
                 </div>
             </div>
 
@@ -109,7 +113,7 @@
                 <h2><i class="fa-solid fa-map-location-dot"></i> Location on Map</h2>
                 <div class="hold-map">
                     <iframe id="mapFrame" width="100%" height="100%"
-                        style="border:0;" loading="lazy" allowfullscreen
+                        style="border:0;display:none;" loading="lazy" allowfullscreen
                         referrerpolicy="no-referrer-when-downgrade"
                         src="about:blank">
                     </iframe>
@@ -132,6 +136,9 @@
                 <button class="btn-share" id="sharePop">
                     <i class="fa-solid fa-share-nodes"></i> Share Property
                 </button>
+                <button class="btn-report" id="reportPop">
+                    <i class="fa-solid fa-flag"></i> Report Property
+                </button>
             </div>
 
             <!-- Agent card -->
@@ -143,7 +150,7 @@
                     </div>
                     <div>
                         <p class="agent-name" id="agentName">—</p>
-                        <p class="agent-role">Verified Agent</p>
+                        <p class="agent-role" id="agent-stand">_</p>
                     </div>
                     <div>
                         <button id="agent-profile">View Profile</button>
@@ -203,12 +210,70 @@
         </div>
     </div>
 
+    <!-- REPORT POPUP -->
+    <div class="contact-popup" id="reportPopup">
+        <div class="contact-popup-inner" style="max-width: 420px; text-align: left; background: var(--card-bg, #fff);">
+            <button class="popup-close" id="reportPopupClose" style="position: absolute; top: 14px; right: 16px; background: none; border: none; font-size: 1.3rem; color: #aaa; cursor: pointer;"><i class="fa-solid fa-xmark"></i></button>
+            <h3 style="text-align: center; margin-bottom: 6px; color: #055361;">Report Property</h3>
+            <p style="text-align: center; margin-bottom: 20px; font-size: 0.9rem; color: #666;">Help us keep Easy Find safe. Tell us what is wrong with this listing.</p>
+            
+            <form id="reportForm" style="display: flex; flex-direction: column; gap: 14px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label for="reportReason" style="font-weight: 700; font-size: 0.85rem; color: #055361;">Reason for Report *</label>
+                    <select id="reportReason" required style="padding: 11px; border-radius: 8px; border: 1.5px solid #e0faf9; font-size: 0.9rem; background: #fff; color: #333; outline: none; transition: border-color 0.2s;">
+                        <option value="" disabled selected>Select a reason</option>
+                        <option value="spam">Spam or misleading listing</option>
+                        <option value="incorrect_details">Incorrect property details</option>
+                        <option value="fraudulent">Fraudulent or suspicious poster</option>
+                        <option value="offensive">Offensive or abusive content</option>
+                        <option value="other">Other reason</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label for="reportName" style="font-weight: 700; font-size: 0.85rem; color: #055361;">Your Name</label>
+                    <input type="text" id="reportName" placeholder="e.g. John Doe" style="padding: 11px; border-radius: 8px; border: 1.5px solid #e0faf9; font-size: 0.9rem; outline: none; transition: border-color 0.2s;">
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label for="reportEmail" style="font-weight: 700; font-size: 0.85rem; color: #055361;">Your Email Address *</label>
+                    <input type="email" id="reportEmail" required placeholder="e.g. john@example.com" style="padding: 11px; border-radius: 8px; border: 1.5px solid #e0faf9; font-size: 0.9rem; outline: none; transition: border-color 0.2s;">
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label for="reportDescription" style="font-weight: 700; font-size: 0.85rem; color: #055361;">Additional Details</label>
+                    <textarea id="reportDescription" rows="4" placeholder="Explain the problem in detail..." style="padding: 11px; border-radius: 8px; border: 1.5px solid #e0faf9; font-size: 0.9rem; outline: none; resize: vertical; font-family: inherit; transition: border-color 0.2s;"></textarea>
+                </div>
+                
+                <button type="submit" style="padding: 13px; background: #ff5252; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: background 0.2s; margin-top: 10px;">
+                    Submit Report
+                </button>
+            </form>
+        </div>
+    </div>
+
 </main>
 
+<!-- RELATED PROPERTIES -->
+<section class="related-section" id="relatedSection">
+    <div class="related-header">
+        <h2><i class="fa-solid fa-layer-group"></i> Related Properties</h2>
+        <p>You might also like these</p>
+    </div>
+    <div class="related-grid" id="relatedGrid"></div>
+    <div class="related-more" id="relatedMore" style="display:none;">
+        <button class="btn-load-related" id="btnLoadMore">
+            <i class="fas fa-plus"></i> Load More
+        </button>
+    </div>
+</section>
+
 <footer>
-    <p>&copy; 2026 <a href="/" class="footer-link">Easy Find</a>. All rights reserved.</p>
+    <p>&copy; 2026 <a href="/" class="footer-link">Easy Find</a>. All rights reserved. | <a href="/terms.html" class="footer-link">Terms of Service</a></p>
 </footer>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="/alert-box.js"></script>
 <script src="property.js"></script>
 </body>

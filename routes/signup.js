@@ -1,6 +1,35 @@
-const path = require('path');
-const bcrypt = require('bcrypt');
+﻿const path = require('path');
+const fs = require('fs');
+const bcrypt = require('bcryptjs');
 const User = require('../model/User.js');
+const rateLimit = require('express-rate-limit');
+const ADMIN = require('../model/ADMIN.js');
+
+// Middleware to check if user is admin
+function requireAdmin(req, res, next) {
+    if (!req.session.admin) {
+        return res.status(403).json({
+            success: false,
+            message: 'Admin authentication required'
+        });
+    }
+    next();
+}
+
+// Strict limiter for Login and password reset
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,
+    message: {
+        success: false, 
+        message: 'Too many attempts. Please try again later.'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: () => process.env.NODE_ENV === 'development'
+});
+
+// General limiter for public profiles/status - Fix 31: removed unused apiLimiter
 
 module.exports = function(app) {
 
@@ -26,7 +55,7 @@ module.exports = function(app) {
     }
 
     // Signup endpoint
-    app.post('/api/signup', async (req, res) => {
+    app.post('/api/signup', authLimiter, async (req, res) => {
         try {
             const { name, email, number, password } = req.body;
 
@@ -66,7 +95,7 @@ module.exports = function(app) {
                 status: 'active',
                 registrationDate: new Date(),
                 loginCount: 0,
-                ipAddress: req.ip || req.connection.remoteAddress
+                ipAddress: req.ip || req.socket?.remoteAddress
             });
 
             await newUser.save();
@@ -82,8 +111,8 @@ module.exports = function(app) {
         }
     });
 
-    // Get all users (for analytics)
-    app.get('/api/users', async (req, res) => {
+    // Get all users (for analytics) - Fix 1: requireAdmin added
+    app.get('/api/users', requireAdmin, async (req, res) => {
         try {
             const users = await User.find()
                 .select('name email number status registrationDate lastLogin loginCount')
@@ -97,8 +126,8 @@ module.exports = function(app) {
         }
     });
 
-    // Update user status
-    app.patch('/api/users/:id', async (req, res) => {
+    // Update user status - Fix 2: requireAdmin added
+    app.patch('/api/users/:id', requireAdmin, async (req, res) => {
         try {
             const { id } = req.params;
             const { status } = req.body;
@@ -118,53 +147,121 @@ module.exports = function(app) {
             res.json({ success: true, message: 'User status updated successfully' });
 
         } catch (error) {
-            console.error('Error updating user:', error);
+            console.error('Error updating user hi:', error);
             res.status(500).json({ success: false, message: 'Error updating user' });
         }
     });
 
     // Login
-    app.post('/api/login', async (req, res) => {
+    app.post('/api/login', authLimiter, async (req, res) => {
         try {
-            const { email, password } = req.body;
-
-            if (!email || !password) {
-                return res.status(400).json({ success: false, message: 'Email and password are required' });
+            const { email, password, googleToken } = req.body;
+            let targetEmail = '';
+    
+            // 1. DETERMINE AUTHENTICATION METHOD
+            if (googleToken) {
+                // GOOGLE OAUTH PATHWAY
+                try {
+                    const ticket = await client.verifyIdToken({
+                        idToken: googleToken,
+                        audience: process.env.GOOGLE_CLIENT_ID,
+                    });
+                    const payload = ticket.getPayload();
+                    
+                    if (!payload || !payload.email) {
+                        return res.status(400).json({ success: false, message: 'Invalid Google token payload' });
+                    }
+                    
+                    targetEmail = payload.email.trim().toLowerCase();
+                } catch (googleError) {
+                    console.error('Google token verification failed:', googleError);
+                    return res.status(401).json({ success: false, message: 'Google authentication failed' });
+                }
+            } else {
+                // STANDARD PASSWORD PATHWAY
+                if (!email || !password) {
+                    return res.status(400).json({ success: false, message: 'Email and password are required' });
+                }
+                targetEmail = email.trim().toLowerCase();
             }
-            
-            //check if user exists
-            const user = await User.findOne({ email: email.trim().toLowerCase() });
-
+    
+            // 2. CHECK IF ACCOUNT IS AN ADMIN
+            const admin = await ADMIN.findOne({ email: targetEmail });
+            if (admin) {
+                // If it's a standard password login, verify the password
+                if (!googleToken) {
+                    const isPasswordValid = await admin.comparePassword(password);
+                    if (!isPasswordValid) {
+                        return res.status(401).json({ success: false, message: 'Invalid email or password' });
+                    }
+                }
+    
+                // Set Admin Session
+                req.session.admin = {
+                    id: admin._id,
+                    email: admin.email,
+                    role: admin.role
+                };
+    
+                return res.json({
+                    success: true,
+                    message: 'Login successful',
+                    admin: {
+                        id: admin._id,
+                        email: admin.email,
+                        role: admin.role
+                    }
+                });
+            }
+    
+            // 3. CHECK IF ACCOUNT IS A STANDARD USER
+            const user = await User.findOne({ email: targetEmail });
             if (!user) {
-                return res.status(401).json({ success: false, message: 'Invalid email or password' });
+                return res.status(401).json({ success: false, message: 'Invalid email or password.' });
             }
-
+    
             if (user.status !== 'active') {
                 return res.status(401).json({ success: false, message: 'Account is inactive. Please contact support.' });
             }
-
-            const isPasswordValid = await user.comparePassword(password);
-            if (!isPasswordValid) {
-                return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    
+            // If it's a standard password login, verify the password
+            if (!googleToken) {
+                const isPasswordValid = await user.comparePassword(password);
+                if (!isPasswordValid) {
+                    return res.status(401).json({ success: false, message: 'Invalid email or password' });
+                }
             }
-
-            //Add Session cookies
-            req.session.userId = user._id
-
-            // Update login tracking
+    
+            // Setup User Session and Update Analytics Data
+            req.session.userId = user._id;
             user.lastLogin = new Date();
             user.loginCount = (user.loginCount || 0) + 1;
             await user.save();
-
-            res.json({
+    
+            return res.json({
                 success: true,
                 message: 'Login successful',
                 user: { id: user._id, name: user.name, email: user.email }
             });
-
+    
         } catch (error) {
             console.error('Login error:', error);
             res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+        }
+    });
+
+    // Check admin session
+    app.get('/api/admin/session', (req, res) => {
+        if (req.session.admin) {
+            res.json({
+                success: true,
+                admin: req.session.admin
+            });
+        } else {
+            res.status(401).json({
+                success: false,
+                message: 'Not authenticated'
+            });
         }
     });
     
@@ -201,8 +298,18 @@ module.exports = function(app) {
 
     });
 
+    // Admin Logout 
+    app.post('/api/admin/logout', (req, res) => {
+
+        req.session.destroy(() => {
+            res.clearCookie('connect.sid');
+            res.json({ success: true });
+        });
+
+    });
+
     // Password reset
-    app.post('/api/reset-password', async (req, res) => {
+    app.post('/api/reset-password', authLimiter, async (req, res) => {
         try {
             const { email, currentPassword, newPassword } = req.body;
 
@@ -216,7 +323,7 @@ module.exports = function(app) {
             }
 
             const user = await User.findOne({ email: email.trim().toLowerCase() });
-            if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+            if (!user) return res.status(404).json({ success: false, message: 'Invalid email or current password' });
 
             const isCurrentPasswordValid = await user.comparePassword(currentPassword);
             if (!isCurrentPasswordValid) {
@@ -233,5 +340,13 @@ module.exports = function(app) {
             console.error('Password reset error:', error);
             res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
         }
+    });
+
+    // ADMIN STATUS
+    app.get('/api/admin/status', requireAdmin, (req, res) => {
+        res.json({ success: true, isAdmin: true, admin: {
+            email: req.session.admin.email,
+            role: req.session.admin.role
+        }});
     });
 };
