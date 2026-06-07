@@ -99,6 +99,23 @@ header {
     box-shadow: 0px 3px 9px #0d656850;
 }
 
+/* 1. The Idle Animation (Subtle floating/shaking on load) */
+.links a:nth-child(4) i {
+    display: inline-block; /* Required for transforms to work */
+    animation: rocketFloat 2s ease-in-out infinite;
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: all 0.5s;
+}
+
+@keyframes rocketFloat {
+    0%, 100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+    50% {
+        transform: translate(1px, -3px) rotate(3deg); /* Gentle rumble & lift */
+    }
+}
+
 .links a:hover { background: #eee; }
 
 .nav2 {
@@ -283,6 +300,14 @@ header {
     padding: 30px 0 180px;
     overflow: hidden;
     text-align: center;
+    
+    /* Layer 1: Sharp dot pattern | Layer 2: Your radial gradient */
+    background: 
+        radial-gradient(rgba(255, 255, 255, 0.15) 1px, transparent 1px), 
+        radial-gradient(circle at bottom, #217777 0%, #052c2a 100%);
+        
+    /* Tells the dots how big and how far apart to repeat */
+    background-size: 24px 24px, auto; 
 }
 
 .hold-hero-text {
@@ -298,13 +323,15 @@ header {
 }
 
 .hold-hero-text p {
-    font-size: 2rem;
+    margin-top: 30px;
+    font-size: clamp(0.5rem, 3vw, 2rem);
     font-weight: bold;
-    text-shadow: 2px 2px 6px #fff;
+    color: #88f5ef;
 }
 
 .hold-hero-text span {
-    font-size: 1rem;
+    margin-top: 30px;
+    font-size: clamp(0.85rem, 2.5vw, 1rem);
     color: #ffffff;
     font-weight: bold;
     text-shadow: 2px 2px 6px #000000b2;
@@ -315,60 +342,25 @@ header {
 }
 
 .hold-hero-text h1 {
-    font-family: "HyperTrack";
-    font-size: 5rem;
+    font-size: clamp(2.2rem, 8vw, 5rem);
     line-height: 1;
     color: #ffffff;
-    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.6);
-}
-
-.hold-hero-text h1 span {
-    color: #050;
-    font-family: monospace;
-    font-size: 7rem;
 }
 
 .hold-hero-text>a {
-    color: #fff;
+    color: #003030;
     text-decoration: none;
-    background: linear-gradient(90deg, rgb(4, 82, 65), rgb(28, 170, 139));
+    background: #7ef0ff;
     border-radius: 15px;
-    padding: 10px 20px;
-    margin-top: 50px;
+    padding: 15px 30px;
     position: relative ;
-    top: 120px;
+    top: 90px;
     cursor: pointer;
     transition: all 1s;
 }
 .hold-hero-text>a:hover {
+    color: #fff;
     background: linear-gradient(90deg, rgba(4, 82, 65, 0.582), rgba(28, 170, 139, 0.603));
-}
-.hold-hero-text>a svg {
-    width: 20px;
-    height: 20px;
-    opacity: 1;
-}
-
-/* ===== HERO BRAND SHAPE (RESPONSIVE) ===== */
-.hero-brand {
-    position: absolute;
-    left: 50%;
-    bottom: 0;
-    top: 70px;
-    transform: translateX(-50%) rotate(90deg) scaleY(3) scaleX(1.6);
-    
-    /* Responsive sizing */
-    width: 70vw;
-    height: 100vw;
-    max-width: 450px;
-    max-height: 450px;
-
-    background: url('image/IMG_7296.jpg');
-    background-size: contain;
-    clip-path: polygon(54% 0, 54% 57%, 54% 100%, 0% 100%, 25% 50%, 0% 0%);
-    
-    opacity: 1;
-    z-index: -1;
 }
 
 #all-search {

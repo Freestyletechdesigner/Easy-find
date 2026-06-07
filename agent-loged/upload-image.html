@@ -52,6 +52,29 @@
       backdrop-filter: blur(10px);
     }
 
+    .modal-close {
+      position: relative;
+      left: 0%;
+      text-decoration: none;
+      background: rgb(185, 0, 0);
+      border: none;
+      font-size: 1.75rem;
+      color: white;
+      cursor: pointer;
+      padding-bottom: 6px;
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      font-weight: 300;
+      flex-shrink: 0;
+    }
+
     .header {
       text-align: center;
       margin-bottom: 32px;
@@ -311,6 +334,7 @@
 </style>
 
   <div class="container">
+    <a href="/agent-loged" class="modal-close">×</a>
     <div class="header">
       <h1><i class="fas fa-user-circle"></i> Profile Picture</h1>
       <p>Upload your profile picture to personalize your account</p>
