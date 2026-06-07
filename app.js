@@ -57,7 +57,7 @@ app.use((req, res, next) => {
 app.use(compression());
 
 const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? [process.env.APP_URL].filter(Boolean)
+    ? (process.env.APP_URL ? process.env.APP_URL.split(',') : [])
     : true;
 
 app.use(cors({
