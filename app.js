@@ -296,6 +296,8 @@ app.use('/appeal', express.static('appeal', staticOpts));
 app.use('/boost-account', express.static('boost-account', staticOpts));
 app.use('/password-reset', express.static('password-reset', staticOpts));
 app.use('/verification-payment', express.static('verification-payment', staticOpts));
+// Terms 
+app.use('/terms', express.static('public/terms.html'));
 
 // ── Agent Verification page — gate by payment ─────────
 // Case 1: Paystack callback with reference → verify payment, update DB, redirect to page
@@ -376,8 +378,6 @@ app.get('/password-reset/reset-password',  (req, res) => res.sendFile(path.join(
 app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
 app.get('/our-agent', (req, res) => res.sendFile(path.join(__dirname, 'public', 'our-agent.html')));
 
-// Terms 
-app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'terms.html')));
 
 signup(app);
 messageAPI(app);

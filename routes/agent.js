@@ -292,18 +292,17 @@ const agent = (app) => {
     // Send code for verification
     app.post('/api/agent/send-code', authLimiter, async (req, res) => {
         try {
-            const number = req.body.number;
+            const email = (req.body.email || '').trim().toLowerCase();
 
-            if (!number) {
-                return res.status(400).json({ success: false, message: 'Phone number are required' });
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                return res.status(400).json({ success: false, message: 'A valid email address is required' });
             }
 
-            const user = await AgentUser.findOne({ number });
-            if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-            //send code to SMS
-            const phone = user.number;
+            const user = await AgentUser.findOne({ email });
+            if (!user) return res.status(404).json({ success: false, message: 'No account found with that email address' });
+
             const { sendOTP } = require('../utils/sms.js');
-            const result = await sendOTP(phone);
+            const result = await sendOTP(user.number, user.email);
 
             if (!result.success) {
                 return res.status(500).json({ success: false, message: result.message });
@@ -311,11 +310,12 @@ const agent = (app) => {
 
             req.session.otp = {
                 code:    result.otp,
-                phone,
-                expires: Date.now() + 10 * 60 * 1000
+                email:   user.email,
+                phone:   user.number,
+                expires: Date.now() + 10 * 60 * 1000  // 10 minutes
             };
 
-            res.json({ success: true, message: 'Code has been sent to your SMS' });
+            res.json({ success: true, message: 'Reset code sent to your email' });
 
         } catch (error) {
             console.error('Password reset error:', error);
@@ -326,9 +326,9 @@ const agent = (app) => {
     //Password reset
     app.post('/api/agent/reset-password', async (req, res) => {
         const { newPassword } = req.body;
-        const phone = req.session.phoneVerified;
+        const email = req.session.emailVerified;
 
-        if (!phone) 
+        if (!email)
             return res.status(403).json({ success: false, message: 'Not verified. Start over.' });
         if (!newPassword || newPassword.length < 8)
             return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
@@ -336,14 +336,14 @@ const agent = (app) => {
             return res.status(400).json({ success: false, message: 'Password must contain uppercase, lowercase, and number' });
 
         try {
-            const agent = await AgentUser.findOne({ number: phone });
+            const agent = await AgentUser.findOne({ email });
             if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
 
             agent.password = newPassword;
             agent.passwordResetAt = new Date();
             await agent.save();
 
-            req.session.phoneVerified = null;
+            req.session.emailVerified = null;
             res.json({ success: true, message: 'Password reset successfully' });
         } catch (error) {
             console.error(error);
@@ -361,9 +361,9 @@ const agent = (app) => {
         if (otp !== stored.code) return res.status(400).json({ success: false, message: 'Invalid OTP' });
 
         req.session.otp = null;
-        req.session.phoneVerified = stored.phone;
+        req.session.emailVerified = stored.email; // track by email now
 
-        res.json({ success: true, message: 'Phone number verified successfully' });
+        res.json({ success: true, message: 'Email verified successfully' });
     });
 
     // Get verified agents (public)

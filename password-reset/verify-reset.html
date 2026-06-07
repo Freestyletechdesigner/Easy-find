@@ -53,11 +53,12 @@
         .header { text-align: center; margin-bottom: 28px; }
         .header h2 { font-size: 26px; color: #333; margin-bottom: 8px; }
         .header p  { color: #666; font-size: 14px; line-height: 1.6; }
-        .phone-display {
+        .email-display {
             display: inline-block; margin-top: 10px;
             background: #e8fffe; color: #005f66;
             padding: 4px 14px; border-radius: 20px;
             font-weight: 700; font-size: 14px;
+            word-break: break-all;
         }
 
         .otp-group { display: flex; justify-content: center; gap: 12px; margin: 24px 0; }
@@ -121,19 +122,17 @@
             .right { padding: 40px 24px; }
             .otp-input { width: 44px; height: 50px; font-size: 1.3rem; }
         }
-        
         @media (max-width: 400px) {
             .otp-input { width: 38px; height: 46px; font-size: 1.3rem; }
         }
-        
     </style>
 </head>
 <body>
 <div class="container">
     <div class="left">
-        <div class="icon-wrap"><i class="fas fa-mobile-alt"></i></div>
-        <h1>Check Your Phone</h1>
-        <p>Enter the 6-digit code we sent to your phone number to continue resetting your password.</p>
+        <div class="icon-wrap"><i class="fas fa-envelope-open-text"></i></div>
+        <h1>Check Your Email</h1>
+        <p>Enter the 6-digit code we sent to your email address to continue resetting your password.</p>
         <ul>
             <li><i class="fas fa-clock"></i> Code expires in 10 minutes</li>
             <li><i class="fas fa-shield-alt"></i> Never share your code</li>
@@ -145,7 +144,7 @@
         <div class="header">
             <h2>Enter Verification Code</h2>
             <p>A 6-digit code was sent to</p>
-            <span class="phone-display" id="phoneDisplay">your phone</span>
+            <span class="email-display" id="emailDisplay">your email</span>
         </div>
 
         <div id="alert" class="alert"></div>
@@ -180,11 +179,21 @@
 </div>
 
 <script>
+    // Get email from URL or sessionStorage
     const params = new URLSearchParams(window.location.search);
-    const phone  = params.get('phone') || sessionStorage.getItem('resetPhone') || '';
-    const masked = phone ? phone.slice(0,4) + '****' + phone.slice(-3) : 'your phone';
-    document.getElementById('phoneDisplay').textContent = masked;
+    const email  = params.get('email') || sessionStorage.getItem('resetEmail') || '';
 
+    // Mask email for display: jo***@gmail.com
+    function maskEmail(e) {
+        if (!e) return 'your email';
+        const [user, domain] = e.split('@');
+        if (!domain) return e;
+        const masked = user.slice(0, 2) + '***';
+        return masked + '@' + domain;
+    }
+    document.getElementById('emailDisplay').textContent = maskEmail(email);
+
+    // ── OTP input navigation ──────────────────────────────
     const inputs = document.querySelectorAll('.otp-input');
     inputs.forEach((input, i) => {
         input.addEventListener('input', e => {
@@ -207,6 +216,7 @@
     });
     inputs[0].focus();
 
+    // ── Countdown timer ───────────────────────────────────
     let timeLeft = 600;
     const cd = document.getElementById('countdown');
     const timer = setInterval(() => {
@@ -215,9 +225,15 @@
         const s = String(timeLeft%60).padStart(2,'0');
         cd.textContent = `${m}:${s}`;
         if (timeLeft <= 60) cd.style.color = '#f5576c';
-        if (timeLeft <= 0) { clearInterval(timer); cd.textContent = 'Expired'; cd.classList.add('expired'); document.getElementById('resendBtn').disabled = false; }
+        if (timeLeft <= 0) {
+            clearInterval(timer);
+            cd.textContent = 'Expired';
+            cd.classList.add('expired');
+            document.getElementById('resendBtn').disabled = false;
+        }
     }, 1000);
-    setTimeout(() => { document.getElementById('resendBtn').disabled = false; }, 30000);
+    // Enable resend after 60 seconds
+    setTimeout(() => { document.getElementById('resendBtn').disabled = false; }, 60000);
 
     function showAlert(msg, type) {
         const el = document.getElementById('alert');
@@ -225,14 +241,16 @@
         setTimeout(() => el.className = 'alert', 4000);
     }
 
+    // ── Verify code ───────────────────────────────────────
     async function verifyCode() {
         const otp = Array.from(inputs).map(i => i.value).join('');
         if (otp.length < 6) {
             inputs.forEach(i => i.classList.add('error'));
             setTimeout(() => inputs.forEach(i => i.classList.remove('error')), 600);
-            showAlert('Please enter the complete 6-digit code', 'error'); return;
+            showAlert('Please enter the complete 6-digit code', 'error');
+            return;
         }
-        const btn = document.getElementById('verifyBtn');
+        const btn     = document.getElementById('verifyBtn');
         const spinner = document.getElementById('spinner');
         const btnText = document.getElementById('btnText');
         btn.disabled = true; spinner.style.display = 'inline-block'; btnText.style.display = 'none';
@@ -245,39 +263,47 @@
             const data = await res.json();
             if (data.success) {
                 showAlert('Verified! Redirecting...', 'success');
-                sessionStorage.setItem('resetPhone', phone);
                 setTimeout(() => window.location.href = '/password-reset/reset-password', 1200);
             } else {
-                showAlert(data.message || 'Invalid code', 'error');
+                showAlert(data.message || 'Invalid code. Please try again.', 'error');
                 inputs.forEach(i => { i.classList.add('error'); i.value = ''; i.classList.remove('filled'); });
                 setTimeout(() => inputs.forEach(i => i.classList.remove('error')), 600);
                 inputs[0].focus();
                 btn.disabled = false; spinner.style.display = 'none'; btnText.style.display = 'inline';
             }
-        } catch { showAlert('Something went wrong.', 'error'); btn.disabled = false; spinner.style.display = 'none'; btnText.style.display = 'inline'; }
+        } catch {
+            showAlert('Something went wrong.', 'error');
+            btn.disabled = false; spinner.style.display = 'none'; btnText.style.display = 'inline';
+        }
     }
 
+    // ── Resend code ───────────────────────────────────────
     async function resendCode() {
-        if (!phone) { showAlert('Phone not found. Go back.', 'error'); return; }
+        if (!email) { showAlert('Email not found. Go back and try again.', 'error'); return; }
         document.getElementById('resendBtn').disabled = true;
         try {
             const res  = await fetch('/api/agent/send-code', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ number: phone })
+                body: JSON.stringify({ email })
             });
             const data = await res.json();
             if (data.success) {
-                showAlert('New code sent!', 'success');
+                showAlert('New code sent to your email!', 'success');
                 timeLeft = 600; cd.style.color = ''; cd.classList.remove('expired');
                 inputs.forEach(i => { i.value = ''; i.classList.remove('filled','error'); });
                 inputs[0].focus();
-                setTimeout(() => { document.getElementById('resendBtn').disabled = false; }, 30000);
-            } else { showAlert(data.message || 'Failed to resend', 'error'); document.getElementById('resendBtn').disabled = false; }
-        } catch { showAlert('Something went wrong.', 'error'); document.getElementById('resendBtn').disabled = false; }
+                setTimeout(() => { document.getElementById('resendBtn').disabled = false; }, 60000);
+            } else {
+                showAlert(data.message || 'Failed to resend', 'error');
+                document.getElementById('resendBtn').disabled = false;
+            }
+        } catch {
+            showAlert('Something went wrong.', 'error');
+            document.getElementById('resendBtn').disabled = false;
+        }
     }
 
     document.addEventListener('keydown', e => { if (e.key === 'Enter') verifyCode(); });
-</script> 
-    
+</script>
 </body>
 </html>
