@@ -1301,8 +1301,8 @@ window.closeMapPicker = function () {
             });
         }
 
-        document.getElementById('mapPickerCoords').textContent =
-            `📍 ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        document.getElementById('mapPickerCoords').innerHTML =
+            `<i class="fa-solid fa-location-dot"></i> ${lat.toFixed(6)}, ${lng.toFixed(6)}`;
     }
 
     window.searchMapLocation = async function(query) {

@@ -13,8 +13,10 @@
   "type": "commonjs",
   "dependencies": {
     "@google/genai": "^2.7.0",
+    "@huggingface/transformers": "^4.2.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
+    "chromadb": "^3.4.3",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

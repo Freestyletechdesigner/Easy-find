@@ -76,7 +76,8 @@ const AGENT_POST = require('./routes/agent-upload.js');
 const VIEW_POST = require('./routes/view-post.js');
 const PAYMENT_FOR_BOOST = require('./routes/payment-for-boost.js');
 const FEEDBACK = require('./routes/feedback.js');
-const SEARCH_ENGINE = require('./routes/agent-search-engine.js');
+const SEARCH_ENGINE     = require('./routes/agent-search-engine.js');
+const PROPERTY_SEARCH   = require('./routes/property-search.js');
 const PROPERTY_REPORT = require('./routes/property-report.js');
 const NIN_VERIFICATION = require('./routes/agent-verification.js');
 
@@ -385,6 +386,7 @@ agentProfileUpload(app);
 AGENT_POST(app);
 VIEW_POST(app);
 SEARCH_ENGINE(app);
+PROPERTY_SEARCH(app);
 PAYMENT_FOR_BOOST(app);
 FEEDBACK(app);
 PROPERTY_REPORT(app);

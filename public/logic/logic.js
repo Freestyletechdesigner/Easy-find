@@ -355,111 +355,168 @@
     });
 
 
-    //normal search
-    const searchSection = document.getElementById('search-bar');
-    const searchBar = document.getElementById('search');
-    const searchClear = document.getElementById('searchClear');
+    // AI Property + Agent Search
+    const searchSection  = document.getElementById('search-bar');
+    const searchBar      = document.getElementById('search');
+    const searchClear    = document.getElementById('searchClear');
+    const holdListAgent  = document.getElementById('search-agent-list');
+    const searchInput    = document.getElementById('search');
 
-    searchBar.addEventListener('input', () => {
-        // show/hide clear button
-        if (searchClear) searchClear.style.display = searchBar.value ? 'block' : 'none';
+    let aiSearchActive = false;
 
-        const cards = document.querySelectorAll('.listing-card');
-        let search = searchBar.value.toLowerCase();
-
-        cards.forEach(card => {
-            let dataName = card.getAttribute('data-title').toLowerCase();
-            let dataLocation = card.getAttribute('data-location').toLowerCase();
-            let dataPrice = card.getAttribute('data-price');
-            let dataRoom = card.getAttribute('data-room');
-
-            card.style.display = (
-                dataName.includes(search) ||
-                dataLocation.includes(search) ||
-                dataPrice.includes(search) ||
-                dataRoom.includes(search)
-            ) ? '' : 'none';
-        });
-        document.getElementById('loadMoreBtn').style.display = 'none'
-    });
-
-    //search for agent
-const holdListAgent = document.getElementById('search-agent-list');
-const searchInput = document.getElementById('search');
-
-// Debounce helper to prevent spamming the backend
-function debounce(func, delay) {
-    let timeoutId;
-    return (...args) => {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => func.apply(this, args), delay);
-    };
-}
-
-// Actual API fetcher based on input value
-async function fetchAndRenderAgents(query) {
-    try {
-        const res = await fetch(`/api/search/agent?q=${encodeURIComponent(query)}`);
-        const data = await res.json();
-
-        if (!data.success) return;
-
-        renderAgents(data.agents);
-        
-        const loadMoreBtn = document.getElementById('loadMoreBtn');
-        if (loadMoreBtn) loadMoreBtn.style.display = 'none';
-    } catch (error) {
-        console.error('Search agent error:', error);
+    function debounce(func, delay) {
+        let timeoutId;
+        return (...args) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => func.apply(this, args), delay);
+        };
     }
-}
 
-// Main logic coordinator
-function initSearch() {
-    if (!searchInput) return;
+    // Build coloured pills showing what the AI parsed from the query
+    function buildUnderstoodBadge(parsed) {
+        if (!parsed) return '';
+        const pills = [];
+        const pill = (icon, label) =>
+            `<span style="background:#e6f7f5;color:#0d7068;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:500;">${icon} ${label}</span>`;
+        if (parsed.type)     pills.push(pill('<i class="fa-solid fa-house"></i>', parsed.type));
+        if (parsed.category) pills.push(pill('<i class="fa-solid fa-tag"></i>', parsed.category === 'shortlet' ? 'Short-let' : parsed.category === 'rent' ? 'For Rent' : 'For Sale'));
+        if (parsed.minBeds !== null && parsed.maxBeds !== null && parsed.minBeds === parsed.maxBeds)
+                             pills.push(pill('<i class="fa-solid fa-bed"></i>', `${parsed.minBeds} bed${parsed.minBeds !== 1 ? 's' : ''}`));
+        else if (parsed.minBeds !== null) pills.push(pill('<i class="fa-solid fa-bed"></i>', `≥${parsed.minBeds} bed room`));
+        else if (parsed.maxBeds !== null) pills.push(pill('<i class="fa-solid fa-bed"></i>', `≤${parsed.maxBeds} bed room`));
+        if (parsed.maxPrice) pills.push(pill('<i class="fa-solid fa-sack-dollar"></i>', `under ₦${Number(parsed.maxPrice).toLocaleString()}`));
+        if (parsed.minPrice) pills.push(pill('<i class="fa-solid fa-sack-dollar"></i>', `above ₦${Number(parsed.minPrice).toLocaleString()}`));
+        if (parsed.location) pills.push(pill('<i class="fa-solid fa-location-dot"></i>', parsed.location));
+        return pills.join(' ');
+    }
 
-    // Listen to typing, but debounced
-    searchInput.addEventListener('input', debounce((e) => {
-        const searchValue = e.target.value.trim();
-        
-        if (!searchValue) {
-            holdListAgent.style.display = 'none';
+    // AI Property Search — replaces cards in the grid
+    async function fetchAndRenderProperties(query) {
+        try {
+            const grid = document.getElementById('cardsContainer');
+            grid.innerHTML = Array(4).fill(`
+                <div class="skeleton-card">
+                    <div class="skeleton skeleton-img"></div>
+                    <div class="skeleton-body">
+                        <div class="skeleton skeleton-line" style="width:60%"></div>
+                        <div class="skeleton skeleton-line" style="width:40%"></div>
+                        <div class="skeleton skeleton-line" style="width:80%"></div>
+                    </div>
+                </div>
+            `).join('');
+
+            const res  = await fetch(`/api/search/property?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+
+            grid.innerHTML = '';
+            document.getElementById('loadMoreBtn').style.display = 'none';
+            aiSearchActive = true;
+
+            if (!data.success || !data.properties.length) {
+                const understood = buildUnderstoodBadge(data.parsed);
+                grid.innerHTML = `
+                    <div style="grid-column:1/-1;text-align:center;padding:50px 20px;color:#888;">
+                        ${understood ? `<div style="margin-bottom:12px;">${understood}</div>` : ''}
+                        <p style="font-size:15px;">No properties found matching your search. Try different keywords.</p>
+                        <button onclick="clearAISearch()" style="margin-top:16px;background:#0d7068;color:#fff;border:none;border-radius:20px;padding:8px 20px;font-size:13px;cursor:pointer;">Show all properties</button>
+                    </div>`;
+                return;
+            }
+
+            const understood = buildUnderstoodBadge(data.parsed);
+            if (understood) {
+                const badgeRow = document.createElement('div');
+                badgeRow.id = 'ai-understood-row';
+                badgeRow.style.cssText = 'grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:0 4px 12px;';
+                badgeRow.innerHTML = `<span style="font-size:13px;color:#555;"><i class="fa-solid fa-robot"></i>:</span> ${understood}
+                    <button onclick="clearAISearch()" style="margin-left:auto;background:#f2f2f2;border:none;border-radius:20px;padding:4px 14px;font-size:12px;cursor:pointer;color:#555;">✕ Clear</button>`;
+                grid.appendChild(badgeRow);
+            }
+
+            data.properties.forEach(p => {
+                grid.insertAdjacentHTML('beforeend', propertyCard(p));
+            });
+
+            window.dispatchEvent(new Event('scroll'));
+        } catch (err) {
+            console.error('AI property search error:', err);
+        }
+    }
+
+    // Clear AI search and restore normal feed
+    window.clearAISearch = function() {
+        searchBar.value = '';
+        if (searchClear) searchClear.style.display = 'none';
+        holdListAgent.style.display = 'none';
+        aiSearchActive = false;
+        uploadProperty();
+    };
+
+    // Agent dropdown search
+    async function fetchAndRenderAgents(query) {
+        try {
+            const res  = await fetch(`/api/search/agent?q=${encodeURIComponent(query)}`);
+            const data = await res.json();
+            if (!data.success) return;
+            renderAgents(data.agents);
+        } catch (err) {
+            console.error('Search agent error:', err);
+        }
+    }
+
+    function renderAgents(agents) {
+        if (agents.length === 0) {
+            holdListAgent.innerHTML = '<div class="agent-search-empty">No agents found</div>';
+            holdListAgent.style.display = 'block';
             return;
         }
-        
-        fetchAndRenderAgents(searchValue);
-    }, 300)); // 300ms wait time
-
-    // Hide dropdown when clicking outside
-    document.addEventListener('click', (e) => {
-        if (!searchInput.contains(e.target) && !holdListAgent.contains(e.target)) {
-            holdListAgent.style.display = 'none';
-        }
-    });
-}
-
-function renderAgents(agents) {
-    if (agents.length === 0) {
-        holdListAgent.innerHTML = '<div class="agent-search-empty">No agents found</div>';
+        holdListAgent.innerHTML = agents.map(a => `
+            <a href="/agent-profile?id=${a._id}" class="agent-search-item">
+                <div class="agent-search-avatar">
+                    ${a.profilePicture
+                        ? `<img src="${a.profilePicture}" alt="${a.name}">`
+                        : `<span>${a.name ? a.name[0].toUpperCase() : '?'}</span>`
+                    }
+                </div>
+                <div class="agent-search-info">
+                    <p class="agent-search-name">${a.name}</p>
+                    <p class="agent-search-stand">${a.stand && a.stand.toLowerCase() === 'verified agent' ? '<i class="fa-solid fa-circle-check"></i> ' + a.stand : ''}</p>
+                </div>
+            </a>
+        `).join('');
         holdListAgent.style.display = 'block';
-        return;
     }
-    
-    holdListAgent.innerHTML = agents.map(a => `
-        <a href="/agent-profile?id=${a._id}" class="agent-search-item">
-            <div class="agent-search-avatar">
-                ${a.profilePicture
-                    ? `<img src="${a.profilePicture}" alt="${a.name}">`
-                    : `<span>${a.name[0].toUpperCase()}</span>`
-                }
-            </div>
-            <div class="agent-search-info">
-                <p class="agent-search-name">${a.name}</p>
-                <p class="agent-search-stand">${a.stand && a.stand.toLowerCase() === 'verified agent' ? `<i class="fa-solid fa-circle-check"></i> ${a.stand}` : ''}</p>
-            </div>
-        </a>
-    `).join('');
-    holdListAgent.style.display = 'block';
-}
+
+    // Combined debounced handler — fires both property AI + agent dropdown
+    const handleSearch = debounce((value) => {
+        if (!value) {
+            holdListAgent.style.display = 'none';
+            if (aiSearchActive) { aiSearchActive = false; uploadProperty(); }
+            return;
+        }
+        fetchAndRenderAgents(value);
+        fetchAndRenderProperties(value);
+    }, 400);
+
+    function initSearch() {
+        if (!searchInput) return;
+
+        searchInput.addEventListener('input', (e) => {
+            const value = e.target.value.trim();
+            if (searchClear) searchClear.style.display = value ? 'block' : 'none';
+            handleSearch(value);
+        });
+
+        if (searchClear) {
+            searchClear.addEventListener('click', () => { window.clearAISearch(); });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !holdListAgent.contains(e.target)) {
+                holdListAgent.style.display = 'none';
+            }
+        });
+    }
 
 // Call once on DOM ready
 initSearch();
