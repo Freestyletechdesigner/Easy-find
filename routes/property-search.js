@@ -15,8 +15,9 @@ const { parsePropertyQuery, learnLocations } = require('../ai/property-parser.js
 
 function PROPERTY_SEARCH(app) {
 
-    // Learn locations from DB on startup, then refresh every 10 min
-    learnLocations(AgentPost);
+    // Learn locations from DB after a short delay to ensure DB is connected,
+    // then refresh every 10 minutes so new agent locations are picked up
+    setTimeout(() => learnLocations(AgentPost), 5000);
     setInterval(() => learnLocations(AgentPost), 10 * 60 * 1000);
 
     app.get('/api/search/property', async (req, res) => {

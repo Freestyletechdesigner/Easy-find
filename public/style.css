@@ -3234,3 +3234,182 @@ header {
     backface-visibility: hidden;
     will-change: transform;
 }
+/* Container Box - Sized specifically for inline forms/bars */
+.ai-search-companion {
+    position: relative;
+    width: 45px;
+    height: 45px;
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 8px;
+    perspective: 200px;
+}
+
+/* Floating Shadow */
+.ai-search-companion .agent-shadow {
+    position: absolute;
+    bottom: 2px;
+    left: 12px;
+    width: 20px;
+    height: 3px;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 50%;
+    animation: companionShadow 5s ease-in-out infinite;
+}
+
+/* Torso Base */
+.ai-search-companion .agent-body {
+    position: absolute;
+    bottom: 6px;
+    left: 11px;
+    width: 22px;
+    height: 18px;
+    background: linear-gradient(135deg, #31d9f777, #003a37);
+    border-radius: 8px;
+    box-shadow: 0 3px 8px rgba(29, 78, 216, 0.3);
+}
+
+/* Humanistic Head Motion */
+.ai-search-companion .agent-head {
+    position: absolute;
+    top: 4px;
+    left: 9px;
+    width: 26px;
+    height: 22px;
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    border-radius: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    transform-origin: bottom center;
+    animation: companionHead 5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 5;
+}
+
+/* Visor Screen */
+.ai-search-companion .agent-visor {
+    width: 20px;
+    height: 11px;
+    background: #1e293b;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 2px;
+    box-sizing: border-box;
+}
+
+/* Glowing Eyes */
+.ai-search-companion .agent-eye {
+    width: 3.5px;
+    height: 3.5px;
+    background-color: #38bdf8;
+    border-radius: 50%;
+    box-shadow: 0 0 4px #38bff8;
+    animation: companionBlink 3.5s infinite;
+}
+
+/* Left Balance Arm */
+.ai-search-companion .agent-arm-left {
+    position: absolute;
+    left: 5px;
+    top: 24px;
+    width: 5px;
+    height: 11px;
+    background: linear-gradient(to bottom, #e2e8f0, #cbd5e1);
+    border-radius: 3px;
+    transform-origin: top center;
+    animation: companionLeftArm 2.5s ease-in-out infinite alternate;
+}
+
+/* Right Scanning Arm Assembly */
+.ai-search-companion .agent-arm-right-container {
+    position: absolute;
+    right: 3px;
+    top: 22px;
+    width: 16px;
+    height: 20px;
+    transform-origin: 3px 3px;
+    animation: companionRightArm 4s ease-in-out infinite;
+    z-index: 10;
+}
+
+.ai-search-companion .agent-arm-right {
+    width: 5px;
+    height: 11px;
+    background: linear-gradient(to bottom, #cbd5e1, #94a3b8);
+    border-radius: 3px;
+    transform: rotate(-25deg);
+}
+
+/* Gripping Hand Point */
+.ai-search-companion .agent-hand-grip {
+    position: absolute;
+    left: 2px;
+    top: 7px;
+    width: 6px;
+    height: 6px;
+    background: #cbd5e1;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Handheld Glass Tool */
+.ai-search-companion .agent-magnifying-glass {
+    position: absolute;
+    bottom: 2px;
+    left: -2px;
+    width: 9px;
+    height: 9px;
+    border: 1.5px solid #f59e0b;
+    border-radius: 50%;
+    background: rgba(245, 158, 11, 0.08);
+    box-shadow: 0 0 4px rgba(245, 158, 11, 0.4);
+    transform: rotate(-15deg);
+}
+
+/* Tool Handle */
+.ai-search-companion .agent-magnifying-glass::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 3.5px;
+    width: 1.5px;
+    height: 8px;
+    background-color: #d97706;
+    border-radius: 1px;
+}
+
+/* --- Micro Animations --- */
+@keyframes companionHead {
+    0%, 100% { transform: translateY(0) rotateX(0deg) rotateY(0deg); }
+    20% { transform: translateY(0.5px) rotateX(8deg) rotateY(-10deg); }
+    40% { transform: translateY(-0.5px) rotateX(-4deg) rotateY(12deg); }
+    65% { transform: translateY(0.5px) rotateX(6deg) rotateY(8deg); }
+    85% { transform: translateY(-0.5px) rotateX(-6deg) rotateY(-6deg); }
+}
+
+@keyframes companionRightArm {
+    0%, 100% { transform: rotate(0deg) translateY(0); }
+    30% { transform: rotate(-16deg) translateX(-1px); }
+    70% { transform: rotate(10deg) translateY(1px); }
+}
+
+@keyframes companionLeftArm {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(8deg); }
+}
+
+@keyframes companionBlink {
+    0%, 88%, 94%, 100% { transform: scaleY(1); }
+    91%, 97% { transform: scaleY(0.1); }
+}
+
+@keyframes companionShadow {
+    0%, 100% { transform: scaleX(1); opacity: 0.7; }
+    40% { transform: scaleX(1.1); opacity: 0.4; }
+    85% { transform: scaleX(0.9); opacity: 0.8; }
+}
