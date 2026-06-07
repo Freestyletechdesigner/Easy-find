@@ -356,7 +356,7 @@ header {
     position: relative ;
     top: 90px;
     cursor: pointer;
-    transition: all 1s;
+    transition: all 0.5s;
 }
 .hold-hero-text>a:hover {
     color: #fff;
