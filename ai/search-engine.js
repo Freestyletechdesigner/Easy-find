@@ -67,6 +67,7 @@ const SYNONYM_MAP = {
 
 // ─── Stop Words (ignored during indexing & search) ───────────────────────────
 const STOP_WORDS = new Set([
+    // --- English Stop Words ---
     'a','an','the','and','or','but','in','on','at','to','for','of','with',
     'by','from','is','are','was','were','be','been','has','have','had',
     'do','does','did','will','would','could','should','may','might','shall',
@@ -76,9 +77,25 @@ const STOP_WORDS = new Set([
     'than','then','when','where','who','which','what','how','why','very',
     'just','also','about','up','out','so','into','after','before','over',
     'between','through','during','above','below','off','again','further',
-    'am','its','been','being','me','him','us','them','can','own','same',
-]);
+    'am','being','me','him','us','them','can','own','same',
+    'give','tell','say','like','take','get','go','come','see','know','think',
 
+    // --- Nigerian Pidgin Grammar & Slang Stop Words ---
+    'dey', 'wey', 'for', 'na', 'am', 'dem', 'im', 'unah', 'wunah', 'una',
+    'con', 'come', 'don', 'go', 'won', 'wan', 'want', 'make', 'tori', 'say',
+    'dat', 'dis', 'dose', 'dese', 'wit', 'inside', 'bifor', 'afta', 'abi', 
+    'shebi', 'sef', 'o', 'oh', 'jare', 'baba', 'guy', 'abeg', 'please',
+    'wetin','e','vex','omo','sabi','sabbi','wahala','u',
+    'oga', 'bros', 'chairman', 'madam', 'aunty', 'uncle',
+    'ogaatop', 'area', 'person', 'people', 'pikin', 'pikins',
+    'en', 'hin', 'ham', 'demself', 'yourself', 'myself',
+    'ourselves', 'themselves', 'dash', 'borrow', 'lend',
+    'carry', 'bring', 'leave', 'waka',
+    'chop', 'drink', 'sleep', 'sit',
+    'hear', 'ask', 'answer', 'talk', 'yan', 'greet',
+    'open', 'close', 'hold', 'drop', 'send',
+    'fit', 'must', 'suppose', 'gats', 'gat', 'need', 'bin', 'de'
+]);
 // ─── Porter Stemmer (lightweight — handles the most common English suffixes) ──
 function stem(word) {
     if (word.length < 4) return word;
