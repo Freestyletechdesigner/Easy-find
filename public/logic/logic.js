@@ -521,6 +521,106 @@
 // Call once on DOM ready
 initSearch();
 
+// ── Voice Search (Push-to-Talk) ───────────────────────────────────────────────
+// Hold the mic button → speak → release → search fires automatically
+(function initVoiceSearch() {
+    const micBtn  = document.getElementById('searchMic');
+    const micIcon = document.getElementById('micIcon');
+    const input   = document.getElementById('search');
+
+    if (!micBtn) return;
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+        micBtn.style.display = 'none';
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang           = 'en-NG';
+    recognition.continuous     = false;
+    recognition.interimResults = true;
+
+    let isListening  = false;
+    let finalText    = '';
+
+    function startListening() {
+        if (isListening) return;
+        finalText = '';
+        try {
+            recognition.start();
+        } catch (e) { /* already started */ }
+    }
+
+    function stopListening() {
+        if (!isListening) return;
+        recognition.stop();
+    }
+
+    // ── Mouse events (desktop) ────────────────────────────
+    micBtn.addEventListener('mousedown',  (e) => { e.preventDefault(); startListening(); });
+    micBtn.addEventListener('mouseup',    ()  => stopListening());
+    micBtn.addEventListener('mouseleave', ()  => { if (isListening) stopListening(); });
+
+    // ── Touch events (mobile) ─────────────────────────────
+    micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startListening(); }, { passive: false });
+    micBtn.addEventListener('touchend',   (e) => { e.preventDefault(); stopListening();  }, { passive: false });
+
+    // ── Recognition lifecycle ─────────────────────────────
+    recognition.addEventListener('start', () => {
+        isListening = true;
+        micBtn.classList.add('listening');
+        micIcon.className    = 'fa-solid fa-microphone-lines';
+        input.placeholder    = 'Listening... speak now';
+    });
+
+    recognition.addEventListener('result', (e) => {
+        let interim = '';
+        finalText   = '';
+        for (const result of e.results) {
+            if (result.isFinal) finalText  += result[0].transcript;
+            else                interim    += result[0].transcript;
+        }
+        // Show live transcription in the input while holding
+        input.value = finalText || interim;
+        const clearBtn = document.getElementById('searchClear');
+        if (clearBtn) clearBtn.style.display = input.value ? 'block' : 'none';
+    });
+
+    recognition.addEventListener('end', () => {
+        isListening           = false;
+        micBtn.classList.remove('listening');
+        micIcon.className     = 'fa-solid fa-microphone';
+        input.placeholder     = 'Street, location, price, or agent name...';
+
+        // Use finalText if available, fall back to whatever is in the input
+        const query = (finalText || input.value).trim();
+        if (query) {
+            input.value = query;
+            const clearBtn = document.getElementById('searchClear');
+            if (clearBtn) clearBtn.style.display = 'block';
+            handleSearch(query);
+        }
+    });
+
+    recognition.addEventListener('error', (e) => {
+        isListening           = false;
+        micBtn.classList.remove('listening');
+        micIcon.className     = 'fa-solid fa-microphone';
+        input.placeholder     = 'Street, location, price, or agent name...';
+
+        if (e.error === 'not-allowed') {
+            micBtn.title = 'Microphone access denied — allow it in browser settings';
+        } else if (e.error === 'no-speech') {
+            micBtn.title = 'No speech detected — try again';
+        } else {
+            micBtn.title = 'Voice error — try again';
+        }
+        setTimeout(() => { micBtn.title = 'Hold to speak'; }, 3000);
+    });
+})();
+
+
 
     //card load
     const btnShow = document.getElementById("loadMoreBtn");

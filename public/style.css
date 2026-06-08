@@ -578,6 +578,28 @@ header {
 }
 .search-clear:hover { color: #555; }
 
+/* ── Voice search mic button ─────────────────────────────── */
+.search-mic {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #aaa;
+    padding: 8px 10px;
+    font-size: 17px;
+    flex-shrink: 0;
+    transition: color 0.2s, transform 0.2s;
+    outline: none;
+}
+.search-mic:hover { color: #0d7068; }
+.search-mic.listening {
+    color: #e53e3e;
+    animation: mic-pulse 0.9s ease-in-out infinite;
+}
+@keyframes mic-pulse {
+    0%, 100% { transform: scale(1);    opacity: 1; }
+    50%       { transform: scale(1.35); opacity: 0.7; }
+}
+
 #search-agent-list {
     display: none;
     position: absolute;
