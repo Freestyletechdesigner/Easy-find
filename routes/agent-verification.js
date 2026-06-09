@@ -1,287 +1,309 @@
-const axios = require('axios');
+'use strict';
+
+const axios     = require('axios');
+const crypto    = require('crypto');
 const AgentUser = require('../model/AgentUser');
-const crypto = require('crypto');
+
+// ── Smile ID SDK ──────────────────────────────────────────────────────────────
+const smileIdentityCore = require('smile-identity-core');
+const Signature         = smileIdentityCore.Signature;
+
+// ── Smile ID config ───────────────────────────────────────────────────────────
+const SMILE_PARTNER_ID = process.env.SMILE_ID_PARTNER_ID;
+const SMILE_API_KEY    = process.env.SMILE_ID_API_KEY;
+const SMILE_ENV        = (process.env.SMILE_ID_ENVIRONMENT || 'sandbox').toLowerCase();
+const SMILE_SID_SERVER = SMILE_ENV === 'production' ? '1' : '0';
+const SMILE_BASE       = SMILE_ENV === 'production'
+    ? 'https://api.smileidentity.com/v1'
+    : 'https://testapi.smileidentity.com/v1';
+
+// Instantiate the SDK signature provider exactly as documented
+const signatureProvider = new Signature(SMILE_PARTNER_ID, SMILE_API_KEY);
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 function NIN_VERIFICATION(app) {
-    
-    // Middleware: Verifies if the agent is actively authenticated via session cookies
+
     function requireAgent(req, res, next) {
-        if (!req.session || !req.session.agent) {
+        if (!req.session?.agent) {
             return res.status(403).json({ success: false, message: 'Agent authentication required' });
         }
         next();
     }
 
-    // Middleware: Checks if payment status is valid directly from the database
     async function ensurePaidAgent(req, res, next) {
-        if (!req.session || !req.session.agent) {
+        if (!req.session?.agent) {
             return res.status(403).json({ success: false, message: 'Agent authentication required' });
         }
-
         const agentId = req.session.agent.id || req.session.agent._id;
-
         try {
             const agent = await AgentUser.findById(agentId);
-            
-            if (!agent || !agent.verifyPayment) {
-                return res.status(200).json({ 
-                    success: false, 
-                    redirectToPayment: true, 
-                    url: '/verification-payment' 
+            if (!agent?.verifyPayment) {
+                return res.status(200).json({
+                    success: false,
+                    redirectToPayment: true,
+                    url: '/verification-payment'
                 });
             }
-
-            // Sync session so future requests skip the DB hit
             req.session.agent.verifyPayment = true;
             next();
         } catch (err) {
-            console.error("Middleware verification state extraction error:", err);
-            return res.status(500).json({ success: false, message: "Internal verification lookup failure" });
+            console.error('ensurePaidAgent error:', err.message);
+            return res.status(500).json({ success: false, message: 'Internal error' });
         }
     }
 
-    // ── BUG FIX: This is the callback URL Paystack redirects to after payment.
-    // We CANNOT rely on the webhook having already fired (especially on localhost).
-    // Instead, we verify the payment reference directly with Paystack's API here.
-    // This is the correct pattern: webhook = background update, redirect = immediate confirmation.
-    app.get('/agent-verification', requireAgent, async (req, res) => {
-        const { reference, trxref } = req.query;
-        const paymentRef = reference || trxref;
-
-        // If no reference in query string — user navigated here directly, just check DB state
-        if (!paymentRef) {
-            const agentId = req.session.agent.id || req.session.agent._id;
-            try {
-                const agent = await AgentUser.findById(agentId);
-                if (agent && agent.verifyPayment) {
-                    req.session.agent.verifyPayment = true;
-                    return res.json({ success: true });
-                }
-                return res.json({ success: false, redirectToPayment: true, url: '/verification-payment' });
-            } catch (err) {
-                return res.status(500).json({ success: false, message: "DB lookup failed" });
-            }
-        }
-
-        // Reference exists — verify it directly with Paystack so we don't rely on webhook
-        try {
-            const paystackResponse = await axios.get(
-                `https://api.paystack.co/transaction/verify/${encodeURIComponent(paymentRef)}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
-                    }
-                }
-            );
-
-            const txData = paystackResponse.data?.data;
-
-            if (!txData || txData.status !== 'success') {
-                console.warn(`Payment verification failed for reference: ${paymentRef}`, txData?.status);
-                return res.json({ success: false, redirectToPayment: true, url: '/verification-payment' });
-            }
-
-            // Confirm the metadata matches this agent — prevents one agent using another's reference
-            const agentId = req.session.agent.id || req.session.agent._id;
-            const metaAgentId = txData.metadata?.agentId;
-
-            if (metaAgentId && metaAgentId.toString() !== agentId.toString()) {
-                console.error(`Security: agentId mismatch. Session: ${agentId}, Metadata: ${metaAgentId}`);
-                return res.status(403).json({ success: false, message: "Payment reference does not belong to this account" });
-            }
-
-            // Payment confirmed — update DB (idempotent: safe to call even if webhook already fired)
-            const updatedAgent = await AgentUser.findByIdAndUpdate(
-                agentId,
-                { verifyPayment: true },
-                { new: true }
-            );
-
-            if (!updatedAgent) {
-                return res.status(404).json({ success: false, message: "Agent not found" });
-            }
-
-            // Sync session immediately
-            req.session.agent.verifyPayment = true;
-
-            console.log(`Payment confirmed via redirect verification for agent: ${updatedAgent.email}`);
-            return res.json({ success: true });
-
-        } catch (err) {
-            console.error("Paystack redirect verification error:", err.response?.data || err.message);
-            return res.status(500).json({ success: false, message: "Could not verify payment with Paystack" });
-        }
-    });
-
-    // ── Paystack: Initialize Payment Endpoint ───────────────────
+    // ── Paystack: Initialize Verification Payment ─────────────────────────────
     app.post('/api/verification/initialize-payment', requireAgent, async (req, res) => {
         try {
             const agentId = req.session.agent.id || req.session.agent._id;
-            
-            const agent = await AgentUser.findById(agentId);
-            if (!agent) {
-                return res.status(404).json({ success: false, message: "Agent profile not found" });
-            }
+            const agent   = await AgentUser.findById(agentId);
 
-            // Guard: don't charge an agent who already paid
-            if (agent.verifyPayment) {
-                return res.json({ success: false, message: "Your account is already verified." });
-            }
-
-            const amountInKobo = 3000 * 100;
+            if (!agent)               return res.status(404).json({ success: false, message: 'Agent not found' });
+            if (agent.verifyPayment)  return res.json({ success: false, message: 'Already paid for verification' });
 
             const response = await axios.post(
                 'https://api.paystack.co/transaction/initialize',
                 {
-                    email: agent.email,
-                    amount: amountInKobo,
+                    email:        agent.email,
+                    amount:       3000 * 100,
                     callback_url: `${req.protocol}://${req.get('host')}/agent-verification`,
-                    metadata: {
-                        agentId: agentId.toString(),
-                        purpose: "verification_payment"
-                    }
+                    metadata:     { agentId: agentId.toString(), purpose: 'verification_payment' }
                 },
                 {
                     headers: {
-                        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+                        Authorization:  `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
                         'Content-Type': 'application/json'
                     }
                 }
             );
 
-            if (response.data && response.data.status) {
+            if (response.data?.status) {
                 res.json({
-                    success: true,
+                    success:           true,
                     authorization_url: response.data.data.authorization_url,
-                    reference: response.data.data.reference
+                    reference:         response.data.data.reference
                 });
             } else {
-                res.status(400).json({ success: false, message: "Transaction failed, please try again later" });
+                res.status(400).json({ success: false, message: 'Transaction initialization failed' });
             }
-
-        } catch (error) {
-            console.error("Paystack Initialization Error:", error.response?.data || error.message);
-            res.status(500).json({ success: false, message: "Network connection error, please try again later" });
+        } catch (err) {
+            console.error('Paystack init error:', err.response?.data || err.message);
+            res.status(500).json({ success: false, message: 'Could not initialize payment' });
         }
     });
 
-    // ── Paystack: Webhook Verification Receiver ───────────────────
-    // NOTE: This is a background safety net. The primary update now happens
-    // in GET /agent-verification above via direct Paystack API verification.
-    // The webhook handles cases where the user closes the browser before redirect.
+    // ── Paystack: Payment Redirect Handler ───────────────────────────────────
+    app.get('/agent-verification', requireAgent, async (req, res) => {
+        const { reference, trxref } = req.query;
+        const paymentRef = reference || trxref;
+        const agentId    = req.session.agent.id || req.session.agent._id;
+
+        if (!paymentRef) {
+            try {
+                const agent = await AgentUser.findById(agentId);
+                if (agent?.verifyPayment) {
+                    req.session.agent.verifyPayment = true;
+                    return res.sendFile(require('path').join(__dirname, '..', 'agent-verification', 'index.html'));
+                }
+                return res.redirect('/verification-payment');
+            } catch (err) {
+                return res.redirect('/verification-payment');
+            }
+        }
+
+        try {
+            const paystackRes = await axios.get(
+                `https://api.paystack.co/transaction/verify/${encodeURIComponent(paymentRef)}`,
+                { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
+            );
+
+            const txData = paystackRes.data?.data;
+            if (!txData || txData.status !== 'success') return res.redirect('/verification-payment');
+
+            const metaAgentId = txData.metadata?.agentId;
+            if (metaAgentId && metaAgentId.toString() !== agentId.toString()) {
+                return res.status(403).send('Payment reference mismatch');
+            }
+
+            await AgentUser.findByIdAndUpdate(agentId, { verifyPayment: true });
+            req.session.agent.verifyPayment = true;
+            return res.sendFile(require('path').join(__dirname, '..', 'agent-verification', 'index.html'));
+        } catch (err) {
+            console.error('Paystack verify error:', err.message);
+            return res.redirect('/verification-payment');
+        }
+    });
+
+    // ── Paystack: Webhook ────────────────────────────────────────────────────
     app.post('/api/verification/webhook', async (req, res) => {
         try {
-            if (!req.rawBody) {
-                console.error("Webhook Error: Raw body buffer was not captured.");
-                return res.status(400).json({ message: "Payload missing raw body context" });
-            }
+            if (!req.rawBody) return res.status(400).send('Missing raw body');
 
-            const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
-                               .update(req.rawBody)
-                               .digest('hex');
-                               
-            if (hash !== req.headers['x-paystack-signature']) {
-                console.error("Webhook Error: Signature verification failed.");
-                return res.status(401).json({ message: "Invalid transaction token signature header" });
-            }
+            const hash = crypto
+                .createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
+                .update(req.rawBody)
+                .digest('hex');
+
+            if (hash !== req.headers['x-paystack-signature']) return res.status(401).send('Invalid signature');
 
             const event = req.body;
-            const expiry = new Date();
-            expiry.setDate(expiry.getDate() + 30);
-
             if (event.event === 'charge.success') {
-                const metadata = event.data?.metadata;
-                
-                if (metadata && metadata.purpose === 'verification_payment' && metadata.agentId) {
-                    const cleanAgentId = String(metadata.agentId).trim();
-                    
-                    console.log(`Webhook: Updating verifyPayment for Agent ID: ${cleanAgentId}`);
-                    
-                    const updatedAgent = await AgentUser.findByIdAndUpdate(
-                        cleanAgentId, 
-                        {
-                            verifyPayment: true,
-                            boostAccount: true,
-                            boostAccountExpiry: expiry
-                        },
-                        { new: true }
-                    );
-
-                    if (!updatedAgent) {
-                        console.error(`Webhook DB Error: No agent found for ID: ${cleanAgentId}`);
-                    } else {
-                        console.log(`Webhook DB Success: verifyPayment=true for ${updatedAgent.email}`);
-                    }
+                const { purpose, agentId } = event.data?.metadata || {};
+                if (purpose === 'verification_payment' && agentId) {
+                    await AgentUser.findByIdAndUpdate(agentId.trim(), { verifyPayment: true });
+                    console.log(`[Verification] Payment confirmed for agent ${agentId}`);
                 }
             }
-
-            return res.sendStatus(200);
-
-        } catch (error) {
-            console.error("Paystack Webhook Error:", error.message);
-            return res.sendStatus(500);
+            res.sendStatus(200);
+        } catch (err) {
+            console.error('Verification webhook error:', err.message);
+            res.sendStatus(500);
         }
     });
 
-    // Enforced payment verification on the POST handler for NIN completion
-    app.post('/complete-verification', requireAgent, ensurePaidAgent, async (req, res) => {
+    // ── Smile ID: Generate Web Token ─────────────────────────────────────────
+    app.post('/api/smile/token', requireAgent, ensurePaidAgent, async (req, res) => {
         try {
-            const { referenceId } = req.body;
-            const userId = req.session.agent.id || req.session.agent._id;
-    
-            if (!referenceId || !userId) {
-                return res.status(400).json({ message: "Missing Reference ID or User ID" });
-            }
-    
-            const response = await axios.get(`https://api.dojah.io/api/v1/kyc/result?reference=${referenceId}`, {
-                headers: {
-                    'AppId': process.env.DOJAH_APP_ID,
-                    'Authorization': process.env.DOJAH_SECRET_KEY
+            const agentId   = req.session.agent.id || req.session.agent._id;
+            const timestamp = new Date().toISOString();
+            const jobId     = `easyfind_${agentId}_${Date.now()}`;
+
+            // SDK returns { signature: '...', timestamp: '...' } — extract both
+            const sigData = signatureProvider.generate_signature(timestamp);
+
+            const payload = {
+                partner_id:     SMILE_PARTNER_ID,
+                signature:      sigData.signature,
+                timestamp:      sigData.timestamp,
+                authorization:  sigData.signature,
+                user_id:        agentId.toString(),
+                job_id:         jobId,
+                job_type:       1,
+                product:        'biometric_kyc',
+                callback_url:   `${process.env.APP_URL?.split(',')[0] || 'http://localhost:9000'}/api/smile/callback`,
+                country:        'NG',
+                id_type:        'NIN',
+                sid_server:     SMILE_SID_SERVER,
+                partner_params: {
+                    job_id:  jobId,
+                    user_id: agentId.toString()
                 }
-            });
-    
-            const verification = response.data.entity;
-    
-            if (!verification || (verification.status !== 'Approved' && verification.status !== 'success')) {
-                 return res.status(400).json({ message: "Verification failed or is still pending." });
+            };
+
+            console.log('[Smile ID] Token request → URL:', `${SMILE_BASE}/token`);
+            console.log('[Smile ID] partner_id:', SMILE_PARTNER_ID, '| sid_server:', SMILE_SID_SERVER);
+            console.log('[Smile ID] timestamp:', sigData.timestamp);
+            console.log('[Smile ID] signature:', sigData.signature);
+
+            const response = await axios.post(`${SMILE_BASE}/token`, payload);
+
+            console.log('[Smile ID] Response status:', response.status);
+            console.log('[Smile ID] Response data:', JSON.stringify(response.data));
+
+            if (!response.data?.token) {
+                console.error('[Smile ID] Unexpected token response:', response.data);
+                return res.status(500).json({ success: false, message: 'Could not generate verification token' });
             }
-    
-            const updatedUser = await AgentUser.findByIdAndUpdate(
-                userId,
+
+            res.json({
+                success:    true,
+                token:      response.data.token,
+                partner_id: SMILE_PARTNER_ID,
+                sid_server: SMILE_SID_SERVER
+            });
+
+        } catch (err) {
+            console.error('[Smile ID] Token error:', err.response?.data || err.message);
+            res.status(500).json({ success: false, message: 'Verification service error. Please try again.' });
+        }
+    });
+
+    // ── Smile ID: Callback (Smile ID calls this after job completes) ──────────
+    app.post('/api/smile/callback', async (req, res) => {
+        try {
+            const { partner_params, Actions, ResultCode, ResultText, FullData } = req.body;
+            const agentId = partner_params?.user_id;
+
+            console.log(`[Smile ID] Callback for agent ${agentId}: ${ResultCode} — ${ResultText}`);
+
+            if (ResultCode === '0' && agentId) {
+                await AgentUser.findByIdAndUpdate(agentId, {
+                    isVerified: true,
+                    stand:      'Verified Agent',
+                    verificationData: {
+                        firstName:     FullData?.FullName?.split(' ')[0] || '',
+                        lastName:      FullData?.FullName?.split(' ').slice(1).join(' ') || '',
+                        dob:           FullData?.DOB || '',
+                        gender:        FullData?.Gender || '',
+                        nimcPhoto:     FullData?.Photo || '',
+                        referenceId:   partner_params?.job_id || '',
+                        livenessScore: Actions?.Liveness_Check === 'Passed' ? 1 : 0,
+                        verifiedAt:    new Date()
+                    }
+                });
+                console.log(`[Smile ID] Agent ${agentId} verified ✓`);
+            } else {
+                console.warn(`[Smile ID] Verification failed for ${agentId}: ${ResultText}`);
+            }
+
+            res.sendStatus(200);
+        } catch (err) {
+            console.error('[Smile ID] Callback error:', err.message);
+            res.sendStatus(500);
+        }
+    });
+
+    // ── Smile ID: Mark agent verified after successful widget completion ─────────
+    // Called directly from the frontend onSuccess — doesn't rely on Smile ID webhook
+    app.post('/api/smile/verify-complete', requireAgent, ensurePaidAgent, async (req, res) => {
+        try {
+            const agentId = req.session.agent.id || req.session.agent._id;
+
+            const updated = await AgentUser.findByIdAndUpdate(
+                agentId,
                 {
                     isVerified: true,
-                    stand: "Verified Agent",
-                    verificationData: {
-                        firstName: verification.first_name,
-                        lastName: verification.last_name,
-                        dob: verification.dob,
-                        vNIN: verification.vNIN || verification.nin,
-                        gender: verification.gender,
-                        nimcPhoto: verification.image,
-                        selfiePhoto: verification.selfie,
-                        referenceId: referenceId,
-                        livenessScore: verification.liveness_score,
-                        verifiedAt: new Date()
-                    }
+                    stand:      'Verified Agent',
+                    'verificationData.verifiedAt': new Date()
                 },
                 { new: true }
             );
-    
-            req.session.agent.stand = "Verified Agent";
+
+            if (!updated) {
+                return res.status(404).json({ success: false, message: 'Agent not found' });
+            }
+
+            // Sync session
+            req.session.agent.stand      = 'Verified Agent';
             req.session.agent.isVerified = true;
-    
-            res.status(200).json({
-                success: true,
-                message: "NIN and Face Verified Successfully",
-                user: updatedUser
-            });
-    
-        } catch (error) {
-            console.error("Dojah Verification Error:", error.response?.data || error.message);
-            res.status(500).json({ message: "Internal Server Error during verification" });
+
+            console.log(`[Smile ID] Agent ${agentId} marked as Verified Agent`);
+
+            res.json({ success: true, stand: 'Verified Agent' });
+        } catch (err) {
+            console.error('[Smile ID] verify-complete error:', err.message);
+            res.status(500).json({ success: false, message: 'Could not complete verification' });
         }
     });
 
+    // ── Smile ID: Poll result ─────────────────────────────────────────────────
+    app.get('/api/smile/result', requireAgent, async (req, res) => {
+        try {
+            const agentId = req.session.agent.id || req.session.agent._id;
+            const agent   = await AgentUser.findById(agentId).select('isVerified stand').lean();
+
+            if (agent?.isVerified) {
+                req.session.agent.stand      = 'Verified Agent';
+                req.session.agent.isVerified = true;
+                return res.json({ success: true, verified: true, stand: 'Verified Agent' });
+            }
+
+            res.json({ success: true, verified: false });
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Error checking verification status' });
+        }
+    });
 }
 
 module.exports = NIN_VERIFICATION;

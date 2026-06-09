@@ -11,12 +11,9 @@
             font-family: "HyperTrack";
             src: url("/agent-loged/fonts/Hyper-Track-BF6923fcf16dfa7.otf") format("opentype");
         }
-
         @font-face {
-          font-family: "Logo";
-          src: url("/agent-loged/fonts/LeagueSpartan-Bold.otf") format("opentype");
-          font-weight: normal;
-          font-style: normal;
+            font-family: "Logo";
+            src: url("/agent-loged/fonts/LeagueSpartan-Bold.otf") format("opentype");
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -25,11 +22,9 @@
             background: #e8f5f5;
             font-family: Arial, sans-serif;
             color: #111;
-            overflow-x: hidden;
             min-height: 100vh;
         }
 
-        /* ── HEADER ─────────────────────────── */
         header {
             display: flex;
             justify-content: space-between;
@@ -39,68 +34,32 @@
             margin: 12px auto;
             padding: 10px 24px;
             border-radius: 14px;
-            background: #ffffff;
+            background: #fff;
             box-shadow: 0 4px 16px rgba(0,0,0,0.08);
             position: sticky;
             top: 10px;
             z-index: 100;
         }
-
-        .logo {
-            font-family: "HyperTrack", cursive;
-            font-size: 1.1rem;
-            text-decoration: none;
-            color: #000;
-        }
-        .logo span {
-            color: #fff;
-            background: #050;
-            padding: 2px 8px;
-            margin-right: 4px;
-            border-radius: 8px;
-            font-family: "Logo";
-            font-size: 2rem;
-        }
-
-        header nav a {
-            text-decoration: none;
-            color: #333;
-            font-weight: 600;
-            padding: 8px 14px;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
+        .logo { font-family: "HyperTrack", cursive; font-size: 1.1rem; text-decoration: none; color: #000; }
+        .logo span { color: #fff; background: #050; padding: 2px 8px; margin-right: 4px; border-radius: 8px; font-family: "Logo"; font-size: 2rem; }
+        header nav a { text-decoration: none; color: #333; font-weight: 600; padding: 8px 14px; border-radius: 8px; transition: background 0.2s; }
         header nav a:hover { background: #eee; }
 
-        /* ── PAGE ANIMATIONS ────────────────── */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-20px); }
-            to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50%       { opacity: 0.5; }
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes fadeInUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
 
-        /* ── MAIN CONTAINER ─────────────────── */
         .page-wrap {
-            max-width: 780px;
-            margin: 30px auto 60px;
+            max-width: 680px;
+            margin: 40px auto 80px;
             padding: 0 16px;
             animation: fadeInUp 0.7s ease-out;
         }
 
-        /* ── HERO BADGE ─────────────────────── */
-        .hero-badge {
+        /* Hero */
+        .hero {
             text-align: center;
-            margin-bottom: 28px;
+            margin-bottom: 32px;
         }
         .badge-pill {
             display: inline-flex;
@@ -114,280 +73,74 @@
             border-radius: 50px;
             letter-spacing: 1px;
             text-transform: uppercase;
-            animation: pulse 2.5s infinite;
             border: 1px solid #b2d8b2;
+            animation: pulse 2.5s infinite;
         }
-        .hero-badge h1 {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #050;
-            margin: 12px 0 6px;
-        }
-        .hero-badge p {
-            color: #555;
-            font-size: 0.95rem;
-        }
+        .hero h1 { font-size: 2rem; font-weight: 800; color: #050; margin: 14px 0 8px; }
+        .hero p  { color: #555; font-size: 0.95rem; line-height: 1.6; }
 
-        /* ── CARD ───────────────────────────── */
+        /* Cards */
         .card {
             background: #fff;
             border-radius: 16px;
             padding: 28px;
             box-shadow: 0 4px 20px rgba(0,0,0,0.07);
             margin-bottom: 20px;
-            animation: slideInLeft 0.5s ease-out;
         }
 
-        /* ── STEP TITLE ─────────────────────── */
-        .step-title {
+        /* Step list */
+        .steps {
             display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 28px;
         }
-        .step-num {
-            width: 32px;
-            height: 32px;
-            background: #050;
-            color: #fff;
+        .step-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+        .step-circle {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            background: #f0faf0;
+            border: 2px solid #050;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
             font-size: 0.85rem;
-            flex-shrink: 0;
-        }
-        .step-title h3 {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #050;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        /* ── AGENT TYPE TOGGLE ──────────────── */
-        .type-toggle {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .type-option {
-            flex: 1;
-            min-width: 140px;
-            border: 2px solid #ddd;
-            border-radius: 12px;
-            padding: 14px 18px;
-            cursor: pointer;
-            transition: all 0.25s;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            color: #555;
-        }
-        .type-option input { display: none; }
-        .type-option i { font-size: 1.2rem; color: #aaa; transition: color 0.2s; }
-        .type-option.selected {
-            border-color: #050;
-            background: #f0faf0;
             color: #050;
         }
-        .type-option.selected i { color: #050; }
+        .step-row.done .step-circle { background: #050; color: #fff; border-color: #050; }
+        .step-text h4 { font-size: 0.92rem; color: #222; margin-bottom: 2px; }
+        .step-text p  { font-size: 0.82rem; color: #777; }
 
-        /* ── FORM FIELDS ────────────────────── */
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-        .form-group {
+        /* Already verified */
+        .verified-banner {
             display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .form-group.full { grid-column: 1 / -1; }
-
-        label {
-            font-size: 0.82rem;
-            font-weight: 700;
-            color: #444;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-
-        input[type="text"],
-        input[type="tel"],
-        input[type="email"],
-        textarea,
-        select {
-            padding: 11px 14px;
-            border: 1.5px solid #ddd;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            background: #fafafa;
-            color: #222;
-            transition: border 0.2s, box-shadow 0.2s;
-            outline: none;
-            width: 100%;
-            font-family: Arial, sans-serif;
-        }
-        input:focus, textarea:focus, select:focus {
-            border-color: #050;
-            background: #fff;
-            box-shadow: 0 0 0 3px rgba(0, 80, 0, 0.08);
-        }
-        textarea { resize: vertical; min-height: 90px; }
-
-        /* ── CAMERA BOX ─────────────────────── */
-        .camera-wrap {
-            display: flex;
-            flex-direction: column;
             align-items: center;
             gap: 14px;
+            background: #e6f4ea;
+            border: 1.5px solid #86c98a;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
         }
-        .camera-box {
+        .verified-banner i { font-size: 1.8rem; color: #2e7d32; }
+        .verified-banner strong { color: #1b5e20; font-size: 1rem; display: block; }
+        .verified-banner span  { color: #388e3c; font-size: 0.85rem; }
+
+        /* Verify button */
+        .btn-start {
             width: 100%;
-            max-width: 320px;
-            height: 240px;
-            background: #0f172a;
-            border-radius: 16px;
-            overflow: hidden;
-            position: relative;
-            border: 3px solid #050;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-        }
-        .camera-box video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .camera-overlay {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(0,0,0,0.5);
-            color: #fff;
-            font-size: 0.85rem;
-            text-align: center;
             padding: 16px;
-        }
-        .cam-status {
-            font-size: 0.82rem;
-            color: #666;
-            text-align: center;
-        }
-
-/* -- TECH-SCANNER BUTTON STYLE -- */
-.btn-verify-id {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 30px;
-    background: #fff;
-    border: 2px solid #050;
-    color: #000; 
-    border-radius: 12px;
-    font-weight: 800;
-    font-size: 0.8rem;
-    cursor: pointer;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
-}
-
-/* 1. The Glowing "Breathe" Animation */
-@keyframes buttonBreathe {
-    0% { box-shadow: 0 0 5px rgba(0, 255, 0, 0.2); }
-    50% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); }
-    100% { box-shadow: 0 0 5px rgba(0, 255, 0, 0.2); }
-}
-.btn-verify-id:not(.verified) {
-    animation: buttonBreathe 2s infinite ease-in-out;
-}
-
-/* 2. The Moving Scanning Laser */
-.btn-verify-id::before {
-    content: "";
-    position: absolute;
-    top: -100%;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: #0f0;
-    box-shadow: 0 0 15px #0f0, 0 0 30px #0f0;
-    opacity: 0;
-    z-index: 2;
-}
-
-.btn-verify-id:hover::before {
-    opacity: 1;
-    animation: laserScan 1.5s infinite linear;
-}
-
-@keyframes laserScan {
-    0% { top: -10%; }
-    100% { top: 110%; }
-}
-
-/* 3. Holographic Shimmer on Hover */
-.btn-verify-id:hover {
-    color: #fff;
-    background: #050;
-    border-color: #0f0;
-    transform: translateY(-2px);
-}
-
-/* 4. Fingerprint Icon Spin/Pulse */
-.btn-verify-id:hover i {
-    animation: pulseIcon 1s infinite;
-}
-
-@keyframes pulseIcon {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.3); opacity: 0.7; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* Verified State (Locked in Green) */
-.btn-verify-id.verified {
-    background: #1b4332;
-    border-color: #2d6a4f;
-    color: #d8f3dc;
-    pointer-events: none;
-    animation: none;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
-}
-
-        /* ── TERMS ──────────────────────────── */
-        .terms-row {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-            font-size: 0.875rem;
-            color: #555;
-        }
-        .terms-row input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            flex-shrink: 0;
-            margin-top: 2px;
-            accent-color: #050;
-        }
-
-        /* ── SUBMIT BUTTON ──────────────────── */
-        .btn-submit {
-            width: 100%;
-            padding: 15px;
             background: #050;
             color: #fff;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
@@ -396,154 +149,68 @@
             align-items: center;
             justify-content: center;
             gap: 10px;
-            letter-spacing: 0.5px;
+            box-shadow: 0 4px 16px rgba(0,80,0,0.25);
+            position: relative;
+            overflow: hidden;
         }
-        .btn-submit:hover {
-            background: #033;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0,80,0,0.25);
+        .btn-start:hover:not(:disabled) { background: #033; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,80,0,0.3); }
+        .btn-start:disabled { background: #aaa; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Laser scan animation on button */
+        .btn-start::after {
+            content: '';
+            position: absolute;
+            top: -100%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: #0f0;
+            box-shadow: 0 0 10px #0f0;
+            opacity: 0;
         }
-        .btn-submit:active { transform: translateY(0); }
-        .btn-submit:disabled { background: #aaa; cursor: not-allowed; transform: none; }
-        .btn-submit .spinner {
+        .btn-start.scanning::after {
+            opacity: 1;
+            animation: laser 1.2s infinite linear;
+        }
+        @keyframes laser { 0% { top: -5%; } 100% { top: 105%; } }
+
+        .spinner {
             width: 18px; height: 18px;
-            border: 2px solid rgba(255,255,255,0.4);
+            border: 2px solid rgba(255,255,255,0.35);
             border-top-color: #fff;
             border-radius: 50%;
             animation: spin 0.7s linear infinite;
             display: none;
         }
 
-        /* ── RESPONSIVE ─────────────────────── */
+        /* Status message */
+        .status-msg {
+            text-align: center;
+            margin-top: 14px;
+            font-size: 0.88rem;
+            color: #555;
+            min-height: 20px;
+        }
+        .status-msg.success { color: #2e7d32; font-weight: 600; }
+        .status-msg.error   { color: #c62828; font-weight: 600; }
+
+        /* Info note */
+        .info-note {
+            background: #f0f7ff;
+            border-left: 3px solid #1976d2;
+            border-radius: 0 10px 10px 0;
+            padding: 12px 16px;
+            font-size: 0.84rem;
+            color: #1565c0;
+            margin-top: 16px;
+        }
+
+        footer { text-align: center; padding: 25px 0; font-size: 14px; color: #666; }
+        footer a { color: #050; text-decoration: none; font-weight: 600; }
+
         @media (max-width: 600px) {
-            .form-row { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 1.5rem; }
             .card { padding: 20px; }
-            .hero-badge h1 { font-size: 1.4rem; }
-        }
-
-        /* ── DESKTOP/LAPTOP SPLIT VIEW ──────── */
-        @media (min-width: 992px) {
-            .page-wrap {
-                display: grid;
-                grid-template-columns: 360px 1fr;
-                gap: 40px;
-                max-width: 1200px;
-                margin: 40px auto 80px;
-                align-items: start;
-            }
-
-            .hero-badge {
-                position: sticky;
-                top: 100px;
-                text-align: left;
-                margin-bottom: 0;
-                background: #fff;
-                padding: 32px;
-                border-radius: 16px;
-                box-shadow: 0 4px 20px rgba(0,0,0,0.06);
-                border: 1px solid rgba(0, 80, 0, 0.08);
-                display: flex;
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .hero-badge h1 {
-                font-size: 2.1rem;
-            }
-
-            .desktop-stepper {
-                display: flex !important;
-                flex-direction: column;
-                gap: 24px;
-                margin-top: 32px;
-                position: relative;
-                width: 100%;
-                text-align: left;
-            }
-
-            .desktop-stepper::before {
-                content: '';
-                position: absolute;
-                left: 17px;
-                top: 24px;
-                bottom: 24px;
-                width: 2px;
-                background: #e2ebd5;
-                z-index: 1;
-            }
-
-            .step-item {
-                display: flex;
-                align-items: flex-start;
-                gap: 16px;
-                position: relative;
-                z-index: 2;
-                opacity: 0.6;
-                transition: opacity 0.3s ease;
-            }
-
-            .step-item.active {
-                opacity: 1;
-            }
-
-            .step-item.completed {
-                opacity: 0.9;
-            }
-
-            .step-icon {
-                width: 36px;
-                height: 36px;
-                border-radius: 50%;
-                background: #fff;
-                border: 2px solid #ccd9be;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: 700;
-                color: #5d7a60;
-                font-size: 0.85rem;
-                flex-shrink: 0;
-                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            }
-
-            .step-item.active .step-icon {
-                background: #050;
-                border-color: #050;
-                color: #fff;
-                box-shadow: 0 0 0 4px rgba(0, 80, 0, 0.15);
-                transform: scale(1.05);
-            }
-
-            .step-item.completed .step-icon {
-                background: #e6f4ea;
-                border-color: #050;
-                color: #050;
-            }
-
-            .step-text h4 {
-                margin: 0;
-                font-size: 0.92rem;
-                color: #2c3e2e;
-                font-weight: 700;
-                letter-spacing: 0.2px;
-                transition: color 0.3s ease;
-            }
-
-            .step-item.active .step-text h4 {
-                color: #050;
-            }
-
-            .step-text p {
-                margin: 3px 0 0;
-                font-size: 0.78rem;
-                color: #667e69;
-                line-height: 1.3;
-            }
-        }
-
-        /* Hide stepper by default on smaller screens */
-        .desktop-stepper {
-            display: none;
         }
     </style>
 </head>
@@ -558,277 +225,245 @@
 
 <div class="page-wrap">
 
-    <!-- Hero -->
-    <div class="hero-badge">
-        <div class="badge-pill">
-            <i class="fa-solid fa-shield-halved"></i> Secure Identity Verification
-        </div>
+    <div class="hero">
+        <div class="badge-pill"><i class="fa-solid fa-shield-halved"></i> Secure Identity Verification</div>
         <h1>Agent Verification</h1>
-        <p>Join the Easy Find network by completing your identity verification below.</p>
-        
-        <!-- Live Stepper for Desktop Split View -->
-        <div class="desktop-stepper">
-            <div class="step-item active" id="step-item-1">
-                <div class="step-icon"><i class="fa-solid fa-user"></i></div>
-                <div class="step-text">
-                    <h4>Account Profile</h4>
-                    <p>Select your agent type</p>
-                </div>
-            </div>
-            <div class="step-item" id="step-item-2">
-                <div class="step-icon"><i class="fa-solid fa-address-card"></i></div>
-                <div class="step-text">
-                    <h4>Contact Details</h4>
-                    <p>Enter name & phone</p>
-                </div>
-            </div>
-            <div class="step-item" id="step-item-3">
-                <div class="step-icon"><i class="fa-solid fa-fingerprint"></i></div>
-                <div class="step-text">
-                    <h4>Biometrics</h4>
-                    <p>NIN & Face ID verification</p>
-                </div>
-            </div>
-            <div class="step-item" id="step-item-4">
-                <div class="step-icon"><i class="fa-solid fa-map-location-dot"></i></div>
-                <div class="step-text">
-                    <h4>Office Address</h4>
-                    <p>Provide office location</p>
-                </div>
-            </div>
+        <p>Complete your NIN + face verification to earn the <strong>Verified Agent</strong> badge and build trust with clients.</p>
+    </div>
+
+    <!-- Already verified banner (hidden by default) -->
+    <div class="verified-banner" id="verifiedBanner" style="display:none;">
+        <i class="fa-solid fa-circle-check"></i>
+        <div>
+            <strong>You are a Verified Agent</strong>
+            <span>Your identity has been confirmed. Your profile shows the verified badge.</span>
         </div>
     </div>
 
-    <form id="registrationForm" action="/api/v1/register-agent" method="POST" enctype="multipart/form-data">
+    <div class="card" id="verifyCard">
+        <h3 style="margin-bottom:20px;color:#050;font-size:1rem;text-transform:uppercase;letter-spacing:0.5px;">
+            <i class="fa-solid fa-fingerprint" style="margin-right:8px;"></i>What happens during verification
+        </h3>
 
-        <!-- Step 1: Account Type -->
-        <div class="card">
-            <div class="step-title">
-                <div class="step-num">1</div>
-                <h3>Account Profile</h3>
-            </div>
-            <div class="type-toggle">
-                <label class="type-option selected" id="label-ind">
-                    <input type="radio" name="agent_type" value="individual" checked>
-                    <i class="fa-solid fa-user"></i> Personal Agent
-                </label>
-                <label class="type-option" id="label-corp">
-                    <input type="radio" name="agent_type" value="company">
-                    <i class="fa-solid fa-building"></i> Corporate Agency
-                </label>
-            </div>
-        </div>
-
-        <!-- Step 2: Contact Details -->
-        <div class="card">
-            <div class="step-title">
-                <div class="step-num">2</div>
-                <h3>Contact Details</h3>
-            </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label>Full Legal Name</label>
-                    <input type="text" name="fullname" placeholder="John Doe" required>
+        <div class="steps">
+            <div class="step-row">
+                <div class="step-circle">1</div>
+                <div class="step-text">
+                    <h4>Enter your NIN</h4>
+                    <p>Your 11-digit National Identification Number</p>
                 </div>
-                <div class="form-group">
-                    <label>WhatsApp Number</label>
-                    <input type="tel" name="phone" placeholder="08030000000" required>
+            </div>
+            <div class="step-row">
+                <div class="step-circle">2</div>
+                <div class="step-text">
+                    <h4>Take a selfie</h4>
+                    <p>A live selfie to match your NIN photo</p>
                 </div>
-                <div class="form-group full" id="cac_section" style="display:none;">
-                    <label>Business RC Number (CAC)</label>
-                    <input type="text" name="cac_number" placeholder="RC-123456">
+            </div>
+            <div class="step-row">
+                <div class="step-circle">3</div>
+                <div class="step-text">
+                    <h4>Instant result</h4>
+                    <p>Get your Verified Agent badge immediately on success</p>
                 </div>
             </div>
         </div>
 
-        <!-- Step 3: Biometric Verification -->
-        <div class="card">
-            <div class="step-title">
-                <div class="step-num">3</div>
-                <h3>Biometric Verification</h3>
-            </div>
-            <div class="camera-wrap">
-                <div class="camera-box">
-                    <video id="video" autoplay muted playsinline></video>
-                    <div class="camera-overlay" id="cam-overlay">
-                        <span><i class="fa-solid fa-camera" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Camera will activate on verification</span>
-                    </div>
-                </div>
-                <p class="cam-status" id="cam-status">Ensure your face is clearly visible in the frame</p>
-                <button type="button" id="start-verification" class="btn-verify-id">
-                    <i class="fa-solid fa-fingerprint"></i> Verify NIN & Face ID
-                </button>
-            </div>
-            <input type="hidden" name="dojah_reference" id="dojah_reference">
-            <input type="hidden" name="selfie_data" id="selfie_data">
-        </div>
+        <button class="btn-start" id="startBtn" onclick="startVerification()">
+            <span class="spinner" id="btnSpinner"></span>
+            <i class="fa-solid fa-fingerprint" id="btnIcon"></i>
+            <span id="btnText">Start NIN Verification</span>
+        </button>
 
-        <!-- Step 4: Office Address -->
-        <div class="card">
-            <div class="step-title">
-                <div class="step-num">4</div>
-                <h3>Office Address</h3>
-            </div>
-            <div class="form-group">
-                <label>Full Address</label>
-                <textarea name="address" placeholder="Full street address, City, and State..." required></textarea>
-            </div>
-        </div>
+        <div class="status-msg" id="statusMsg"></div>
 
-        <!-- Terms & Submit -->
-        <div class="card">
-            <div class="terms-row" style="margin-bottom: 20px;">
-                <input type="checkbox" id="terms" required>
-                <label for="terms" style="text-transform:none;letter-spacing:0;font-weight:400;">
-                    I agree to the Easy Find <a href="/terms.html" target="_blank" style="color:#050;font-weight:700;">Terms of Service</a> and data privacy policies.
-                </label>
-            </div>
-            <button type="submit" id="submitBtn" class="btn-submit">
-                <span class="spinner" id="submitSpinner"></span>
-                <i class="fa-solid fa-paper-plane" id="submitIcon"></i>
-                Submit Registration
-            </button>
+        <div class="info-note">
+            <i class="fa-solid fa-lock"></i>
+            Your data is encrypted and processed securely by <strong>Smile ID</strong>, a licensed identity verification provider. Easy Find does not store your raw biometric data.
         </div>
+    </div>
 
-    </form>
 </div>
 
-<footer style="text-align: center; padding: 25px 0; margin-top: 40px; font-size: 14px; color: #666; width: 100%;">
-    <p>&copy; 2026 Easy Find. All rights reserved. | <a href="/terms.html" style="color: #050; text-decoration: none; font-weight: 600;">Terms of Service</a></p>
+<footer>
+    <p>&copy; 2026 <a href="/">Easy Find</a>. All rights reserved. | <a href="/terms.html">Terms of Service</a></p>
 </footer>
 
-<script src="https://widget.dojah.io/widget.js"></script>
+<!-- Smile ID Web Integration Widget (v11) -->
+<script src="https://cdn.smileidentity.com/inline/v11/js/script.min.js"></script>
+
 <script>
-
-    // ── Auth ──────────────────────────────────────────────
-    async function checkAuth() {
+    // ── Check current verification status on load ─────────────────────────────
+    async function checkVerificationStatus() {
         try {
-            const response = await fetch('/api/agent/profile', { credentials: 'include' });
-            const data = await response.json();
-            if (!data.agent) {
-                window.location.href = '/login-agent';
+            const res  = await fetch('/api/smile/result', { credentials: 'include' });
+            const data = await res.json();
+            if (data.verified) {
+                showVerified();
             }
-        } catch (error) {
-            window.location.href = '/login-agent';
+        } catch (e) {
+            console.warn('Status check failed:', e.message);
         }
     }
 
-    checkAuth()
-    // Agent type toggle
-    const labelInd  = document.getElementById('label-ind');
-    const labelCorp = document.getElementById('label-corp');
-    const cacSection = document.getElementById('cac_section');
+    function showVerified() {
+        document.getElementById('verifiedBanner').style.display = 'flex';
+        document.getElementById('verifyCard').style.display     = 'none';
+    }
 
-    document.querySelectorAll('input[name="agent_type"]').forEach(radio => {
-        radio.addEventListener('change', () => {
-            labelInd.classList.toggle('selected', radio.value === 'individual' && radio.checked);
-            labelCorp.classList.toggle('selected', radio.value === 'company' && radio.checked);
-            cacSection.style.display = radio.value === 'company' ? 'block' : 'none';
-        });
-    });
+    function setStatus(msg, type) {
+        const el = document.getElementById('statusMsg');
+        el.textContent  = msg;
+        el.className    = 'status-msg ' + (type || '');
+    }
 
-    // Camera preview
-    async function initCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            document.getElementById('video').srcObject = stream;
-            document.getElementById('cam-overlay').style.display = 'none';
-        } catch (err) {
-            console.log('Camera unavailable');
+    function setBtnLoading(loading) {
+        const btn     = document.getElementById('startBtn');
+        const spinner = document.getElementById('btnSpinner');
+        const icon    = document.getElementById('btnIcon');
+        const text    = document.getElementById('btnText');
+        btn.disabled  = loading;
+        spinner.style.display = loading ? 'block' : 'none';
+        icon.style.display    = loading ? 'none'  : 'inline';
+        if (loading) {
+            btn.classList.add('scanning');
+            text.textContent = 'Loading verification...';
+        } else {
+            btn.classList.remove('scanning');
+            text.textContent = 'Start NIN Verification';
         }
     }
 
-    // Dojah verification
-    document.getElementById('start-verification').addEventListener('click', function () {
-        initCamera();
-        const options = {
-            app_id: "YOUR_APP_ID",
-            p_key: "YOUR_PUBLIC_KEY",
-            type: "verification",
-            config: {
-                identity: { type: 'vin' },
-                liveness: true,
-                selfie: true
-            },
-            onSuccess: function (response) {
-                const btn = document.getElementById('start-verification');
-                btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Identity Verified';
-                btn.classList.add('verified');
-                document.getElementById('cam-status').textContent = 'Security check complete.';
-                document.getElementById('dojah_reference').value = response.reference;
-            },
-            onError: function (err) {
-                alert('Verification Error: ' + err);
+    // ── Poll for result after widget closes ───────────────────────────────────
+    let pollInterval = null;
+
+    function startPolling() {
+        setStatus('Processing your verification... please wait.', '');
+        let attempts = 0;
+        pollInterval = setInterval(async () => {
+            attempts++;
+            try {
+                const res  = await fetch('/api/smile/result', { credentials: 'include' });
+                const data = await res.json();
+                if (data.verified) {
+                    clearInterval(pollInterval);
+                    setStatus('Verification successful! You are now a Verified Agent.', 'success');
+                    setTimeout(() => showVerified(), 1800);
+                } else if (attempts >= 20) {
+                    // Stop polling after ~40 seconds
+                    clearInterval(pollInterval);
+                    setStatus('Verification is still processing. Check back in a few minutes.', '');
+                    setBtnLoading(false);
+                }
+            } catch (e) {
+                clearInterval(pollInterval);
+                setBtnLoading(false);
             }
-        };
-        const connect = new Dojah(options);
-        connect.open();
-    });
+        }, 2000); // check every 2 seconds
+    }
 
-    // Submit loading state
-    document.getElementById('registrationForm').addEventListener('submit', function () {
-        const btn = document.getElementById('submitBtn');
-        const spinner = document.getElementById('submitSpinner');
-        const icon = document.getElementById('submitIcon');
-        btn.disabled = true;
-        spinner.style.display = 'block';
-        icon.style.display = 'none';
-        btn.lastChild.textContent = ' Submitting...';
-    });
+    // ── Main: Start verification ──────────────────────────────────────────────
+    async function startVerification() {
+        setBtnLoading(true);
+        setStatus('', '');
 
-    // Intersection Observer to highlight active step in desktop stepper
-    const cards = document.querySelectorAll('form .card');
-    const stepItems = document.querySelectorAll('.step-item');
-    
-    if (cards.length > 0 && stepItems.length > 0) {
-        const observerOptions = {
-            root: null,
-            rootMargin: '-20% 0px -55% 0px',
-            threshold: 0
-        };
+        try {
+            // 1. Get a token from our backend
+            const tokenRes  = await fetch('/api/smile/token', {
+                method:      'POST',
+                credentials: 'include',
+                headers:     { 'Content-Type': 'application/json' }
+            });
+            const tokenData = await tokenRes.json();
 
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const stepNumEl = entry.target.querySelector('.step-num');
-                    if (stepNumEl) {
-                        const stepIndex = parseInt(stepNumEl.textContent.trim()) - 1;
-                        if (stepIndex >= 0 && stepIndex < stepItems.length) {
-                            stepItems.forEach((item, idx) => {
-                                if (idx === stepIndex) {
-                                    item.classList.add('active');
-                                } else {
-                                    item.classList.remove('active');
-                                }
-                                
-                                if (idx < stepIndex) {
-                                    item.classList.add('completed');
-                                    const iconEl = item.querySelector('.step-icon i');
-                                    if (iconEl && !iconEl.dataset.originalClass) {
-                                        iconEl.dataset.originalClass = iconEl.className;
-                                        iconEl.className = 'fa-solid fa-circle-check';
-                                    }
-                                } else {
-                                    item.classList.remove('completed');
-                                    const iconEl = item.querySelector('.step-icon i');
-                                    if (iconEl && iconEl.dataset.originalClass) {
-                                        iconEl.className = iconEl.dataset.originalClass;
-                                        delete iconEl.dataset.originalClass;
-                                    }
-                                }
-                            });
+            if (!tokenData.success || !tokenData.token) {
+                const msg = tokenData.message || 'Could not start verification. Please try again.';
+                console.error('Token fetch failed:', tokenData);
+                setStatus(msg, 'error');
+                setBtnLoading(false);
+                return;
+            }
+
+            console.log('[Smile ID] Token received, opening widget...');
+            console.log('[Smile ID] sid_server:', tokenData.sid_server);
+
+            setBtnLoading(false);
+
+            // Guard: make sure the Smile ID widget script loaded
+            if (typeof SmileIdentity !== 'function') {
+                console.error('[Smile ID] SmileIdentity type:', typeof SmileIdentity);
+                setStatus('Verification widget failed to load. Check your internet connection and refresh.', 'error');
+                return;
+            }
+
+            // 2. Call SmileIdentity directly — it IS the function (not SmileIdentity.initialize)
+            SmileIdentity({
+                token:        tokenData.token,
+                product:      'biometric_kyc',
+                environment:  tokenData.sid_server === '1' ? 'production' : 'sandbox',
+                callback_url: window.location.origin + '/api/smile/callback',
+
+                id_selection: {
+                    NG: ['NIN']
+                },
+
+                partner_details: {
+                    partner_id:   tokenData.partner_id,
+                    name:         'Easy Find',
+                    logo_url:     window.location.origin + '/logo/logo.JPEG',
+                    policy_url:   window.location.origin + '/terms',
+                    theme_color:  '#050'
+                },
+
+                onSuccess: async function (data) {
+                    console.log('[Smile ID] Success:', data);
+                    setStatus('Verification complete! Updating your profile...', '');
+
+                    try {
+                        const res  = await fetch('/api/smile/verify-complete', {
+                            method:      'POST',
+                            credentials: 'include',
+                            headers:     { 'Content-Type': 'application/json' }
+                        });
+                        const result = await res.json();
+
+                        if (result.success) {
+                            setStatus('You are now a Verified Agent! 🎉', 'success');
+                            setTimeout(() => showVerified(), 1500);
+                        } else {
+                            setStatus(result.message || 'Verification recorded. Refreshing...', 'success');
+                            setTimeout(() => window.location.reload(), 2000);
                         }
+                    } catch (err) {
+                        console.error('verify-complete error:', err);
+                        // Still show success — webhook will handle it
+                        setStatus('Verification submitted! Your badge will appear shortly.', 'success');
+                        setTimeout(() => showVerified(), 2000);
                     }
+                },
+
+                onClose: function () {
+                    setStatus('Verification cancelled. Click the button to try again.', '');
+                    setBtnLoading(false);
+                },
+
+                onError: function (err) {
+                    console.error('[Smile ID] Widget error:', err);
+                    const msg = typeof err === 'string' ? err : (err?.message || 'Please try again.');
+                    setStatus('Verification error: ' + msg, 'error');
+                    setBtnLoading(false);
                 }
             });
-        }, observerOptions);
 
-        cards.forEach(card => {
-            if (card.querySelector('.step-num')) {
-                observer.observe(card);
-            }
-        });
+        } catch (err) {
+            console.error('startVerification error:', err.message, err.stack);
+            setStatus('Something went wrong. Please refresh and try again.', 'error');
+            setBtnLoading(false);
+        }
     }
+
+    // Run on page load
+    checkVerificationStatus();
 </script>
 
 </body>
