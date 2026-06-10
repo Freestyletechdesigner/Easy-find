@@ -264,7 +264,7 @@ if (!fs.existsSync(uploadPropertyDir)) fs.mkdirSync(uploadPropertyDir, { recursi
 // No cache in development so changes are visible immediately
 // Cache in production for performance
 const staticOpts = process.env.NODE_ENV === 'production' ? { maxAge: '1h' }  : {};
-const assetOpts  = process.env.NODE_ENV === 'production' ? { maxAge: '7d' }  : {};
+const assetOpts  = process.env.NODE_ENV === 'production' ? { maxAge: '2d' }  : {};
 
 // Cache busting — every server restart gets a new version token
 // HTML files can reference ?v=BUILD_VERSION to force browser refresh
