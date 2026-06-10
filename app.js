@@ -65,6 +65,16 @@ app.use(cors({
     credentials: true
 }));
 
+// Add this near your other app.use statements
+app.use((req, res, next) => {
+  if (req.url.endsWith('.webp')) {
+    res.setHeader('Content-Type', 'image/webp');
+  } else if (req.url.endsWith('.jpg') || req.url.endsWith('.jpeg')) {
+    res.setHeader('Content-Type', 'image/jpeg');
+  }
+  next();
+});
+
 const connectDB = require('./db.js');
 connectDB().catch(err => { console.error('Failed to connect to DB:', err); process.exit(1); });
 // API END POINT
