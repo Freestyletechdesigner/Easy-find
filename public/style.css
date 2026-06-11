@@ -334,7 +334,7 @@ header {
     max-width: 450px;
     max-height: 450px;
 
-    background: url('image/IMG_7296.JPG');
+    background: url('/image/IMG_7296.JPG');
     background-size: contain;
     clip-path: polygon(54% 0, 54% 57%, 54% 100%, 0% 100%, 25% 50%, 0% 0%);
     
