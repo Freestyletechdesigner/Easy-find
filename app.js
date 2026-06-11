@@ -41,9 +41,29 @@ app.set('broadcastProperty', (property) => {
 });
 
 
-app.use(helmet({
-    contentSecurityPolicy: process.env.NODE_ENV === 'production'
-}));
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        // Allow scripts from your domain, EmailJS, and Google
+        scriptSrc: [
+          "'self'", 
+          "https://cdn.jsdelivr.net", 
+          "https://accounts.google.com", 
+          "'unsafe-inline'" // Required for your inline scripts
+        ],
+        // Allow framing Google (if needed for your app)
+        frameSrc: ["'self'", "https://www.google.com", "https://accounts.google.com"],
+        // Allow connecting to your own API
+        connectSrc: ["'self'", "https://easyfind.com.ng", "https://api.paystack.co"], 
+        // Essential for images and styles
+        imgSrc: ["'self'", "data:", "https:"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+      },
+    },
+  })
+);
 
 // Add these explicit headers or update your existing Helmet configuration
 app.use((req, res, next) => {
