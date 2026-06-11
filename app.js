@@ -46,17 +46,17 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        // Allow scripts from your domain, EmailJS, and Google
+        // Allow scripts from your domain, EmailJS, Google, and inline scripts
         scriptSrc: [
           "'self'", 
           "https://cdn.jsdelivr.net", 
           "https://accounts.google.com", 
-          "'unsafe-inline'" // Required for your inline scripts
+          "'unsafe-inline'" 
         ],
-        // Allow framing Google (if needed for your app)
+        // Allow frames for Google
         frameSrc: ["'self'", "https://www.google.com", "https://accounts.google.com"],
-        // Allow connecting to your own API
-        connectSrc: ["'self'", "https://easyfind.com.ng", "https://api.paystack.co"], 
+        // Allow connections to your API and external services
+        connectSrc: ["'self'", "https://easyfind.com.ng", "https://api.paystack.co", "https://nominatim.openstreetmap.org"], 
         // Essential for images and styles
         imgSrc: ["'self'", "data:", "https:"],
         styleSrc: ["'self'", "'unsafe-inline'", "https:"],
@@ -312,8 +312,16 @@ if (process.env.NODE_ENV !== 'production') {
     });
 }
 
-app.use(express.static('public', staticOpts));
-app.use('/admin', express.static('admin', staticOpts));
+// Function to force no-cache for HTML files
+const noCacheHtml = (res, path) => {
+    if (path.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    }
+};
+
+
+app.use(express.static('public', { ...staticOpts, setHeaders: noCacheHtml }));
+app.use('/admin', express.static('admin', { ...staticOpts, setHeaders: noCacheHtml }));
 app.use('/agent-loged', express.static('agent-loged', staticOpts));
 app.use('/agent-profiles', express.static('agent-profiles', assetOpts));
 app.use('/property', express.static('public/property', staticOpts));
