@@ -46,18 +46,30 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        // Allow scripts from your domain, EmailJS, Google, and inline scripts
         scriptSrc: [
           "'self'", 
           "https://cdn.jsdelivr.net", 
           "https://accounts.google.com", 
+          "https://unpkg.com", 
+          "https://cdn.emailjs.com",
+          "https://cdn.smileidentity.com", // Added Smile ID Script
           "'unsafe-inline'" 
         ],
-        // Allow frames for Google
-        frameSrc: ["'self'", "https://www.google.com", "https://accounts.google.com"],
-        // Allow connections to your API and external services
-        connectSrc: ["'self'", "https://easyfind.com.ng", "https://api.paystack.co", "https://nominatim.openstreetmap.org"], 
-        // Essential for images and styles
+        scriptSrcAttr: ["'self'", "'unsafe-inline'"], 
+        frameSrc: [
+            "'self'", 
+            "https://www.google.com", 
+            "https://accounts.google.com",
+            "https://cdn.smileidentity.com" // Added Smile ID Frames
+        ],
+        connectSrc: [
+          "'self'", 
+          "https://easyfind.com.ng", 
+          "https://api.paystack.co", 
+          "https://nominatim.openstreetmap.org",
+          "https://api.emailjs.com",
+          "https://cdn.smileidentity.com" // Added Smile ID API
+        ], 
         imgSrc: ["'self'", "data:", "https:"],
         styleSrc: ["'self'", "'unsafe-inline'", "https:"],
       },
