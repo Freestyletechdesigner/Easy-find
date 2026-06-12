@@ -69,7 +69,8 @@ app.use(
           "https://nominatim.openstreetmap.org",
           "https://api.emailjs.com",
           "https://cdn.smileidentity.com",
-          "https://unpkg.com"
+          "https://unpkg.com",
+          "https://accounts.google.com"
         ], 
         imgSrc: ["'self'", "data:", "https:"],
         styleSrc: ["'self'", "'unsafe-inline'", "https:"],
@@ -82,7 +83,7 @@ app.use(
 app.use((req, res, next) => {
     // Allows Google to communicate with your localhost environment smoothly
     res.setHeader("Referrer-Policy", "no-referrer-when-downgrade");
-    res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
     next();
 });
 
