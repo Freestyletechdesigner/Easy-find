@@ -68,7 +68,8 @@ app.use(
           "https://api.paystack.co", 
           "https://nominatim.openstreetmap.org",
           "https://api.emailjs.com",
-          "https://cdn.smileidentity.com" // Added Smile ID API
+          "https://cdn.smileidentity.com",
+          "https://unpkg.com"
         ], 
         imgSrc: ["'self'", "data:", "https:"],
         styleSrc: ["'self'", "'unsafe-inline'", "https:"],
