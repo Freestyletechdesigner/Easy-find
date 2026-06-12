@@ -1395,7 +1395,7 @@ async function handleGoogleCredentialResponse(googleResponse) {
         // Check if the server returned success: false
         if (!data.success) {
             // This displays the exact message sent from your server
-            showLoginAlert(data.message, 'error');
+            showLoginAlert('User not found, check your email', 'error');
             return; // Stop here if login failed
         }
 
