@@ -83,7 +83,7 @@ app.use(
 app.use((req, res, next) => {
     // Allows Google to communicate with your localhost environment smoothly
     res.setHeader("Referrer-Policy", "no-referrer-when-downgrade");
-    res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+    res.setHeader("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
     next();
 });
 
