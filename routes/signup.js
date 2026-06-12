@@ -4,7 +4,8 @@ const bcrypt = require('bcryptjs');
 const User = require('../model/User.js');
 const rateLimit = require('express-rate-limit');
 const ADMIN = require('../model/ADMIN.js');
-
+const { OAuth2Client } = require('google-auth-library');
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Middleware to check if user is admin
 function requireAdmin(req, res, next) {
     if (!req.session.admin) {
