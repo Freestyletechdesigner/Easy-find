@@ -183,13 +183,17 @@ app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    // Add these two lines specifically:
+    proxy: true, 
     cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-        maxAge: 1000 * 60 * 60 * 24 * 30// a month
+        secure: true,        // REQUIRED for HTTPS
+        sameSite: 'lax',     // Allows cookie to persist during redirects
+        maxAge: 1000 * 60 * 60 * 24 * 30
     }
 }));
+
+app.set('trust proxy', 1);
 
 function requireAdmin(req, res, next) {
     if (!req.session.admin) {
