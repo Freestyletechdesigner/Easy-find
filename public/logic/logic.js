@@ -1391,11 +1391,20 @@ async function handleGoogleCredentialResponse(googleResponse) {
         });
 
         const data = await res.json();
+
+        // Check if the server returned success: false
+        if (!data.success) {
+            // This displays the exact message sent from your server
+            showLoginAlert(data.message, 'error');
+            return; // Stop here if login failed
+        }
+
+        // If success: true
         handleUnifiedLoginResponse(data);
 
     } catch (err) {
         console.error("Google login error", err);
-        showLoginAlert('Google authentication failed. Please try again.', 'error');
+        showLoginAlert('An error occurred. Please try again.', 'error');
     } finally {
         if (submitBtn) {
             submitBtn.classList.remove('loading');
