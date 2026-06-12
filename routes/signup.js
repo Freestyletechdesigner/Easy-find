@@ -193,7 +193,7 @@ module.exports = function(app) {
                 if (!googleToken) {
                     const isPasswordValid = await admin.comparePassword(password);
                     if (!isPasswordValid) {
-                        return res.status(401).json({ success: false, message: 'Invalid email or password' });
+                        return res.status(401).json({ success: false, message: 'User not found, check your email' });
                     }
                 }
     
