@@ -186,7 +186,7 @@
                 });
                 const data = await res.json();
                 showMsg('profile-msg', data.message, data.success ? 'success' : 'error');
-                if (data.success) document.getElementById('agent-name').textContent = name;
+                if (data.success) return console.log(data.success);
             } catch (e) {
                 showMsg('profile-msg', 'Failed to save. Try again.', 'error');
             } finally {
