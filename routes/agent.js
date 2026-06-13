@@ -165,7 +165,7 @@ const agent = (app) => {
             if (!googleToken) {
                 const isPasswordValid = await agent.comparePassword(password);
                 if (!isPasswordValid) {
-                    return res.status(401).json({ success: false, message: 'User not found, check your email' });
+                    return res.status(401).json({ success: false, message: 'Invalid Google token payload' });
                 }
             } else {
                 // SECURITY PATCH: If they already linked a Google ID before, make sure it matches the current one!
