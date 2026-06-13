@@ -37,10 +37,17 @@
         }
 
         @keyframes slideUp {
-            from { opacity: 0; transform: translateY(40px) scale(0.98); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
+        /* LEFT SIDE PANEL - BRANDING */
         .login-left {
             background: linear-gradient(135deg, #02473b 0%, #012b24 100%);
             padding: 60px 45px;
@@ -77,7 +84,9 @@
             margin-bottom: 40px;
         }
 
-        .features { list-style: none; }
+        .features {
+            list-style: none;
+        }
 
         .features li {
             margin-bottom: 20px;
@@ -89,7 +98,9 @@
             transition: transform 0.2s ease;
         }
 
-        .features li:hover { transform: translateX(5px); }
+        .features li:hover {
+            transform: translateX(5px);
+        }
 
         .features li i {
             font-size: 18px;
@@ -112,6 +123,7 @@
             margin-top: 30px;
         }
 
+        /* RIGHT SIDE PANEL - FORM CONTROLS */
         .login-right {
             padding: 60px 65px;
             display: flex;
@@ -120,7 +132,9 @@
             background: #ffffff;
         }
 
-        .login-header { margin-bottom: 35px; }
+        .login-header {
+            margin-bottom: 35px;
+        }
 
         .login-header h2 {
             font-size: 32px;
@@ -130,9 +144,14 @@
             margin-bottom: 8px;
         }
 
-        .login-header p { color: #6b7280; font-size: 15px; }
+        .login-header p {
+            color: #6b7280;
+            font-size: 15px;
+        }
 
-        .form-group { margin-bottom: 22px; }
+        .form-group {
+            margin-bottom: 22px;
+        }
 
         .form-group label {
             display: block;
@@ -149,8 +168,7 @@
         }
 
         .input-wrapper i.fa-lock,
-        .input-wrapper i.fa-envelope,
-        .input-wrapper i.fa-phone {
+        .input-wrapper i.fa-envelope {
             position: absolute;
             left: 16px;
             color: #9ca3af;
@@ -159,8 +177,7 @@
             transition: color 0.3s ease;
         }
 
-        .form-group input,
-        .form-group textarea {
+        .form-group input {
             width: 100%;
             padding: 15px 16px 15px 48px;
             border: 1.5px solid #e5e7eb;
@@ -169,21 +186,17 @@
             transition: all 0.25s ease;
             background: #f9fafb;
             color: #111827;
-            font-family: inherit;
         }
 
-        .form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-            padding-left: 16px;
-        }
-
-        .form-group input:focus,
-        .form-group textarea:focus {
+        .form-group input:focus {
             outline: none;
             border-color: #27a594;
             background: white;
             box-shadow: 0 0 0 4px rgba(39, 165, 148, 0.12);
+        }
+
+        .form-group input:focus + i {
+            color: #27a594;
         }
 
         .password-toggle {
@@ -197,7 +210,9 @@
             transition: color 0.2s ease;
         }
 
-        .password-toggle:hover { color: #27a594; }
+        .password-toggle:hover {
+            color: #27a594;
+        }
 
         .form-options {
             display: flex;
@@ -214,7 +229,10 @@
             transition: color 0.2s ease;
         }
 
-        .forgot-password:hover { color: #02502c; text-decoration: underline; }
+        .forgot-password:hover {
+            color: #02502c;
+            text-decoration: underline;
+        }
 
         #googleBtn {
             width: 100%;
@@ -243,8 +261,15 @@
             background: linear-gradient(135deg, #2cbfa9 0%, #066958 100%);
         }
 
-        .btn-login:active { transform: translateY(1px); }
-        .btn-login:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-login:active {
+            transform: translateY(1px);
+        }
+
+        .btn-login:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
 
         .divider {
             text-align: center;
@@ -255,7 +280,8 @@
         .divider::before {
             content: '';
             position: absolute;
-            left: 0; top: 50%;
+            left: 0;
+            top: 50%;
             width: 100%;
             height: 1px;
             background: #f0f2f5;
@@ -279,10 +305,21 @@
             color: #4b5563;
         }
 
-        .signup-link a { color: #27a594; text-decoration: none; font-weight: 600; }
-        .signup-link a:hover { text-decoration: underline; color: #02502c; }
+        .signup-link a {
+            color: #27a594;
+            text-decoration: none;
+            font-weight: 600;
+        }
 
-        .back-home { text-align: center; margin-top: 24px; }
+        .signup-link a:hover {
+            text-decoration: underline;
+            color: #02502c;
+        }
+
+        .back-home {
+            text-align: center;
+            margin-top: 24px;
+        }
 
         .back-home a {
             color: #6b7280;
@@ -295,7 +332,9 @@
             transition: color 0.2s ease;
         }
 
-        .back-home a:hover { color: #111827; }
+        .back-home a:hover {
+            color: #111827;
+        }
 
         .alert {
             position: fixed;
@@ -312,62 +351,114 @@
 
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-12px); }
-            to   { opacity: 1; transform: translateY(0); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .alert.success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-        .alert.error   { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
-
-        /* Profile completion panel (hidden by default) */
-        #complete-profile-panel { display: none; }
-
-        .profile-note {
-            background: #f0fdf9;
-            border: 1px solid #a7f3d0;
-            border-radius: 12px;
-            padding: 12px 16px;
-            font-size: 13.5px;
+        .alert.success {
+            background: #ecfdf5;
             color: #065f46;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            border: 1px solid #a7f3d0;
         }
 
+        .alert.error {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        /* ==========================================
+           RESPONSIVE LAYOUT ENGINE (MOBILE STACKING)
+           ========================================== */
         @media (max-width: 900px) {
             .login-container {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr; /* Stacks layout into single column vertically */
                 min-height: auto;
                 max-width: 520px;
                 border-radius: 20px;
             }
-            .login-left { padding: 40px 35px 30px 35px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-            .brand-wrapper h1 { font-size: 28px; margin-bottom: 10px; }
-            .brand-wrapper p  { margin-bottom: 20px; font-size: 14px; }
-            .features li { margin-bottom: 12px; font-size: 14px; }
-            .features li i { width: 32px; height: 32px; padding: 6px; font-size: 15px; }
-            .left-footer { display: none; }
-            .login-right { padding: 40px 35px; }
-            .login-header h2 { font-size: 26px; }
+            .login-left {
+                padding: 40px 35px 30px 35px;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .brand-wrapper h1 {
+                font-size: 28px;
+                margin-bottom: 10px;
+            }
+            .brand-wrapper p {
+                margin-bottom: 20px;
+                font-size: 14px;
+            }
+            .features li {
+                margin-bottom: 12px;
+                font-size: 14px;
+            }
+            .features li i {
+                width: 32px;
+                height: 32px;
+                padding: 6px;
+                font-size: 15px;
+            }
+            .left-footer {
+                display: none; /* Sub-footer hidden on mobile to avoid duplication */
+            }
+            .login-right {
+                padding: 40px 35px;
+            }
+            .login-header h2 {
+                font-size: 26px;
+            }
         }
 
+        /* COMPACT / SMALL DEVICE ENGINE ACCELERATION (e.g., iPhone 6s) */
         @media (max-width: 400px) {
-            body { padding: 10px 8px; }
-            .login-container { border-radius: 16px; }
-            .login-left { padding: 30px 20px 20px 20px; }
-            .brand-wrapper h1 { font-size: 23px; }
-            .brand-wrapper p  { font-size: 13px; margin-bottom: 15px; }
-            .features li { font-size: 13px; gap: 10px; }
-            .login-right { padding: 30px 18px; }
-            .login-header { margin-bottom: 24px; text-align: center; }
-            .login-header h2 { font-size: 23px; }
-            .login-header p  { font-size: 13px; }
-            .form-group input { padding: 13px 14px 13px 44px; font-size: 14.5px; }
-            .input-wrapper i.fa-lock,
-            .input-wrapper i.fa-envelope,
-            .input-wrapper i.fa-phone { left: 14px; }
-            .btn-login { padding: 13px; font-size: 15px; }
-            .divider { margin: 18px 0; }
+            body {
+                padding: 10px 8px;
+            }
+            .login-container {
+                border-radius: 16px;
+            }
+            .login-left {
+                padding: 30px 20px 20px 20px; /* Highly optimized micro paddings */
+            }
+            .brand-wrapper h1 {
+                font-size: 23px;
+            }
+            .brand-wrapper p {
+                font-size: 13px;
+                margin-bottom: 15px;
+            }
+            .features li {
+                font-size: 13px;
+                gap: 10px;
+            }
+            .login-right {
+                padding: 30px 18px;
+            }
+            .login-header {
+                margin-bottom: 24px;
+                text-align: center;
+            }
+            .login-header h2 {
+                font-size: 23px;
+            }
+            .login-header p {
+                font-size: 13px;
+            }
+            .form-group input {
+                padding: 13px 14px 13px 44px;
+                font-size: 14.5px;
+            }
+            .input-wrapper i.fa-lock, 
+            .input-wrapper i.fa-envelope {
+                left: 14px;
+            }
+            .btn-login {
+                padding: 13px;
+                font-size: 15px;
+            }
+            .divider {
+                margin: 18px 0;
+            }
         }
     </style>
 </head>
@@ -378,6 +469,7 @@
             <div class="brand-wrapper">
                 <h1>Welcome Back, Agent!</h1>
                 <p>Login to access your agent dashboard and manage your property listings seamlessly.</p>
+                
                 <ul class="features">
                     <li><i class="fa-solid fa-house-chimney"></i> Manage your property listings</li>
                     <li><i class="fa-solid fa-comments"></i> Track client inquiries</li>
@@ -391,117 +483,56 @@
         </div>
 
         <div class="login-right">
+            <div class="login-header">
+                <h2>Agent Login</h2>
+                <p>Enter your credentials to access your dashboard</p>
+            </div>
 
-            <!-- ── LOGIN PANEL ──────────────────────────────── -->
-            <div id="login-panel">
-                <div class="login-header">
-                    <h2>Agent Login</h2>
-                    <p>Enter your credentials or continue with Google</p>
+            <div id="alert" class="alert"></div>
+
+            <form id="agent-login-form">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-envelope"></i>
+                        <input type="email" id="email" name="email" placeholder="agent@example.com" required>
+                    </div>
                 </div>
 
-                <div id="alert" class="alert"></div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <div class="input-wrapper">
+                        <i class="fa-solid fa-lock"></i>
+                        <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                        <i class="fa-solid fa-eye password-toggle" id="toggle-password"></i>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <a href="/password-reset/forgot-password" class="forgot-password">Forgot Password?</a>
+                </div>
 
                 <div id="googleBtn"></div>
-
-                <div class="divider"><span>OR</span></div>
-
-                <form id="agent-login-form">
-                    <div class="form-group">
-                        <label for="email">Email Address</label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-envelope"></i>
-                            <input type="email" id="email" name="email" placeholder="agent@example.com" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-lock"></i>
-                            <input type="password" id="password" name="password" placeholder="Enter your password" required>
-                            <i class="fa-solid fa-eye password-toggle" id="toggle-password"></i>
-                        </div>
-                    </div>
-
-                    <div class="form-options">
-                        <a href="/password-reset/forgot-password" class="forgot-password">Forgot Password?</a>
-                    </div>
-
-                    <button type="submit" id="login-btn" class="btn-login">Login to Dashboard</button>
-                </form>
-
-                <div class="signup-link">
-                    <p>Don't have an account? <a href="/signup-agent">Register as Agent</a></p>
+                
+                <div class="divider">
+                    <span>OR</span>
                 </div>
 
-                <div class="back-home">
-                    <a href="/"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
-                </div>
+                <button type="submit" id="login-btn" class="btn-login">Login to Dashboard</button>
+            </form>
+
+            <div class="signup-link">
+                <p>Don't have an account? <a href="/signup-agent">Register as Agent</a></p>
             </div>
 
-            <!-- ── COMPLETE PROFILE PANEL (shown after Google sign-up) ── -->
-            <div id="complete-profile-panel">
-                <div class="login-header">
-                    <h2>Complete Your Profile</h2>
-                    <p>One more step — we just need your phone number to finish creating your agent account.</p>
-                </div>
-
-                <div id="alert-profile" class="alert"></div>
-
-                <div class="profile-note">
-                    <i class="fa-solid fa-circle-check"></i>
-                    <span>Google account verified — fill in your details below to get started.</span>
-                </div>
-
-                <form id="complete-profile-form">
-                    <!-- Hidden: stores the Google token so we can re-verify server-side -->
-                    <input type="hidden" id="cp-google-token" name="googleToken">
-
-                    <div class="form-group">
-                        <label for="cp-name">Full Name</label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-user" style="position:absolute;left:16px;color:#9ca3af;"></i>
-                            <input type="text" id="cp-name" placeholder="Your name from Google" disabled
-                                   style="padding-left:48px;opacity:0.7;">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="cp-email">Email Address</label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-envelope"></i>
-                            <input type="email" id="cp-email" placeholder="Your Google email" disabled>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="cp-phone">Phone Number <span style="color:#ef4444;">*</span></label>
-                        <div class="input-wrapper">
-                            <i class="fa-solid fa-phone"></i>
-                            <input type="tel" id="cp-phone" name="phone" placeholder="08012345678" required
-                                   pattern="^0\d{10}$" maxlength="11">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="cp-bio">Bio <span style="color:#6b7280;font-weight:400;">(optional)</span></label>
-                        <textarea id="cp-bio" name="bio" placeholder="Tell clients a bit about yourself and your experience..."></textarea>
-                    </div>
-
-                    <button type="submit" id="complete-btn" class="btn-login">Create Agent Account</button>
-                </form>
-
-                <div class="signup-link" style="margin-top:16px;">
-                    <p><a href="#" id="back-to-login">← Back to login</a></p>
-                </div>
+            <div class="back-home">
+                <a href="/"><i class="fa-solid fa-arrow-left"></i> Back to Home</a>
             </div>
-
         </div>
     </div>
 
     <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleSignIn()"></script>
     <script>
-        // ── Google Sign-In init ──────────────────────────────────────────────
         function initGoogleSignIn() {
             const googleBtnContainer = document.getElementById('googleBtn');
             if (googleBtnContainer && typeof google !== 'undefined') {
@@ -511,22 +542,21 @@
                     use_fedcm_for_prompt: false
                 });
 
+                // Calculate width parameters safely based on current device dimensions
                 const dynamicWidth = window.innerWidth <= 400 ? "280" : "320";
 
                 google.accounts.id.renderButton(
                     googleBtnContainer,
-                    // "continue_with" is correct for both sign-in AND sign-up per Google branding
-                    { theme: "outline", size: "large", width: dynamicWidth, text: "continue_with" }
+                    { theme: "outline", size: "large", width: dynamicWidth, text: "signin_with" }
                 );
             }
         }
 
-        // ── Google callback ──────────────────────────────────────────────────
         async function handleGoogleCredentialResponse(googleResponse) {
             const loginBtn = document.getElementById('login-btn');
             if (loginBtn) {
                 loginBtn.disabled = true;
-                loginBtn.textContent = 'Verifying with Google...';
+                loginBtn.textContent = 'Authenticating with Google...';
             }
 
             try {
@@ -538,25 +568,38 @@
                 });
 
                 const data = await response.json();
-
                 if (!data.success) {
-                    showAlert('alert', data.message || 'Google authentication failed.', 'error');
+                    handleLoginResponse({ success: false, message: 'User not found, check your email.' });
                     return;
                 }
-
-                // ── EXISTING AGENT: log in normally ─────────────────────────
-                if (!data.needsProfile) {
-                    handleLoginResponse(data);
-                    return;
-                }
-
-                // ── NEW AGENT: show profile completion panel ─────────────────
-                showCompleteProfilePanel(data.profile, googleResponse.credential);
+                handleLoginResponse(data);
 
             } catch (error) {
-                console.error('Google auth error:', error);
-                showAlert('alert', 'Google authentication failed. Please try again.', 'error');
-            } finally {
+                console.error('Google authorization error:', error);
+                handleLoginResponse({ success: false, message: 'Google authentication failed. Please try again.' });
+            }
+        }
+
+        function handleLoginResponse(data) {
+            const alertBox = document.getElementById('alert');
+            const loginBtn = document.getElementById('login-btn');
+            
+            if (!alertBox) return;
+
+            alertBox.textContent = data.message || (data.success ? 'Login successful! Redirecting...' : 'Invalid login details');
+            alertBox.className = `alert ${data.success ? 'success' : 'error'}`;
+            alertBox.style.display = 'block';
+
+            if (data.success) {
+                setTimeout(() => {
+                    window.location.href = '/agent-loged';
+                }, 1000);
+            } else if (data.inactive) {
+                setTimeout(() => {
+                    window.location.href = '/appeal';
+                }, 1000);
+            } else {
+                setTimeout(() => { alertBox.style.display = 'none'; }, 5000);
                 if (loginBtn) {
                     loginBtn.disabled = false;
                     loginBtn.textContent = 'Login to Dashboard';
@@ -564,110 +607,9 @@
             }
         }
 
-        // ── Show the profile completion form, pre-filled from Google ────────
-        function showCompleteProfilePanel(profile, googleToken) {
-            document.getElementById('login-panel').style.display = 'none';
-            document.getElementById('complete-profile-panel').style.display = 'block';
-
-            document.getElementById('cp-name').value        = profile.name  || '';
-            document.getElementById('cp-email').value       = profile.email || '';
-            document.getElementById('cp-google-token').value = googleToken;
-        }
-
-        // ── Profile completion form submit ───────────────────────────────────
-        document.getElementById('complete-profile-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const completeBtn   = document.getElementById('complete-btn');
-            const googleToken   = document.getElementById('cp-google-token').value;
-            const phone         = document.getElementById('cp-phone').value.trim();
-            const bio           = document.getElementById('cp-bio').value.trim();
-
-            if (!phone) {
-                showAlert('alert-profile', 'Phone number is required.', 'error');
-                return;
-            }
-
-            if (!/^0\d{10}$/.test(phone)) {
-                showAlert('alert-profile', 'Phone must be 11 digits and start with 0 (e.g. 08012345678).', 'error');
-                return;
-            }
-
-            completeBtn.disabled     = true;
-            completeBtn.textContent  = 'Creating Account...';
-
-            try {
-                const response = await fetch('/api/agent/google-signup-complete', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ googleToken, phone, bio })
-                });
-
-                const data = await response.json();
-
-                if (!data.success) {
-                    showAlert('alert-profile', data.message || 'Sign-up failed. Please try again.', 'error');
-                    return;
-                }
-
-                showAlert('alert-profile', data.message || 'Account created! Redirecting...', 'success');
-                setTimeout(() => { window.location.href = '/agent-loged'; }, 1200);
-
-            } catch (error) {
-                console.error('Complete profile error:', error);
-                showAlert('alert-profile', 'An error occurred. Please try again.', 'error');
-            } finally {
-                completeBtn.disabled    = false;
-                completeBtn.textContent = 'Create Agent Account';
-            }
-        });
-
-        // ── Back to login link ───────────────────────────────────────────────
-        document.getElementById('back-to-login').addEventListener('click', (e) => {
-            e.preventDefault();
-            document.getElementById('complete-profile-panel').style.display = 'none';
-            document.getElementById('login-panel').style.display = 'block';
-        });
-
-        // ── Shared login response handler ────────────────────────────────────
-        function handleLoginResponse(data) {
-            const alertBox = document.getElementById('alert');
-            const loginBtn = document.getElementById('login-btn');
-
-            alertBox.textContent = data.message || (data.success ? 'Login successful! Redirecting...' : 'Invalid login details');
-            alertBox.className   = `alert ${data.success ? 'success' : 'error'}`;
-            alertBox.style.display = 'block';
-
-            if (data.success) {
-                setTimeout(() => { window.location.href = '/agent-loged'; }, 1000);
-            } else if (data.inactive) {
-                setTimeout(() => { window.location.href = '/appeal'; }, 1000);
-            } else {
-                setTimeout(() => { alertBox.style.display = 'none'; }, 5000);
-                if (loginBtn) {
-                    loginBtn.disabled    = false;
-                    loginBtn.textContent = 'Login to Dashboard';
-                }
-            }
-        }
-
-        // ── Reusable alert helper ────────────────────────────────────────────
-        function showAlert(elementId, message, type) {
-            const el = document.getElementById(elementId);
-            if (!el) return;
-            el.textContent   = message;
-            el.className     = `alert ${type}`;
-            el.style.display = 'block';
-            if (type !== 'success') {
-                setTimeout(() => { el.style.display = 'none'; }, 5000);
-            }
-        }
-
-        // ── Password toggle & standard login form ────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
             const togglePassword = document.getElementById('toggle-password');
-            const passwordInput  = document.getElementById('password');
+            const passwordInput = document.getElementById('password');
 
             if (togglePassword && passwordInput) {
                 togglePassword.addEventListener('click', () => {
@@ -683,12 +625,12 @@
                 form.addEventListener('submit', async (e) => {
                     e.preventDefault();
 
-                    const email    = document.getElementById('email').value;
+                    const email = document.getElementById('email').value;
                     const password = document.getElementById('password').value;
                     const loginBtn = document.getElementById('login-btn');
 
                     if (loginBtn) {
-                        loginBtn.disabled    = true;
+                        loginBtn.disabled = true;
                         loginBtn.textContent = 'Signing In...';
                     }
 

@@ -8,19 +8,19 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Strict limiter for Login and OTP
 const authLimiter = rateLimit({
     windowMs: 4 * 60 * 1000,
-    max: 10,
+    max: 10, // 
     message: {
         success: false, 
         message: 'Too many attempts. Please try again after 4 minutes.'
     },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: () => process.env.NODE_ENV === 'development'
+    skip: () => process.env.NODE_ENV === 'development' // skip in dev
 });
 
 // Strict limiter for password reset
 const resetLimiter = rateLimit({
-    windowMs: 60 * 60 * 1000,
+    windowMs: 60 * 60 * 1000, // 1 hour
     max: 2,
     message: {
         success: false, 
@@ -35,6 +35,7 @@ const upload = multer();
 
 const agent = (app) => {
 
+    // Middleware
     function requireAgent(req, res, next) {
         if (!req.session.agent) {
             return res.status(403).json({ success: false, message: 'Agent authentication required' });
@@ -49,7 +50,7 @@ const agent = (app) => {
         next();
     }
 
-    // Signup (email/password)
+    // Signup
     app.post('/api/agent/signup', upload.none(), [
         check('firstName').trim().isLength({ min: 2 }).withMessage('First name must be at least 2 characters'),
         check('lastName').trim().isLength({ min: 2 }).withMessage('Last name must be at least 2 characters'),
@@ -107,301 +108,96 @@ const agent = (app) => {
         }
     });
 
-    // Google sign-up/sign-in for agents
-    // When Google is used on the agent login page:
-    //   - Existing agent  → logs them in normally
-    //   - New Google user → creates a partial agent account and returns
-    //     needsProfile: true so the frontend can redirect to the
-    //     agent sign-up page with fields pre-filled (phone & bio required)
-    app.post('/api/agent/google-auth', authLimiter, async (req, res) => {
-        const { googleToken } = req.body;
-
-        if (!googleToken) {
-            return res.status(400).json({ success: false, message: 'Google token is required' });
-        }
-
-        let payload;
-        try {
-            const ticket = await client.verifyIdToken({
-                idToken: googleToken,
-                audience: process.env.GOOGLE_CLIENT_ID,
-            });
-            payload = ticket.getPayload();
-        } catch (err) {
-            return res.status(401).json({ success: false, message: 'Invalid or expired Google token' });
-        }
-
-        if (!payload.email_verified) {
-            return res.status(401).json({ success: false, message: 'Unverified Google accounts are not permitted.' });
-        }
-
-        const targetEmail = payload.email.trim().toLowerCase();
-        const googleName  = payload.name || payload.email.split('@')[0];
-        const googleId    = payload.sub;
-
-        try {
-            let agentDoc = await AgentUser.findOne({ email: targetEmail });
-
-            // ── EXISTING AGENT: log them in ──────────────────────────────────────
-            if (agentDoc) {
-                if (agentDoc.status !== 'active') {
-                    return res.status(403).json({
-                        success: false,
-                        message: 'Your account is inactive. Please contact us through email.',
-                        inactive: true
-                    });
-                }
-
-                // Bind googleId on first Google login
-                if (agentDoc.googleId && agentDoc.googleId !== googleId) {
-                    return res.status(401).json({ success: false, message: 'Google account mismatch. Please log in with your password.' });
-                }
-                if (!agentDoc.googleId) {
-                    agentDoc.googleId = googleId;
-                }
-
-                agentDoc.lastLogin = new Date();
-                await agentDoc.save();
-
-                req.session.agent = {
-                    id: agentDoc._id,
-                    name: agentDoc.name,
-                    email: agentDoc.email,
-                    role: agentDoc.role,
-                    profilePicture: agentDoc.profilePicture || null
-                };
-
-                return res.json({
-                    success: true,
-                    message: 'Login successful',
-                    agent: { name: agentDoc.name, email: agentDoc.email, role: agentDoc.role }
-                });
-            }
-
-            // ── NEW AGENT: they need to complete their profile ───────────────────
-            // We do NOT create the account yet — we return the Google profile data
-            // so the frontend can pre-fill the sign-up form (phone & bio still needed).
-            return res.json({
-                success: true,
-                needsProfile: true,
-                message: 'Google account verified. Please complete your agent profile.',
-                profile: {
-                    name:        googleName,
-                    email:       targetEmail,
-                    googleToken  // pass token back so the complete-profile step can use it
-                }
-            });
-
-        } catch (err) {
-            console.error('Agent Google auth error:', err);
-            return res.status(500).json({ success: false, message: 'Server error' });
-        }
-    });
-
-    // Complete agent profile after Google sign-up
-    // Called from the sign-up form when needsProfile === true
-    app.post('/api/agent/google-signup-complete', authLimiter, upload.none(), [
-        check('phone').matches(/^0\d{10}$/).withMessage('Phone must be 11 digits starting with 0'),
-    ], async (req, res) => {
-        const errors = validationResult(req);
-        if (!errors.isEmpty()) {
-            return res.status(422).json({ success: false, message: errors.array()[0].msg });
-        }
-
-        const { googleToken, phone, bio } = req.body;
-
-        if (!googleToken || !phone) {
-            return res.status(400).json({ success: false, message: 'Google token and phone number are required' });
-        }
-
-        // Re-verify the token (never trust client-provided email)
-        let payload;
-        try {
-            const ticket = await client.verifyIdToken({
-                idToken: googleToken,
-                audience: process.env.GOOGLE_CLIENT_ID,
-            });
-            payload = ticket.getPayload();
-        } catch (err) {
-            return res.status(401).json({ success: false, message: 'Google token expired. Please sign in with Google again.' });
-        }
-
-        const targetEmail = payload.email.trim().toLowerCase();
-        const googleName  = payload.name || payload.email.split('@')[0];
-        const googleId    = payload.sub;
-
-        try {
-            // Guard against race conditions — check again in case account now exists
-            const existing = await AgentUser.findOne({ email: targetEmail });
-            if (existing) {
-                // Just log them in
-                req.session.agent = {
-                    id: existing._id,
-                    name: existing.name,
-                    email: existing.email,
-                    role: existing.role,
-                    profilePicture: existing.profilePicture || null
-                };
-                return res.json({ success: true, message: 'Account already exists. Logged in successfully.' });
-            }
-
-            const newAgent = new AgentUser({
-                name:             googleName,
-                email:            targetEmail,
-                password:         null,   // Google-only account
-                number:           phone,
-                googleId,
-                role:             'agent',
-                status:           'active',
-                stand:            'Not verified',
-                bio:              bio || '',
-                registrationDate: new Date(),
-                ipAddress:        req.ip || req.socket?.remoteAddress
-            });
-
-            await newAgent.save();
-
-            req.session.agent = {
-                id:    newAgent._id,
-                name:  newAgent.name,
-                email: newAgent.email,
-                role:  'agent'
-            };
-
-            return res.status(201).json({
-                success: true,
-                message: 'Agent account created successfully! Welcome to Easy Find.',
-                agentId: newAgent._id
-            });
-
-        } catch (err) {
-            console.error('Agent Google sign-up complete error:', err);
-            if (err.code === 11000) {
-                return res.status(409).json({ success: false, message: 'Email or phone already registered' });
-            }
-            return res.status(500).json({ success: false, message: 'Server error' });
-        }
-    });
-
-    // Login (Handles Password & Google Auth — kept for backward compat, now delegates to google-auth)
+    // Login (Handles Password & Google Auth)
     app.post('/api/agent/login', authLimiter, [
         check('email').optional({ checkFalsy: true }).isEmail().normalizeEmail().withMessage('Invalid email'),
     ], async (req, res) => {
         
         const { email, password, googleToken } = req.body;
-
-        // If a Google token is present, forward to the unified google-auth handler logic
-        if (googleToken) {
-            // Inline the same logic to avoid a double HTTP request
-            let payload;
-            try {
-                const ticket = await client.verifyIdToken({
-                    idToken: googleToken,
-                    audience: process.env.GOOGLE_CLIENT_ID,
-                });
-                payload = ticket.getPayload();
-            } catch (err) {
-                return res.status(401).json({ success: false, message: 'Invalid or expired Google token' });
-            }
-
-            if (!payload.email_verified) {
-                return res.status(401).json({ success: false, message: 'Unverified Google accounts are not permitted.' });
-            }
-
-            const targetEmail = payload.email.trim().toLowerCase();
-            const googleName  = payload.name || payload.email.split('@')[0];
-            const googleId    = payload.sub;
-
-            try {
-                let agentDoc = await AgentUser.findOne({ email: targetEmail });
-
-                if (agentDoc) {
-                    if (agentDoc.status !== 'active') {
-                        return res.status(403).json({ success: false, message: 'Your account is inactive. Please contact us through email.', inactive: true });
-                    }
-                    if (agentDoc.googleId && agentDoc.googleId !== googleId) {
-                        return res.status(401).json({ success: false, message: 'Google account mismatch. Please log in with your password.' });
-                    }
-                    if (!agentDoc.googleId) agentDoc.googleId = googleId;
-                    agentDoc.lastLogin = new Date();
-                    await agentDoc.save();
-
-                    req.session.agent = {
-                        id: agentDoc._id,
-                        name: agentDoc.name,
-                        email: agentDoc.email,
-                        role: agentDoc.role,
-                        profilePicture: agentDoc.profilePicture || null
-                    };
-
-                    return res.json({
-                        success: true,
-                        message: 'Login successful',
-                        agent: { name: agentDoc.name, email: agentDoc.email, role: agentDoc.role }
-                    });
-                }
-
-                // New agent — needs profile completion
-                return res.json({
-                    success: true,
-                    needsProfile: true,
-                    message: 'Google account verified. Please complete your agent profile.',
-                    profile: { name: googleName, email: targetEmail, googleToken }
-                });
-
-            } catch (err) {
-                console.error('Agent login (Google) error:', err);
-                return res.status(500).json({ success: false, message: 'Server error' });
-            }
-        }
-
-        // Standard password login
         let targetEmail = email;
+        let googleId = null;
+    
         try {
-            const errors = validationResult(req);
-            if (!errors.isEmpty() || !password) {
-                return res.status(422).json({ success: false, message: 'Email and password are required', errors: errors.array() });
+            if (googleToken) {
+                try {
+                    const ticket = await client.verifyIdToken({
+                        idToken: googleToken,
+                        audience: process.env.GOOGLE_CLIENT_ID, 
+                    });
+                    const payload = ticket.getPayload();
+                    
+                    if (!payload.email_verified) {
+                        return res.status(401).json({ success: false, message: 'Unverified Google accounts are not permitted.' });
+                    }
+    
+                    targetEmail = payload.email;
+                    googleId = payload.sub;
+                } catch (jwtError) {
+                    return res.status(401).json({ success: false, message: 'Invalid or expired Google token' });
+                }
+            } else {
+                const errors = validationResult(req);
+                if (!errors.isEmpty() || !password) {
+                    return res.status(422).json({ success: false, message: 'Email and password are required', errors: errors.array() });
+                }
             }
-
-            if (targetEmail) targetEmail = targetEmail.trim().toLowerCase();
-
-            const agentDoc = await AgentUser.findOne({ email: targetEmail });
-
-            if (!agentDoc) {
+    
+            if (targetEmail) {
+                targetEmail = targetEmail.trim().toLowerCase();
+            }
+    
+            const agent = await AgentUser.findOne({ email: targetEmail });
+            
+            if (!agent) {
                 return res.status(401).json({ success: false, message: 'Invalid email or password.' });
             }
-
-            if (agentDoc.status !== 'active') {
-                return res.status(403).json({ success: false, message: 'Your account is inactive. Please contact us through email.', inactive: true });
+    
+            // 3. STATUS CHECK: Make sure the account isn't banned or suspended
+            if (agent.status !== 'active') {
+                return res.status(403).json({ 
+                    success: false, 
+                    message: 'Your account is inactive. Please contact us through email.',
+                    inactive: true 
+                });
             }
-
-            // Check if this is a Google-only account
-            if (!agentDoc.password) {
-                return res.status(401).json({ success: false, message: 'This account was created with Google. Please sign in with Google.' });
+    
+            // 4. SECURITY CHECK: Verify Password OR bind/verify Google link mapping
+            if (!googleToken) {
+                const isPasswordValid = await agent.comparePassword(password);
+                if (!isPasswordValid) {
+                    return res.status(401).json({ success: false, message: 'Invalid Google token payload' });
+                }
+            } else {
+                // SECURITY PATCH: If they already linked a Google ID before, make sure it matches the current one!
+                if (agent.googleId && agent.googleId !== googleId) {
+                    return res.status(401).json({ success: false, message: 'Google account mismatch. Please log in with your password.' });
+                }
+    
+                // Safe to link the identity if it's their first time logging in via Google
+                if (!agent.googleId) {
+                    agent.googleId = googleId;
+                }
             }
-
-            const isPasswordValid = await agentDoc.comparePassword(password);
-            if (!isPasswordValid) {
-                return res.status(401).json({ success: false, message: 'Invalid email or password' });
-            }
-
-            agentDoc.lastLogin = new Date();
-            await agentDoc.save();
-
+    
+            // 5. UPDATE METRICS & SAVE
+            agent.lastLogin = new Date();
+            await agent.save();
+    
+            // 6. ESTABLISH SESSION
             req.session.agent = {
-                id: agentDoc._id,
-                name: agentDoc.name,
-                email: agentDoc.email,
-                role: agentDoc.role,
-                profilePicture: agentDoc.profilePicture || null
+                id: agent._id,
+                name: agent.name,
+                email: agent.email,
+                role: agent.role,
+                profilePicture: agent.profilePicture || null
             };
-
+    
             return res.status(200).json({
                 success: true,
                 message: 'Login successful',
-                agent: { name: agentDoc.name, email: agentDoc.email, role: agentDoc.role }
+                agent: { name: agent.name, email: agent.email, role: agent.role }
             });
-
+    
         } catch (err) {
             console.error('Agent login error:', err);
             return res.status(500).json({ success: false, message: 'Server error' });
@@ -409,16 +205,165 @@ const agent = (app) => {
     });
 
     // Public profile by ID
-    app.get('/api/agent/profile/:id', async (req, res) => {
+    app.get('/api/agent/public/:id', async (req, res) => {
         try {
             const agent = await AgentUser.findById(req.params.id)
-                .select('name email profilePicture stand bio')
+                .select('name profilePicture bio stand registrationDate number')
                 .lean();
             if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
-            res.json({ success: true, agent });
+            res.json({
+                success: true,
+                agent: {
+                    id: agent._id,
+                    name: agent.name,
+                    profilePicture: agent.profilePicture || null,
+                    bio: agent.bio || null,
+                    stand: agent.stand || null,
+                    phone: agent.number || null,
+                    joinedAt: agent.registrationDate || null
+                }
+            });
         } catch (err) {
             res.status(500).json({ success: false, message: 'Server error' });
         }
+    });
+
+    // Logout
+    app.post('/api/agent/logout', (req, res) => {
+        req.session.destroy(err => {
+            if (err) return res.status(500).json({ success: false, message: 'Error logging out' });
+            res.json({ success: true, message: 'Logged out successfully' });
+        });
+    });
+
+    // Agent profile (protected)
+    app.get('/api/agent/profile', requireAgent, async (req, res) => {
+        try {
+            const agent = await AgentUser.findById(req.session.agent.id).select('-password').lean();
+            if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
+            res.json({ success: true, agent });
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Error fetching profile' });
+        }
+    });
+
+    // Update Bio
+    app.post('/api/update/bio', requireAgent,[
+        check('bio')
+             .optional()
+             .trim()
+             .isLength({ max: 300 })
+             .trim()
+    ], async (req, res) => {
+        const bio = (req.body.bio || '').trim().slice(0, 300);
+        try {
+            const agent = await AgentUser.findById(req.session.agent.id);
+            if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
+            agent.bio = bio;
+            await agent.save();
+            res.json({ success: true, bio: agent.bio });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ success: false, message: 'Failed to save bio' });
+        }
+    });
+
+    // Get Bio
+    app.get('/api/get/bio', requireAgent, async (req, res) => {
+        try {
+            const agent = await AgentUser.findById(req.session.agent.id).select('bio').lean();
+            if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
+            res.json({ success: true, bio: agent.bio || '' });
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Error fetching bio' });
+        }
+    });  
+
+    // Get all agents (admin only)
+    app.get('/api/agents', requireAdmin, async (req, res) => {
+        try {
+            const agents = await AgentUser.find().select('-password').lean();
+            res.json({ success: true, agents });
+        } catch (err) {
+            res.status(500).json({ success: false, message: 'Error fetching agents' });
+        }
+    });
+
+    // Send code for verification
+    app.post('/api/agent/send-code', authLimiter, async (req, res) => {
+        try {
+            const email = (req.body.email || '').trim().toLowerCase();
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                return res.status(400).json({ success: false, message: 'A valid email address is required' });
+            }
+
+            const user = await AgentUser.findOne({ email });
+            if (!user) return res.status(404).json({ success: false, message: 'No account found with that email address' });
+
+            const { sendOTP } = require('../utils/sms.js');
+            const result = await sendOTP(user.number, user.email);
+
+            if (!result.success) {
+                return res.status(500).json({ success: false, message: result.message });
+            }
+
+            req.session.otp = {
+                code:    result.otp,
+                email:   user.email,
+                phone:   user.number,
+                expires: Date.now() + 10 * 60 * 1000  // 10 minutes
+            };
+
+            res.json({ success: true, message: 'Reset code sent to your email' });
+
+        } catch (error) {
+            console.error('Password reset error:', error);
+            res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+        }
+    });
+
+    //Password reset
+    app.post('/api/agent/reset-password', async (req, res) => {
+        const { newPassword } = req.body;
+        const email = req.session.emailVerified;
+
+        if (!email)
+            return res.status(403).json({ success: false, message: 'Not verified. Start over.' });
+        if (!newPassword || newPassword.length < 8)
+            return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword))
+            return res.status(400).json({ success: false, message: 'Password must contain uppercase, lowercase, and number' });
+
+        try {
+            const agent = await AgentUser.findOne({ email });
+            if (!agent) return res.status(404).json({ success: false, message: 'Agent not found' });
+
+            agent.password = newPassword;
+            agent.passwordResetAt = new Date();
+            await agent.save();
+
+            req.session.emailVerified = null;
+            res.json({ success: true, message: 'Password reset successfully' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    });
+
+    // Verify OTP 
+    app.post('/api/agent/verify-otp', authLimiter, (req, res) => {
+        const otp = req.body.otp;
+        const stored = req.session.otp;
+
+        if (!stored) return res.status(400).json({ success: false, message: 'No OTP requested' });
+        if (Date.now() > stored.expires) return res.status(400).json({ success: false, message: 'OTP expired' });
+        if (otp !== stored.code) return res.status(400).json({ success: false, message: 'Invalid OTP' });
+
+        req.session.otp = null;
+        req.session.emailVerified = stored.email; // track by email now
+
+        res.json({ success: true, message: 'Email verified successfully' });
     });
 
     // Get verified agents (public)
@@ -428,6 +373,7 @@ const agent = (app) => {
         const skip = (page - 1) * limit;
     
         try {
+            
             const [agents, totalCount] = await Promise.all([
                 AgentUser.find({ stand: 'Verified Agent', status: 'active' })
                     .select('name profilePicture stand bio')
@@ -441,6 +387,7 @@ const agent = (app) => {
             res.json({
                 success: true,
                 totalCount,
+                // Clean up mappings inline inside the response loop
                 agents: agents.map(agent => ({
                     id: agent._id,
                     name: agent.name,
@@ -459,17 +406,20 @@ const agent = (app) => {
         try {
             const AgentPost = require('../model/AgentPost.js');
             
+            // Get all agents with property count
             const agents = await AgentUser.find()
                 .select('name email number profilePicture status stand registrationDate lastLogin loginCount')
                 .lean()
                 .sort({ registrationDate: -1 });
 
+            // Get property counts for each agent
             const agentIds = agents.map(a => a._id.toString());
             const propertyCounts = await AgentPost.aggregate([
                 { $match: { agentId: { $in: agentIds } } },
                 { $group: { _id: '$agentId', count: { $sum: 1 } } }
             ]);
 
+            // Map property counts to agents
             const propertyCountMap = {};
             propertyCounts.forEach(pc => {
                 propertyCountMap[pc._id] = pc.count;
@@ -479,9 +429,14 @@ const agent = (app) => {
                 agent.propertyCount = propertyCountMap[agent._id.toString()] || 0;
             });
 
+            // Get total properties
             const totalProperties = await AgentPost.countDocuments();
 
-            res.json({ success: true, agents, totalProperties });
+            res.json({
+                success: true,
+                agents,
+                totalProperties
+            });
 
         } catch (err) {
             console.error('Error fetching agents:', err);
@@ -494,12 +449,22 @@ const agent = (app) => {
         try {
             const agents = await AgentUser.find({ stand: 'Verified Agent' });
             if (!agents) {
-                return res.status(404).json({ success: false, message: 'No verified agent yet' });
+                return res.status(404).json({
+                    success: false,
+                    message: 'No verified agent yet'
+                })
             }
-            res.json({ success: true, VerifiedAgent: agents.length });
+
+            res.json({
+                success: true,
+                VerifiedAgent: agents.length
+            })
         } catch (error) {
             console.error('Error on count verified agent:', error);
-            res.json({ success: false, message: 'Error loading verified agent' });
+            res.json({
+                success: false,
+                message: 'Error loading verified agent'
+            })
         }
     });
 
@@ -529,15 +494,12 @@ const agent = (app) => {
         if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword))
             return res.status(400).json({ success: false, message: 'Password must contain uppercase, lowercase, and number' });
         try {
-            const agentDoc = await AgentUser.findById(req.session.agent.id);
-            if (!agentDoc.password) {
-                return res.status(400).json({ success: false, message: 'This account uses Google sign-in. You can set a password by using the forgot-password flow.' });
-            }
-            const isMatch = await agentDoc.comparePassword(currentPassword);
+            const agent = await AgentUser.findById(req.session.agent.id);
+            const isMatch = await agent.comparePassword(currentPassword);
             if (!isMatch)
                 return res.status(401).json({ success: false, message: 'Current password is incorrect' });
-            agentDoc.password = newPassword;
-            await agentDoc.save();
+            agent.password = newPassword;
+            await agent.save();
             res.json({ success: true, message: 'Password changed successfully' });
         } catch (err) {
             res.status(500).json({ success: false, message: 'Server error' });
@@ -565,7 +527,10 @@ const agent = (app) => {
             const { stand, status } = req.body;
 
             if (status && !['active', 'inactive', 'suspended'].includes(status)) {
-                return res.status(400).json({ success: false, message: 'Invalid status. Must be: active, inactive, or suspended' });
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid status. Must be: active, inactive, or suspended'
+                });
             }
 
             const validStands = ['Not verified', 'Verified Agent'];
@@ -577,16 +542,25 @@ const agent = (app) => {
             if (stand !== undefined) updateData.stand = stand;
             if (status) updateData.status = status;
 
-            const agentDoc = await AgentUser.findByIdAndUpdate(id, updateData, { new: true });
+            const agent = await AgentUser.findByIdAndUpdate(
+                id,
+                updateData,
+                { new: true }
+            );
 
-            if (!agentDoc) {
+            if (!agent) {
                 return res.status(404).json({ success: false, message: 'Agent not found' });
             }
 
             res.json({
                 success: true,
                 message: 'Agent updated successfully',
-                agent: { id: agentDoc._id, name: agentDoc.name, stand: agentDoc.stand, status: agentDoc.status }
+                agent: {
+                    id: agent._id,
+                    name: agent.name,
+                    stand: agent.stand,
+                    status: agent.status
+                }
             });
 
         } catch (err) {

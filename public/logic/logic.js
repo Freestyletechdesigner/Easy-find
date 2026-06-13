@@ -1372,38 +1372,36 @@ function initGoogleSignIn() {
 async function handleGoogleCredentialResponse(googleResponse) {
     const submitBtn = loginForm ? loginForm.querySelector('input[type="submit"]') : null;
     let originalText = '';
- 
+
     if (submitBtn) {
         originalText = submitBtn.value;
         submitBtn.classList.add('loading');
-        submitBtn.value = 'Signing in with Google...';
+        submitBtn.value = 'Signing In with Google...';
         submitBtn.disabled = true;
     }
- 
+
     try {
         const res = await fetch("/api/login", {
             method: "POST",
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
-            body: JSON.stringify({ googleToken: googleResponse.credential })
+            body: JSON.stringify({
+                googleToken: googleResponse.credential
+            })
         });
- 
+
         const data = await res.json();
- 
+
         if (!data.success) {
-            showLoginAlert(data.message || 'Google sign-in failed. Please try again.', 'error');
+            showLoginAlert('User not found, check your email', 'error');
             return;
         }
- 
-        // isNewUser flag means the account was just created — show a welcome message
-        if (data.isNewUser) {
-            showLoginAlert(data.message || 'Account created! Welcome to Easy Find!', 'success');
-        }
- 
+
+        // If success: true
         handleUnifiedLoginResponse(data);
- 
+
     } catch (err) {
-        console.error("Google login/signup error", err);
+        console.error("Google login error", err);
         showLoginAlert('An error occurred. Please try again.', 'error');
     } finally {
         if (submitBtn) {
@@ -1417,15 +1415,15 @@ async function handleGoogleCredentialResponse(googleResponse) {
 // 3. CENTRALIZED DATA AND UI ROUTER
 function handleUnifiedLoginResponse(data) {
     if (data.success) {
-        if (!data.isNewUser) {
-            showLoginAlert('Login successful!', 'success');
-        }
- 
+        showLoginAlert('Login successful!', 'success');
+        
+        // Check if admin or regular user
         if (data.admin) {
+            // Admin routing structure
             setTimeout(() => { window.location.href = '/admin'; }, 1000);
         } else if (data.user) {
-            const displayName = data.user.name || 'User';
-            userLog.textContent = displayName[0].toUpperCase();
+            // Regular user DOM state upgrades
+            userLog.textContent = data.user.name[0];
             loginNav.style.display = 'none';
             holdLogin.style.right = '-10rem';
             userLog.style.display = 'flex';
