@@ -62,7 +62,8 @@ app.use(
             "https://accounts.google.com",
             "https://cdn.smileidentity.com",
             "https://googleusercontent.com",
-            "https://maps.google.com"
+            "https://maps.google.com",
+            "https://googleusercontent.com"
         ],
         connectSrc: [
           "'self'", 
