@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const ADMIN = require('../model/ADMIN.js');
 const { OAuth2Client } = require('google-auth-library');
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
 // Middleware to check if user is admin
 function requireAdmin(req, res, next) {
     if (!req.session.admin) {
@@ -30,8 +31,6 @@ const authLimiter = rateLimit({
     skip: () => process.env.NODE_ENV === 'development'
 });
 
-// General limiter for public profiles/status - Fix 31: removed unused apiLimiter
-
 module.exports = function(app) {
 
     // Validate email format
@@ -55,7 +54,7 @@ module.exports = function(app) {
         return { valid: true };
     }
 
-    // Signup endpoint
+    // Signup endpoint (email/password)
     app.post('/api/signup', authLimiter, async (req, res) => {
         try {
             const { name, email, number, password } = req.body;
@@ -81,13 +80,11 @@ module.exports = function(app) {
                 return res.status(400).json({ success: false, message: passwordValidation.message });
             }
 
-            // Check if email already exists
             const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
             if (existingUser) {
                 return res.status(400).json({ success: false, message: 'Email address is already registered' });
             }
 
-            // Create and save new user (password hashed by pre-save hook)
             const newUser = new User({
                 name: name.trim(),
                 email: email.trim().toLowerCase(),
@@ -112,7 +109,7 @@ module.exports = function(app) {
         }
     });
 
-    // Get all users (for analytics) - Fix 1: requireAdmin added
+    // Get all users (for analytics)
     app.get('/api/users', requireAdmin, async (req, res) => {
         try {
             const users = await User.find()
@@ -127,7 +124,7 @@ module.exports = function(app) {
         }
     });
 
-    // Update user status - Fix 2: requireAdmin added
+    // Update user status
     app.patch('/api/users/:id', requireAdmin, async (req, res) => {
         try {
             const { id } = req.params;
@@ -148,16 +145,18 @@ module.exports = function(app) {
             res.json({ success: true, message: 'User status updated successfully' });
 
         } catch (error) {
-            console.error('Error updating user hi:', error);
+            console.error('Error updating user:', error);
             res.status(500).json({ success: false, message: 'Error updating user' });
         }
     });
 
-    // Login
+    // Login (handles password, Google, and Google sign-up)
     app.post('/api/login', authLimiter, async (req, res) => {
         try {
             const { email, password, googleToken } = req.body;
             let targetEmail = '';
+            let googleName = '';
+            let googleId = null;
     
             // 1. DETERMINE AUTHENTICATION METHOD
             if (googleToken) {
@@ -172,8 +171,14 @@ module.exports = function(app) {
                     if (!payload || !payload.email) {
                         return res.status(400).json({ success: false, message: 'Invalid Google token payload' });
                     }
+
+                    if (!payload.email_verified) {
+                        return res.status(401).json({ success: false, message: 'Unverified Google accounts are not permitted.' });
+                    }
                     
                     targetEmail = payload.email.trim().toLowerCase();
+                    googleName  = payload.name || payload.email.split('@')[0];
+                    googleId    = payload.sub;
                 } catch (googleError) {
                     console.error('Google token verification failed:', googleError);
                     return res.status(401).json({ success: false, message: 'Google authentication failed' });
@@ -189,34 +194,58 @@ module.exports = function(app) {
             // 2. CHECK IF ACCOUNT IS AN ADMIN
             const admin = await ADMIN.findOne({ email: targetEmail });
             if (admin) {
-                // If it's a standard password login, verify the password
                 if (!googleToken) {
                     const isPasswordValid = await admin.comparePassword(password);
                     if (!isPasswordValid) {
                         return res.status(401).json({ success: false, message: 'Invalid email or password' });
                     }
                 }
-    
-                // Set Admin Session
+
                 req.session.admin = {
                     id: admin._id,
                     email: admin.email,
                     role: admin.role
                 };
-    
+
                 return res.json({
                     success: true,
                     message: 'Login successful',
-                    admin: {
-                        id: admin._id,
-                        email: admin.email,
-                        role: admin.role
-                    }
+                    admin: { id: admin._id, email: admin.email, role: admin.role }
                 });
             }
     
-            // 3. CHECK IF ACCOUNT IS A STANDARD USER
-            const user = await User.findOne({ email: targetEmail });
+            // 3. LOOK UP USER
+            let user = await User.findOne({ email: targetEmail });
+
+            // 4. GOOGLE SIGN-UP: create account automatically if user does not exist
+            if (!user && googleToken) {
+                user = new User({
+                    name: googleName,
+                    email: targetEmail,
+                    // No password — Google-only account
+                    password: null,
+                    number: '',           // User can fill this in their profile later
+                    status: 'active',
+                    googleId,
+                    registrationDate: new Date(),
+                    loginCount: 0,
+                    ipAddress: req.ip || req.socket?.remoteAddress
+                });
+
+                await user.save();
+
+                // Set session immediately after sign-up
+                req.session.userId = user._id;
+
+                return res.json({
+                    success: true,
+                    isNewUser: true,
+                    message: `Welcome to Easy Find, ${googleName}! Your account has been created.`,
+                    user: { id: user._id, name: user.name, email: user.email }
+                });
+            }
+
+            // 5. USER NOT FOUND (password login path only)
             if (!user) {
                 return res.status(401).json({ success: false, message: 'Invalid email or password.' });
             }
@@ -225,17 +254,29 @@ module.exports = function(app) {
                 return res.status(401).json({ success: false, message: 'Account is inactive. Please contact support.' });
             }
     
-            // If it's a standard password login, verify the password
+            // 6. VERIFY CREDENTIALS
             if (!googleToken) {
+                // Password login — but check if this is a Google-only account
+                if (!user.password) {
+                    return res.status(401).json({ success: false, message: 'This account was created with Google. Please sign in with Google.' });
+                }
                 const isPasswordValid = await user.comparePassword(password);
                 if (!isPasswordValid) {
                     return res.status(401).json({ success: false, message: 'Invalid email or password' });
                 }
+            } else {
+                // Google login — bind googleId on first Google login
+                if (user.googleId && user.googleId !== googleId) {
+                    return res.status(401).json({ success: false, message: 'Google account mismatch. Please log in with your password.' });
+                }
+                if (!user.googleId) {
+                    user.googleId = googleId;
+                }
             }
     
-            // Setup User Session and Update Analytics Data
+            // 7. UPDATE SESSION & METRICS
             req.session.userId = user._id;
-            user.lastLogin = new Date();
+            user.lastLogin  = new Date();
             user.loginCount = (user.loginCount || 0) + 1;
             await user.save();
     
@@ -254,31 +295,21 @@ module.exports = function(app) {
     // Check admin session
     app.get('/api/admin/session', (req, res) => {
         if (req.session.admin) {
-            res.json({
-                success: true,
-                admin: req.session.admin
-            });
+            res.json({ success: true, admin: req.session.admin });
         } else {
-            res.status(401).json({
-                success: false,
-                message: 'Not authenticated'
-            });
+            res.status(401).json({ success: false, message: 'Not authenticated' });
         }
     });
     
-    //Middleware
+    // Auth middleware
     function isAuth(req, res, next) {
         if (!req.session.userId) {
-            return res.status(401).json({
-                success: false,
-                message: 'User not registerd'
-            });
+            return res.status(401).json({ success: false, message: 'User not registered' });
         }
-        next()
+        next();
     }
-    
 
-    //User profile
+    // User profile
     app.get('/api/user/profile', isAuth, async (req, res) => {
         try {
             const user = await User.findById(req.session.userId).select('-password').lean();
@@ -289,24 +320,20 @@ module.exports = function(app) {
         }
     });
 
-    //Logout 
+    // Logout 
     app.post('/api/logout', (req, res) => {
-
         req.session.destroy(() => {
             res.clearCookie('connect.sid');
             res.json({ success: true });
         });
-
     });
 
     // Admin Logout 
     app.post('/api/admin/logout', (req, res) => {
-
         req.session.destroy(() => {
             res.clearCookie('connect.sid');
             res.json({ success: true });
         });
-
     });
 
     // Password reset
@@ -326,12 +353,16 @@ module.exports = function(app) {
             const user = await User.findOne({ email: email.trim().toLowerCase() });
             if (!user) return res.status(404).json({ success: false, message: 'Invalid email or current password' });
 
+            if (!user.password) {
+                return res.status(400).json({ success: false, message: 'This account uses Google sign-in. Password reset is not applicable.' });
+            }
+
             const isCurrentPasswordValid = await user.comparePassword(currentPassword);
             if (!isCurrentPasswordValid) {
                 return res.status(401).json({ success: false, message: 'Current password is incorrect' });
             }
 
-            user.password = newPassword; // pre-save hook hashes it
+            user.password = newPassword;
             user.passwordResetAt = new Date();
             await user.save();
 
@@ -343,7 +374,7 @@ module.exports = function(app) {
         }
     });
 
-    // ADMIN STATUS
+    // Admin status
     app.get('/api/admin/status', requireAdmin, (req, res) => {
         res.json({ success: true, isAdmin: true, admin: {
             email: req.session.admin.email,
