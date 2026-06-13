@@ -52,7 +52,7 @@ app.use(
           "https://accounts.google.com", 
           "https://unpkg.com", 
           "https://cdn.emailjs.com",
-          "https://cdn.smileidentity.com", // Added Smile ID Script
+          "https://cdn.smileidentity.com",
           "'unsafe-inline'" 
         ],
         scriptSrcAttr: ["'self'", "'unsafe-inline'"], 
@@ -60,7 +60,7 @@ app.use(
             "'self'", 
             "https://www.google.com", 
             "https://accounts.google.com",
-            "https://cdn.smileidentity.com" // Added Smile ID Frames
+            "https://cdn.smileidentity.com"
         ],
         connectSrc: [
           "'self'", 
@@ -70,9 +70,15 @@ app.use(
           "https://api.emailjs.com",
           "https://cdn.smileidentity.com",
           "https://unpkg.com",
-          "https://accounts.google.com"
+          "https://accounts.google.com",
+          "https://*.tile.openstreetmap.org"
         ], 
-        imgSrc: ["'self'", "data:", "https:"],
+        imgSrc: [
+          "'self'", 
+          "data:", 
+          "https:", 
+          "https://*.tile.openstreetmap.org"
+        ],
         styleSrc: ["'self'", "'unsafe-inline'", "https:"],
       },
     },

@@ -341,9 +341,9 @@
             <div class="footer-col">
                 <h3>Marketplace</h3>
                 <ul>
-                    <li><a href="#">Verified Properties</a></li>
-                    <li><a href="#">About the Platform</a></li>
-                    <li><a href="#">Contact Support</a></li>
+                    <li><a >Verified Properties</a></li>
+                    <li><a href="#about">About the Platform</a></li>
+                    <li><a href="/contact">Contact Support</a></li>
                 </ul>
             </div>
 
@@ -351,9 +351,9 @@
             <div class="footer-col">
                 <h3>Agents & Partners</h3>
                 <ul>
-                    <li><a href="#">Agent Registration</a></li>
-                    <li><a href="#">Identity Verification (KYC)</a></li>
-                    <li><a href="#">Property Boosting</a></li>
+                    <li><a href="/login-agent">Agent Registration</a></li>
+                    <li><a >Identity Verification (KYC)</a></li>
+                    <li><a >Property Boosting</a></li>
                 </ul>
             </div>
 
@@ -361,9 +361,9 @@
             <div class="footer-col">
                 <h3>Regional Focus</h3>
                 <ul>
-                    <li><a href="#">Enugu Real Estate</a></li>
-                    <li><a href="#">Urban Residential</a></li>
-                    <li><a href="#">Commercial Properties</a></li>
+                    <li><a >Enugu Real Estate</a></li>
+                    <li><a >Urban Residential</a></li>
+                    <li><a >Commercial Properties</a></li>
                 </ul>
             </div>
 
@@ -398,39 +398,6 @@
 
 <script src="logic/alert-box.js"></script>
 <script src="logic/logic.js"></script>
-
-<script>
-// Check for payment success on page load
-document.addEventListener('DOMContentLoaded', () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const paymentSuccess = urlParams.get('payment');
-    const bookingId = urlParams.get('booking');
-    
-    if (paymentSuccess === 'success' && bookingId) {
-        // Show success alert
-        alertBox.success(
-            'Payment Successful!',
-            `Your booking (ID: ${bookingId}) has been confirmed.\nThank you for choosing our hotel!`,
-            () => {
-                // Clean up URL
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-        );
-        
-        // Clean up localStorage
-        localStorage.removeItem('currentBooking');
-        localStorage.removeItem('currentBookingId');
-    } else if (paymentSuccess === 'cancelled') {
-        alertBox.warning(
-            'Payment Cancelled',
-            'Your payment was cancelled. You can try booking again.',
-            () => {
-                window.history.replaceState({}, document.title, window.location.pathname);
-            }
-        );
-    }
-});
-</script>
 
 </body>
 </html>
