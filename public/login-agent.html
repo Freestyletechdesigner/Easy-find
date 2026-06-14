@@ -570,6 +570,9 @@
                 const data = await response.json();
                 if (!data.success) {
                     handleLoginResponse({ success: false, message: 'User not found, Register as Agent.' });
+                    setTimeout(() => {
+                        window.location.href = '/signup-agent';
+                    }, 700);
                     return;
                 }
                 handleLoginResponse(data);
