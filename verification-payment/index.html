@@ -232,6 +232,75 @@
                 padding: 40px 30px;
             }
         }
+
+/* ── Font Awesome animation fixes for older Safari / iPhone 6s ── */
+
+/* fa-spin */
+#fa-spinner {
+    -webkit-animation: fa-spin 2s infinite linear;
+    animation: fa-spin 2s infinite linear;
+}
+
+@-webkit-keyframes fa-spin {
+    0%   { -webkit-transform: rotate(0deg);   transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+@keyframes fa-spin {
+    0%   { -webkit-transform: rotate(0deg);   transform: rotate(0deg); }
+    100% { -webkit-transform: rotate(360deg); transform: rotate(360deg); }
+}
+
+/* fa-bounce */
+.fa-bounce {
+    -webkit-animation: fa-bounce 1s infinite;
+    animation: fa-bounce 1s infinite;
+}
+
+@-webkit-keyframes fa-bounce {
+    0%, 100% { -webkit-transform: translateY(0);    transform: translateY(0); }
+    50%       { -webkit-transform: translateY(-6px); transform: translateY(-6px); }
+}
+
+@keyframes fa-bounce {
+    0%, 100% { -webkit-transform: translateY(0);    transform: translateY(0); }
+    50%       { -webkit-transform: translateY(-6px); transform: translateY(-6px); }
+}
+
+/* fa-pulse (used in loading spinners) */
+.fa-pulse {
+    -webkit-animation: fa-spin 1s infinite steps(8);
+    animation: fa-spin 1s infinite steps(8);
+}
+
+/* Ensure animation runs on all webkit browsers */
+.fa-spin,
+.fa-bounce,
+.fa-pulse {
+    -webkit-animation-play-state: running;
+    animation-play-state: running;
+}
+
+/* ── Manual spin animation — replaces fa-spin for full iOS/Safari support ── */
+@-webkit-keyframes spin-rotate {
+    0%   { -webkit-transform: rotate(0deg)   translateZ(0); transform: rotate(0deg)   translateZ(0); }
+    100% { -webkit-transform: rotate(360deg) translateZ(0); transform: rotate(360deg) translateZ(0); }
+}
+@keyframes spin-rotate {
+    0%   { -webkit-transform: rotate(0deg)   translateZ(0); transform: rotate(0deg)   translateZ(0); }
+    100% { -webkit-transform: rotate(360deg) translateZ(0); transform: rotate(360deg) translateZ(0); }
+}
+
+.spin-icon {
+    display: inline-block;
+    -webkit-animation: spin-rotate 1s linear infinite;
+    animation: spin-rotate 1s linear infinite;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    will-change: transform;
+}
     </style>
 </head>
 <body>
@@ -343,7 +412,7 @@
         
             const btn = this;
             btn.disabled = true;
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Connecting...</span>`;
+            btn.innerHTML = `<i class="fas fa-spinner spin-icon"></i> <span>Connecting...</span>`;
         
             try {
                 const response = await fetch('/api/verification/initialize-payment', {
