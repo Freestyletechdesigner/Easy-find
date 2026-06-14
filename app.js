@@ -362,18 +362,12 @@ app.use('/verification-payment', express.static('verification-payment', staticOp
 app.use('/terms', express.static('public/terms.html'));
 
 // ── Agent Verification page — gate by payment ─────────
-// Case 1: Paystack callback with reference → verify payment, update DB, redirect to page
-// Case 2: Direct visit → check DB, serve page if paid, redirect to payment if not
+// Session-independent: reads agentId from Paystack metadata so it works
+// even if the session expired while the agent was on Paystack's payment page.
 app.get('/agent-verification', async (req, res, next) => {
     const { reference, trxref } = req.query;
     const paymentRef = reference || trxref;
 
-    // Must be logged in as agent
-    if (!req.session.agent) {
-        return res.redirect('/login-agent');
-    }
-
-    const agentId = req.session.agent.id || req.session.agent._id;
     const AgentUser = require('./model/AgentUser.js');
     const axios = require('axios');
 
@@ -387,27 +381,47 @@ app.get('/agent-verification', async (req, res, next) => {
             const txData = paystackRes.data?.data;
 
             if (txData && txData.status === 'success') {
+                // Read agentId from metadata — works even without a session
+                const agentId = txData.metadata?.agentId
+                    || req.session?.agent?.id
+                    || req.session?.agent?._id;
+
+                if (!agentId) {
+                    console.error('[Verification] No agentId found in metadata or session');
+                    return res.redirect('/verification-payment');
+                }
+
                 // Update DB
                 await AgentUser.findByIdAndUpdate(agentId, { verifyPayment: true });
-                req.session.agent.verifyPayment = true;
-                // Redirect to clean URL (no query string)
+
+                // Sync session if still alive
+                if (req.session?.agent) {
+                    req.session.agent.verifyPayment = true;
+                    req.session.save(() => {});
+                }
+
+                console.log(`[Verification] Payment confirmed for agent ${agentId}`);
+                // Redirect to clean URL
                 return res.redirect('/agent-verification');
             }
         } catch (err) {
             console.error('Paystack verify error:', err.message);
         }
-        // Payment failed — send back to payment page
         return res.redirect('/verification-payment');
     }
 
-    // Case 2: Direct visit — check DB
+    // Case 2: Direct visit — must be logged in
+    if (!req.session?.agent) {
+        return res.redirect('/login-agent');
+    }
+
+    const agentId = req.session.agent.id || req.session.agent._id;
+
     try {
         const agent = await AgentUser.findById(agentId).select('verifyPayment').lean();
         if (agent && agent.verifyPayment) {
-            // Paid — serve the verification page
             return res.sendFile(path.join(__dirname, 'agent-verification', 'index.html'));
         }
-        // Not paid — redirect to payment
         return res.redirect('/verification-payment');
     } catch (err) {
         console.error('Agent verification check error:', err.message);
