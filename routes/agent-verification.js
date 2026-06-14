@@ -135,7 +135,7 @@ function NIN_VERIFICATION(app) {
                     return res.status(500).send('Session save error');
                 }
                 // 4. Finally serve the page
-                return res.sendFile(require('path').join(__dirname, '..', 'agent-verification', 'index.html'));
+                return res.redirect('/agent-verification');
             });
         } catch (err) {
             console.error('Paystack verify error:', err.message);
