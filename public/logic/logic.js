@@ -1393,7 +1393,7 @@ async function handleGoogleCredentialResponse(googleResponse) {
         const data = await res.json();
 
         if (!data.success) {
-            showLoginAlert('User not found, check your email', 'error');
+            showLoginAlert('User not found, Register.', 'error');
             return;
         }
 

@@ -569,7 +569,7 @@
 
                 const data = await response.json();
                 if (!data.success) {
-                    handleLoginResponse({ success: false, message: 'User not found, check your email.' });
+                    handleLoginResponse({ success: false, message: 'User not found, Register as Agent.' });
                     return;
                 }
                 handleLoginResponse(data);
