@@ -94,40 +94,69 @@ function NIN_VERIFICATION(app) {
     });
 
     // ── Paystack: Payment Redirect Handler ───────────────────────────────────
-    app.get('/agent-verification', requireAgent, async (req, res) => {
+    // NOTE: No requireAgent here — session may be lost after Paystack redirect on production.
+    // We identify the agent from Paystack metadata instead.
+    app.get('/agent-verification', async (req, res) => {
         const { reference, trxref } = req.query;
         const paymentRef = reference || trxref;
-        const agentId = req.session.agent.id || req.session.agent._id;
-    
-        // IF PAYSTACK REDIRECTED BACK (Has Reference)
+
+        // IF PAYSTACK REDIRECTED BACK (has reference)
         if (paymentRef) {
             try {
                 const paystackRes = await axios.get(
                     `https://api.paystack.co/transaction/verify/${encodeURIComponent(paymentRef)}`,
                     { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
                 );
-    
-                if (paystackRes.data?.data?.status === 'success') {
-                    // 1. Update Database
+
+                const txData = paystackRes.data?.data;
+
+                if (txData?.status === 'success') {
+                    // Get agentId from metadata — works even without session
+                    const agentId = txData.metadata?.agentId;
+
+                    if (!agentId) {
+                        console.error('[Verification] No agentId in Paystack metadata');
+                        return res.redirect('/verification-payment');
+                    }
+
+                    // Update DB
                     await AgentUser.findByIdAndUpdate(agentId, { verifyPayment: true });
-                    
-                    // 2. Update Session
-                    req.session.agent.verifyPayment = true;
-                    
-                    // 3. FORCE SESSION SAVE (This is often why production fails)
-                    return req.session.save((err) => {
-                        res.redirect('/agent-verification'); // Now redirect to the clean URL
-                    });
+
+                    // Sync session if still alive
+                    if (req.session?.agent) {
+                        req.session.agent.verifyPayment = true;
+                        req.session.save(() => {});
+                    }
+
+                    console.log(`[Verification] Payment confirmed for agent ${agentId}`);
+                    // Redirect to clean URL — agent will log in if session expired
+                    return res.redirect('/agent-verification');
                 }
             } catch (err) {
                 console.error('Paystack verify error:', err.message);
             }
             return res.redirect('/verification-payment');
         }
-    
-        // IF DIRECT VISIT (No Reference)
-        // Simply serve the page. The frontend handles the auth check.
-        res.sendFile(require('path').join(__dirname, '..', 'agent-verification', 'index.html'));
+
+        // DIRECT VISIT — check if agent is logged in
+        if (!req.session?.agent) {
+            return res.redirect('/login-agent');
+        }
+
+        // Check payment status from DB (don't trust session alone)
+        try {
+            const agentId = req.session.agent.id || req.session.agent._id;
+            const agent   = await AgentUser.findById(agentId).select('verifyPayment').lean();
+
+            if (agent?.verifyPayment) {
+                req.session.agent.verifyPayment = true;
+                return res.sendFile(require('path').join(__dirname, '..', 'agent-verification', 'index.html'));
+            }
+            return res.redirect('/verification-payment');
+        } catch (err) {
+            console.error('DB check error:', err.message);
+            return res.redirect('/verification-payment');
+        }
     });
 
     // ── Paystack: Webhook ────────────────────────────────────────────────────
