@@ -372,21 +372,6 @@
 
     <script>
 
-        // ── Auth ──────────────────────────────────────────────
-        async function checkAuth() {
-            try {
-                const response = await fetch('/api/agent/profile', { credentials: 'include' });
-                const data = await response.json();
-                if (!data.agent) {
-                    window.location.href = '/login-agent';
-                }
-            } catch (error) {
-                window.location.href = '/login-agent';
-            }
-        }
-        document.addEventListener('DOMContentLoaded', async () => {
-            await checkAuth()
-        });
         // ── On page load: check if Paystack just redirected back with a reference ──
         // Paystack appends ?reference=xxx&trxref=xxx to the callback_url after payment.
         // We call GET /agent-verification with those params so the server can verify
