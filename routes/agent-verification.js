@@ -128,7 +128,15 @@ function NIN_VERIFICATION(app) {
 
             await AgentUser.findByIdAndUpdate(agentId, { verifyPayment: true });
             req.session.agent.verifyPayment = true;
-            return res.sendFile(require('path').join(__dirname, '..', 'agent-verification', 'index.html'));
+            
+            req.session.save((err) => {
+                if (err) {
+                    console.error('Session save error:', err);
+                    return res.status(500).send('Session save error');
+                }
+                // Now serve the page
+                return res.sendFile(require('path').join(__dirname, '..', 'agent-verification', 'index.html'));
+            });
         } catch (err) {
             console.error('Paystack verify error:', err.message);
             return res.redirect('/verification-payment');
