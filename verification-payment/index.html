@@ -408,7 +408,7 @@
                     // Payment confirmed and DB updated — redirect to verification page
                     alertBox.success('Payment Confirmed', 'Your payment was successful! Proceeding to identity verification...');
                     setTimeout(() => {
-                        window.location.href = '/agent-loged/verification'; // change to your actual verification page path
+                        window.location.href = '/agent-verification'; // change to your actual verification page path
                     }, 2000);
                 } else if (data.redirectToPayment) {
                     // Payment not confirmed — stay on this page and reset
