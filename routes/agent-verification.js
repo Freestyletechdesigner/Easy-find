@@ -112,29 +112,29 @@ function NIN_VERIFICATION(app) {
             }
         }
 
+        // Inside your Paystack callback route handler
         try {
             const paystackRes = await axios.get(
                 `https://api.paystack.co/transaction/verify/${encodeURIComponent(paymentRef)}`,
                 { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}` } }
             );
-
+        
             const txData = paystackRes.data?.data;
             if (!txData || txData.status !== 'success') return res.redirect('/verification-payment');
-
-            const metaAgentId = txData.metadata?.agentId;
-            if (metaAgentId && metaAgentId.toString() !== agentId.toString()) {
-                return res.status(403).send('Payment reference mismatch');
-            }
-
+        
+            // 1. Await the DB update
             await AgentUser.findByIdAndUpdate(agentId, { verifyPayment: true });
+            
+            // 2. Update the session
             req.session.agent.verifyPayment = true;
             
+            // 3. Force save
             req.session.save((err) => {
                 if (err) {
                     console.error('Session save error:', err);
                     return res.status(500).send('Session save error');
                 }
-                // Now serve the page
+                // 4. Finally serve the page
                 return res.sendFile(require('path').join(__dirname, '..', 'agent-verification', 'index.html'));
             });
         } catch (err) {
