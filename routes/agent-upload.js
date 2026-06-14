@@ -600,6 +600,41 @@ async function processAndSaveImages(files, agentId, agentName = '') {
         }
     });
 
+    app.get('/sitemap.xml', async (req, res) => {
+        try {
+            const properties = await AgentPost.find({}, '_id date'); // Only fetch what you need for better performance
+            
+            // Include the xmlns attribute, or Google might reject the file
+            let xml = `<?xml version="1.0" encoding="UTF-8"?>
+    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+        <url>
+            <loc>https://easyfind.com.ng/</loc>
+            <changefreq>daily</changefreq>
+            <priority>1.0</priority>
+        </url>`;
+    
+            properties.forEach(p => {
+                // Using ISO date format for lastmod helps Google know when it was updated
+                const lastMod = p.date ? p.date.toISOString() : new Date().toISOString();
+                xml += `
+        <url>
+            <loc>https://easyfind.com.ng/property/?id=${p._id}</loc>
+            <lastmod>${lastMod}</lastmod>
+            <changefreq>weekly</changefreq>
+            <priority>0.8</priority>
+        </url>`;
+            });
+    
+            xml += `\n</urlset>`;
+            
+            res.header('Content-Type', 'application/xml');
+            res.send(xml);
+        } catch (err) {
+            console.error("Sitemap error:", err);
+            res.status(500).send('Error generating sitemap');
+        }
+    });
+
     app.use((err, req, res, next) => {
         if (err instanceof multer.MulterError) {
             if (err.code === 'LIMIT_FILE_SIZE') {
