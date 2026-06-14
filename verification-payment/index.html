@@ -384,50 +384,6 @@
         }
         document.addEventListener('DOMContentLoaded', async () => {await checkAuth()});
 
-        // ── On page load: check if Paystack just redirected back with a reference ──
-        // Paystack appends ?reference=xxx&trxref=xxx to the callback_url after payment.
-        // We call GET /agent-verification with those params so the server can verify
-        // the payment directly with Paystack's API and update the DB immediately.
-        (async function handlePaystackReturn() {
-            const params = new URLSearchParams(window.location.search);
-            const reference = params.get('reference') || params.get('trxref');
-
-            if (!reference) return; // User didn't arrive here from Paystack — show normal page
-
-            const btn = document.getElementById('checkout-pay-btn');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Confirming payment...</span>`;
-
-            try {
-                const res = await fetch(`/agent-verification?reference=${encodeURIComponent(reference)}`, {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    // Payment confirmed and DB updated — redirect to verification page
-                    alertBox.success('Payment Confirmed', 'Your payment was successful! Proceeding to identity verification...');
-                    setTimeout(() => {
-                        window.location.href = '/agent-verification'; // change to your actual verification page path
-                    }, 2000);
-                } else if (data.redirectToPayment) {
-                    // Payment not confirmed — stay on this page and reset
-                    alertBox.error('Payment Not Confirmed', 'Your payment could not be verified. Please try again.');
-                    resetButton(btn);
-                    // Remove the stale reference params from the URL so a retry is clean
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                } else {
-                    alertBox.error('Verification Error', data.message || 'Something went wrong. Please contact support.');
-                    resetButton(btn);
-                }
-            } catch (err) {
-                console.error('Payment confirmation error:', err);
-                alertBox.error('Network Error', 'Could not confirm payment. Please check your connection and try again.');
-                resetButton(btn);
-            }
-        })();
-
         // ── Pay button: initialize Paystack checkout ──
         document.getElementById('checkout-pay-btn').addEventListener('click', async function(e) {
             e.preventDefault();
