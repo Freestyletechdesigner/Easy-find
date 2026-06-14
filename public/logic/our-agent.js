@@ -121,4 +121,78 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // scroll animation count
+    // scroll animation count
+    const initScrollCounters = () => {
+        const counters = [
+            { selector: '.anime-count1', target: 88, suffix: '%' },
+            { selector: '.anime-count2', target: 98, suffix: '%' },
+            { selector: '.anime-count3', target: 83, suffix: '%' }
+        ];
+
+        const animateCount = (el, target, suffix, duration = 2000) => {
+            let startTime = null;
+            const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+            const updateCount = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const easedProgress = easeOutCubic(progress);
+                const currentValue = Math.floor(easedProgress * target);
+
+                el.textContent = `${currentValue}${suffix}`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(updateCount);
+                } else {
+                    el.textContent = `${target}${suffix}`;
+                }
+            };
+
+            requestAnimationFrame(updateCount);
+        };
+
+        // Reset all counters to 0% initially
+        const counterData = [];
+        counters.forEach(({ selector, target, suffix }) => {
+            const el = document.querySelector(selector);
+            if (el) {
+                el.textContent = `0${suffix}`;
+                counterData.push({ el, target, suffix });
+            }
+        });
+
+        if (!counterData.length) return;
+
+        // Use IntersectionObserver for high performance trigger on scroll
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries, obs) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const targetEl = entry.target;
+                        const data = counterData.find(d => d.el === targetEl);
+                        if (data) {
+                            animateCount(targetEl, data.target, data.suffix, 2000); // 2 seconds duration
+                        }
+                        obs.unobserve(targetEl);
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            });
+
+            counterData.forEach(data => observer.observe(data.el));
+        } else {
+            // Fallback: Animate immediately if IntersectionObserver is not supported
+            counterData.forEach(data => {
+                animateCount(data.el, data.target, data.suffix, 2000);
+            });
+        }
+    };
+
+    // Initialize the scroll counters
+    initScrollCounters();
+
 });
