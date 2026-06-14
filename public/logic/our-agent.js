@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     card.innerHTML = `
                         ${agent.profilePicture
                             ? `<img src="${agent.profilePicture}" loading="lazy" alt="${agent.name}" onerror="this.style.display='none'">`
-                            : `<i class="fa-solid fa-user-tie" style="font-size:3rem;color:#0d7068;margin-bottom:10px;"></i>`
+                            : `<i class="fa-solid fa-user-tie" id="avatar"></i>`
                         }
                         <h3>${agent.name}</h3>
                         <p><i class="fa-solid fa-circle-check" style="color:#0d7068;"></i> ${agent.stand || 'Verified Agent'}</p>
