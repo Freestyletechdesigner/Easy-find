@@ -170,13 +170,13 @@ module.exports = function(app) {
                     const payload = ticket.getPayload();
                     
                     if (!payload || !payload.email) {
-                        return res.status(400).json({ success: false, message: 'Invalid Google token payload' });
+                        return res.status(400).json({ success: false, message: 'Invalid Google token ' });
                     }
                     
                     targetEmail = payload.email.trim().toLowerCase();
                 } catch (googleError) {
                     console.error('Google token verification failed:', googleError);
-                    return res.status(401).json({ success: false, message: 'Google authentication failed' });
+                    return res.status(401).json({ success: false, message: 'Google authentication failed login manual' });
                 }
             } else {
                 // STANDARD PASSWORD PATHWAY
