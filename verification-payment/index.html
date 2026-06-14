@@ -370,82 +370,100 @@
 
     <script src="alert-box.js"></script>
 
- <script>
-    // 1. Define your helper functions first
-    function resetButton(btn) {
-        btn.disabled = false;
-        btn.innerHTML = `<span>Proceed to Paystack</span> <i class="fas fa-arrow-right"></i>`;
-    }
+    <script>
 
-    async function checkAuth() {
-        try {
-            const response = await fetch('/api/agent/profile', { credentials: 'include' });
-            const data = await response.json();
-            if (!data.agent) {
+        // ── Auth ──────────────────────────────────────────────
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/agent/profile', { credentials: 'include' });
+                const data = await response.json();
+                if (!data.agent) {
+                    window.location.href = '/login-agent';
+                }
+            } catch (error) {
                 window.location.href = '/login-agent';
             }
-        } catch (error) {
-            window.location.href = '/login-agent';
         }
-    }
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuth()
+        });
+        // ── On page load: check if Paystack just redirected back with a reference ──
+        // Paystack appends ?reference=xxx&trxref=xxx to the callback_url after payment.
+        // We call GET /agent-verification with those params so the server can verify
+        // the payment directly with Paystack's API and update the DB immediately.
+        (async function handlePaystackReturn() {
+            const params = new URLSearchParams(window.location.search);
+            const reference = params.get('reference') || params.get('trxref');
 
-    // 2. Use DOMContentLoaded to wait until the page is ready, then run your logic
-    document.addEventListener('DOMContentLoaded', async () => {
-        // Run the auth check first
-        await checkAuth();
+            if (!reference) return; // User didn't arrive here from Paystack — show normal page
 
-        // Then handle the Paystack return logic
-        const params = new URLSearchParams(window.location.search);
-        const reference = params.get('reference') || params.get('trxref');
-
-        if (reference) {
             const btn = document.getElementById('checkout-pay-btn');
             btn.disabled = true;
             btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>Confirming payment...</span>`;
 
             try {
-                const res = await fetch(`/agent-verification?reference=${encodeURIComponent(reference)}`);
+                const res = await fetch(`/agent-verification?reference=${encodeURIComponent(reference)}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
                 const data = await res.json();
 
                 if (data.success) {
-                    alertBox.success('Payment Confirmed', 'Proceeding...');
-                    setTimeout(() => window.location.href = '/agent-loged/verification', 2000);
-                } else {
-                    alertBox.error('Error', data.message || 'Payment not confirmed.');
+                    // Payment confirmed and DB updated — redirect to verification page
+                    alertBox.success('Payment Confirmed', 'Your payment was successful! Proceeding to identity verification...');
+                    setTimeout(() => {
+                        window.location.href = '/agent-loged/verification'; // change to your actual verification page path
+                    }, 2000);
+                } else if (data.redirectToPayment) {
+                    // Payment not confirmed — stay on this page and reset
+                    alertBox.error('Payment Not Confirmed', 'Your payment could not be verified. Please try again.');
                     resetButton(btn);
+                    // Remove the stale reference params from the URL so a retry is clean
                     window.history.replaceState({}, document.title, window.location.pathname);
+                } else {
+                    alertBox.error('Verification Error', data.message || 'Something went wrong. Please contact support.');
+                    resetButton(btn);
                 }
             } catch (err) {
-                alertBox.error('Network Error', 'Could not confirm.');
+                console.error('Payment confirmation error:', err);
+                alertBox.error('Network Error', 'Could not confirm payment. Please check your connection and try again.');
                 resetButton(btn);
             }
-        }
-    });
+        })();
 
-    // 3. Attach event listener for the button
-    document.getElementById('checkout-pay-btn').addEventListener('click', async function(e) {
-        e.preventDefault();
-        const btn = this;
-        btn.disabled = true;
-        btn.innerHTML = `<i class="fas fa-spinner spin-icon"></i> <span>Connecting...</span>`;
-
-        try {
-            const response = await fetch('/api/verification/initialize-payment', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            const data = await response.json();
-            if (data.success && data.authorization_url) {
-                window.location.href = data.authorization_url;
-            } else {
-                alertBox.error('Checkout Failed', data.message);
+        // ── Pay button: initialize Paystack checkout ──
+        document.getElementById('checkout-pay-btn').addEventListener('click', async function(e) {
+            e.preventDefault();
+        
+            const btn = this;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner spin-icon"></i> <span>Connecting...</span>`;
+        
+            try {
+                const response = await fetch('/api/verification/initialize-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+        
+                const data = await response.json();
+        
+                if (data.success && data.authorization_url) {
+                    window.location.href = data.authorization_url;
+                } else {
+                    alertBox.error('Checkout Failed', data.message || 'Could not launch checkout. Please try again.');
+                    resetButton(btn);
+                }
+            } catch (error) {
+                console.error('Payment initialization runtime error:', error);
+                alertBox.error('Network Error', 'A server connection error occurred. Please verify your connection and try again.');
                 resetButton(btn);
             }
-        } catch (error) {
-            alertBox.error('Network Error', 'Connection failed.');
-            resetButton(btn);
+        });
+        
+        function resetButton(btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<span>Proceed to Paystack</span> <i class="fas fa-arrow-right"></i>`;
         }
-    });
-</script>
+    </script>
 </body>
 </html>
