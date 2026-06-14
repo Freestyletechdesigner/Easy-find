@@ -302,7 +302,6 @@
     will-change: transform;
 }
     </style>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-NK9XVCBPJM"></script>
         <script>
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
@@ -310,7 +309,6 @@
     
           gtag('config', 'G-NK9XVCBPJM');
         </script>
-    </head>
 </head>
 <body>
 
@@ -372,6 +370,19 @@
 
     <script>
 
+        // ── Auth ──────────────────────────────────────────────
+        async function checkAuth() {
+            try {
+                const response = await fetch('/api/agent/profile', { credentials: 'include' });
+                const data = await response.json();
+                if (!data.agent) {
+                    window.location.href = '/login-agent';
+                }
+            } catch (error) {
+                window.location.href = '/login-agent';
+            }
+        }
+        document.addEventListener('DOMContentLoaded', async () => {await checkAuth()})
         // ── On page load: check if Paystack just redirected back with a reference ──
         // Paystack appends ?reference=xxx&trxref=xxx to the callback_url after payment.
         // We call GET /agent-verification with those params so the server can verify
