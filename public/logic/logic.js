@@ -1132,7 +1132,8 @@ initSearch();
 
     // Logout
     if (userLog) {
-        logoutBtn.addEventListener('click', async () => {
+        logoutBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
             try {
                 await fetch('/api/logout', { method: 'POST', credentials: 'include' });
                 await fetch('/api/agent/logout', { method: 'POST', credentials: 'include' });
