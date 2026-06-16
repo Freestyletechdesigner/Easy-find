@@ -325,7 +325,7 @@ window.submitProperty = async function () {
     const numbersOnly   = /^\d+(\.\d+)?$/;
 
     const title    = currentForm.querySelector('[name="title"]').value.trim();
-    const price    = currentForm.querySelector('[name="price"]').value.trim();
+    const price    = currentForm.querySelector('[name="price"]').value.trim().replace(/[^0-9]/g, '');
     const category = currentForm.querySelector('[name="category"]').value;
     const location = currentForm.querySelector('[name="location"]').value.trim();
     const beds     = currentForm.querySelector('[name="beds"]').value.trim();
@@ -1448,7 +1448,7 @@ window.generateAIDescription = async function(mode) {
     const title = form.querySelector('[name="title"]')?.value.trim();
     const type = form.querySelector('[name="type"]')?.value;
     const category = form.querySelector('[name="category"]')?.value;
-    const price = form.querySelector('[name="price"]')?.value.trim();
+    const price = form.querySelector('[name="price"]')?.value.trim().replace(/[^0-9]/g, '');
     const location = form.querySelector('[name="location"]')?.value.trim();
     const beds = form.querySelector('[name="beds"]')?.value.trim();
     const baths = form.querySelector('[name="baths"]')?.value.trim();
