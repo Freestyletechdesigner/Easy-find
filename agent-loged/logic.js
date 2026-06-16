@@ -166,6 +166,18 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Image Upload & Drag-Drop ──────────────────────────
     const imagedrop            = document.querySelector('.image-upload-zone');
     const propertyForm         = document.getElementById('propertyForm');
+
+    // Live price formatter for post form
+    const postPriceInput = document.getElementById('postPrice')
+        || (propertyForm && propertyForm.querySelector('[name="price"]'));
+    if (postPriceInput) {
+        postPriceInput.addEventListener('input', function () {
+            const raw = this.value.replace(/[^0-9]/g, '');
+            this.value = raw ? Number(raw).toLocaleString('en-NG') : '';
+            const len = this.value.length;
+            this.setSelectionRange(len, len);
+        });
+    }
     const imageInput           = document.getElementById('fileInput');
     const imagePreviewContainer = document.getElementById('imagePreviewContainer');
     let selectedImages = [];
@@ -979,6 +991,19 @@ async function getCoordinatesWithFallback(locationText) {
 
     editTypeSelect.addEventListener('change', handleEditTypeChange);
 
+    // Live price formatter — shows commas while typing, strips them before submit
+    const editPriceInput = document.getElementById('editPrice');
+    if (editPriceInput) {
+        editPriceInput.addEventListener('input', function () {
+            const raw = this.value.replace(/[^0-9]/g, '');
+            // Reformat with commas
+            this.value = raw ? Number(raw).toLocaleString('en-NG') : '';
+            // Move cursor to end
+            const len = this.value.length;
+            this.setSelectionRange(len, len);
+        });
+    }
+
     function initEditFeatures(existing) {
         const list = Array.isArray(existing)
             ? existing
@@ -1104,7 +1129,8 @@ editFileInput.addEventListener('change', async (e) => {
     // Helper subroutine to populate input fields and open the overlay interface safely
     function populateFormAndOpenModal(p) {
         document.getElementById('editTitle').value       = p.title       || '';
-        document.getElementById('editPrice').value       = p.price       || '';
+        // Show price formatted with commas for readability (e.g. 1,000,000)
+        document.getElementById('editPrice').value       = p.price ? Number(p.price).toLocaleString('en-NG') : '';
         document.getElementById('editLocation').value    = p.location    || '';
         document.getElementById('editBeds').value        = p.beds        || '';
         document.getElementById('editBaths').value       = p.baths       || '';
@@ -1148,7 +1174,7 @@ editFileInput.addEventListener('change', async (e) => {
         const numbersOnly   = /^\d+(\.\d+)?$/;
 
         const title    = document.getElementById('editTitle').value.trim();
-        const price    = document.getElementById('editPrice').value.trim();
+        const price    = document.getElementById('editPrice').value.trim().replace(/[^0-9]/g, '');
         const category = document.getElementById('editCategory').value;
         const location = document.getElementById('editLocation').value.trim();
         const beds     = document.getElementById('editBeds').value.trim();
