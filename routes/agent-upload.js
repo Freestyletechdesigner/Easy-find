@@ -38,8 +38,8 @@ const upload = multer({
         cb(null, true);
     },
     limits: {
-        fileSize: 30 * 1024 * 1024, // 30MB max per raw incoming file
-        files: 10                  // Max 10 files per request
+        fileSize: 100 * 1024 * 1024, // 30MB max per raw incoming file
+        files: 59 // Max 10 files per request
     }
 });
 
@@ -93,7 +93,7 @@ ${details.map(d => `- ${d}`).join('\n')}
 Guidelines:
 1. Tone: Sophisticated, persuasive, welcoming, and polished real estate dialect.
 2. Structure: A single, continuous paragraph.
-3. Length: Approximately 100 to 140 words.
+3. Length: Approximately 100 to 100 words.
 4. Output ONLY the raw descriptive write-up. Absolutely DO NOT wrap in quotes, DO NOT prepend introductions like "Here is...", and DO NOT use markdown headers or lists. Start right with the text.`;
 
         try {

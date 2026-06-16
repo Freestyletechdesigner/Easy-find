@@ -230,8 +230,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 3. Validation: Check if the file (or compressed result) is still too large
-        if (fileToProcess.size > 6 * 1024 * 1024) {
-            alertBox.error('File Too Large', `${file.name} remains above 6MB even after compression.`);
+        if (fileToProcess.size > 10 * 1024 * 1024) {
+            alertBox.error('File Too Large', `${file.name} remains above 10MB even after compression.`);
             continue; 
         }
 
