@@ -6,6 +6,7 @@ const sharp = require('sharp');
 const rateLimit = require('express-rate-limit');
 const AgentPost = require('../model/AgentPost.js');
 const AgentUser = require('../model/AgentUser.js');
+const { sendPropertyListingNotification } = require('../utils/property-notification.js');
 
 const ROOT = path.join(__dirname, '..');
 const UPLOAD_DIR = path.join(ROOT, 'agent-loged', 'upload-property');
@@ -259,11 +260,28 @@ async function processAndSaveImages(files, agentId, agentName = '') {
                 postID: newPost
             });
 
-            // Broadcast via WebSockets
-            setImmediate(() => {
+            // Broadcast via WebSockets + send listing notification email (non-blocking)
+            setImmediate(async () => {
                 const broadcastProperty = req.app.get('broadcastProperty');
-                if (broadcastProperty) {
-                    broadcastProperty(newPost);
+                if (broadcastProperty) broadcastProperty(newPost);
+
+                // Send email notification to agent
+                try {
+                    const agent = await AgentUser.findById(agentId).select('email name').lean();
+                    if (agent?.email) {
+                        await sendPropertyListingNotification({
+                            agentEmail:  agent.email,
+                            agentName:   agent.name || agentName,
+                            title:       title || 'Your Property',
+                            type:        type  || 'property',
+                            category:    category || 'sale',
+                            price:       price,
+                            location:    location || '',
+                            propertyId:  newPost._id.toString()
+                        });
+                    }
+                } catch (emailErr) {
+                    console.error('[Mailer] Failed to send listing notification:', emailErr.message);
                 }
             });
         } catch (error) {
