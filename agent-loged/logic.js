@@ -1092,8 +1092,8 @@ editFileInput.addEventListener('change', async (e) => {
         }
 
         // 3. Validation: Enforce the 6MB limit
-        if (fileToProcess.size > 6 * 1024 * 1024) {
-            alertBox.error('File Too Large', `${file.name} remains above 6MB even after compression.`);
+        if (fileToProcess.size > 10 * 1024 * 1024) {
+            alertBox.error('File Too Large', `${file.name} remains above 10MB even after compression.`);
             continue;
         }
 
