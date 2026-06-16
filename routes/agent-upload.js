@@ -203,7 +203,7 @@ async function processAndSaveImages(files, agentId, agentName = '') {
         check('title').notEmpty().trim().escape(),
         check('type').notEmpty().trim().escape(),
         check('category').notEmpty().isIn(['sale', 'rent', 'shortlet']).withMessage('Invalid category'),
-        check('price').notEmpty().isNumeric().isFloat({ min: 0 }),
+        check('price').notEmpty().customSanitizer(v => String(v).replace(/[^0-9.]/g, '')).isFloat({ min: 0 }),
         check('location').notEmpty().trim().escape(),
         check('beds').optional({ checkFalsy: true }).isNumeric().trim().escape(),
         check('baths').optional({ checkFalsy: true }).isNumeric().trim().escape(),
@@ -222,7 +222,9 @@ async function processAndSaveImages(files, agentId, agentName = '') {
             });
         }
 
-        const { title, type, category, price, location, beds, baths, area, description, features } = req.body;
+        const { title, type, category, location, beds, baths, area, description, features } = req.body;
+        // Strip any formatting characters (commas, ₦, spaces) from price before saving
+        const price = String(req.body.price || '').replace(/[^0-9.]/g, '');
         const isLand = type === 'land';
         const agentId   = req.session.agent.id;
         const agentName = req.session.agent.name || '';
@@ -466,7 +468,7 @@ async function processAndSaveImages(files, agentId, agentName = '') {
         check('title').notEmpty().withMessage('Title is required').trim().escape(),
         check('type').notEmpty().withMessage('Property type is required').trim().escape(),
         check('category').notEmpty().isIn(['sale', 'rent', 'shortlet']).withMessage('Invalid category'),
-        check('price').notEmpty().isNumeric().isFloat({ min: 0 }).withMessage('Price must be a valid number'),
+        check('price').notEmpty().customSanitizer(v => String(v).replace(/[^0-9.]/g, '')).isFloat({ min: 0 }).withMessage('Price must be a valid number'),
         check('location').notEmpty().withMessage('Location is required').trim().escape(),
         check('beds').optional({ checkFalsy: true }).isNumeric().withMessage('Beds must be a number'),
         check('baths').optional({ checkFalsy: true }).isNumeric().withMessage('Baths must be a number'),
@@ -485,7 +487,9 @@ async function processAndSaveImages(files, agentId, agentName = '') {
             });
         }
     
-        const { title, type, category, price, location, beds, baths, area, description, features, latitude, longitude } = req.body;
+        const { title, type, category, location, beds, baths, area, description, features, latitude, longitude } = req.body;
+        // Strip any formatting characters (commas, ₦, spaces) from price before saving
+        const price = String(req.body.price || '').replace(/[^0-9.]/g, '');
         const isLand = type === 'land';
         
         const agentId = req.session.agent.id;
