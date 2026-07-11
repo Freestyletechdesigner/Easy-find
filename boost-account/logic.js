@@ -15,7 +15,7 @@
 
     // on page load, check if Paystack redirected back with a reference
     const urlParams = new URLSearchParams(window.location.search);
-    const reference = urlParams.get('reference');
+    const reference = urlParams.get('reference') || urlParams.get('trxref');
 
     if (reference) {
         // hide the normal UI and show a verifying state
@@ -53,37 +53,28 @@
     let currentStep  = 1;
 
     // default selected plan is single post boost
-    let selectedPlan = 'post';
+    let selectedPlan = 'post_standard';
 
-    // default price matching the post boost plan
-    let selectedAmt  = 950;
+    // default price matching the standard post boost plan
+    let selectedAmt  = 700;
 
-    // human-readable label shown in the payment summary
-    let selectedLabel = 'Single Post Boost';
+    // human-readable label
+    let selectedLabel = 'Standard Post Boost';
 
     // stores the post the agent picked to boost
     let selectedPostId    = null;
     let selectedPostTitle = null;
 
     // called when user clicks a plan card
-    function selectPlan(type, price, el) {
-        // remove selected style from all plan cards
+    function selectPlan(planKey, price, label, el) {
         document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('selected'));
-
-        // highlight the clicked card
         el.classList.add('selected');
-
-        // store the chosen plan type (post or profile)
-        selectedPlan  = type;
-
-        // store the price for this plan
+        selectedPlan  = planKey;
         selectedAmt   = price;
+        selectedLabel = label;
 
-        // store the display label for the summary screen
-        selectedLabel = type === 'post' ? 'Single Post Boost' : 'Profile Boost';
-
-        // if post boost, open the post picker panel
-        if (type === 'post') openPostPicker();
+        // if any post boost plan, open the post picker
+        if (planKey.startsWith('post_')) openPostPicker();
     }
 
     // open the post picker and load the agent's posts
@@ -153,7 +144,7 @@
     function nextStep() {
         if (currentStep === 1) {
             // if post boost, require a post to be selected first
-            if (selectedPlan === 'post' && !selectedPostId) {
+            if (selectedPlan.startsWith('post_') && !selectedPostId) {
                 openPostPicker();
                 return;
             }
@@ -240,7 +231,7 @@
         const body = { email, plan: selectedPlan };
 
         // if boosting a single post, attach the picked post id
-        if (selectedPlan === 'post' && selectedPostId) {
+        if (selectedPlan.startsWith('post_') && selectedPostId) {
             body.postId = selectedPostId;
         }
 

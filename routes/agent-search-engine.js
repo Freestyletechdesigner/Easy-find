@@ -12,6 +12,9 @@ function SEARCH_ENGINE(app) {
             if (!q || !q.trim()) {
                 return res.json({ success: true, agents: [] });
             }
+            if (q && q.length > 50) {
+                return res.json({ success: true, agents: [] });
+            }
 
             const agents = await AgentUser.find({
                 status: 'active',

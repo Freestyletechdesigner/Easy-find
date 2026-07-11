@@ -133,6 +133,8 @@ const SEARCH_ENGINE     = require('./routes/agent-search-engine.js');
 const PROPERTY_SEARCH   = require('./routes/property-search.js');
 const PROPERTY_REPORT = require('./routes/property-report.js');
 const NIN_VERIFICATION = require('./routes/agent-verification.js');
+const PROJECTS = require('./routes/projects.js');
+const COMMENT = require('./routes/comment.js');
 
 // Database schema
 const PageViews = require('./model/PageViews.js');
@@ -430,7 +432,7 @@ app.get('/agent-verification', async (req, res, next) => {
 });
 
 // ── Clean admin routes (no .html) ─────────────────────
-const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'file-uploader', 'login', 'reports'];
+const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'file-uploader', 'reports'];
 adminPages.forEach(page => {
     const file = page === 'dashboard' ? 'index' : page;
     if (page === 'login') {
@@ -451,8 +453,10 @@ app.get('/password-reset/forgot-password', (req, res) => res.sendFile(path.join(
 app.get('/password-reset/verify-reset',    (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'verify-reset.html')));
 app.get('/password-reset/verify-otp',      (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'verify-otp.html')));
 app.get('/password-reset/reset-password',  (req, res) => res.sendFile(path.join(__dirname, 'password-reset', 'reset-password.html')));
-app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
-app.get('/our-agent', (req, res) => res.sendFile(path.join(__dirname, 'public', 'our-agent.html')));
+app.get('/contact',    (req, res) => res.sendFile(path.join(__dirname, 'public', 'contact.html')));
+app.get('/our-agent',  (req, res) => res.sendFile(path.join(__dirname, 'public', 'our-agent.html')));
+app.get('/properties', (req, res) => res.sendFile(path.join(__dirname, 'public', 'properties.html')));
+app.get('/private-policy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'private-policy.html')));
 
 
 signup(app);
@@ -467,6 +471,33 @@ PAYMENT_FOR_BOOST(app);
 FEEDBACK(app);
 PROPERTY_REPORT(app);
 NIN_VERIFICATION(app);
+PROJECTS(app);
+
+// ── Admin: Send push notification to agents ───────────────
+const { sendPushToAgents, sendPushToAllAgents } = require('./utils/push.js');
+
+app.post('/api/admin/push', async (req, res) => {
+    if (!req.session.admin) return res.status(403).json({ success: false, message: 'Admin only' });
+
+    const { title, message, url, agentIds, sendToAll } = req.body;
+    if (!title || !message) return res.status(400).json({ success: false, message: 'Title and message are required' });
+
+    try {
+        if (sendToAll) {
+            await sendPushToAllAgents({ title, message, url });
+            res.json({ success: true, message: 'Push sent to all subscribers' });
+        } else if (agentIds && agentIds.length) {
+            await sendPushToAgents({ agentIds, title, message, url });
+            res.json({ success: true, message: `Push sent to ${agentIds.length} agent(s)` });
+        } else {
+            res.status(400).json({ success: false, message: 'Provide agentIds or set sendToAll: true' });
+        }
+    } catch (err) {
+        console.error('Admin push error:', err.message);
+        res.status(500).json({ success: false, message: 'Failed to send push' });
+    }
+});
+COMMENT(app);
 
 // Global error handler (must be before 404 handler)
 app.use((err, req, res, next) => {

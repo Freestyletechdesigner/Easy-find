@@ -569,6 +569,41 @@ const agent = (app) => {
         }
     });
 
+// Get notifications for logged-in agent
+    app.get('/api/agent/notifications', requireAgent, async (req, res) => {
+        try {
+            const Notification = require('../model/Notification.js');
+            const notifications = await Notification.find({ agentId: req.session.agent.id })
+                .sort({ createdAt: -1 })
+                .lean();
+
+            res.json({ success: true, notifications });
+        } catch (err) {
+            console.error('Error fetching notifications:', err);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    });
+
+    // Delete specific notification
+    app.delete('/api/agent/notifications/:id', requireAgent, async (req, res) => {
+        try {
+            const Notification = require('../model/Notification.js');
+            const result = await Notification.findOneAndDelete({
+                _id: req.params.id,
+                agentId: req.session.agent.id
+            });
+
+            if (!result) {
+                return res.status(404).json({ success: false, message: 'Notification not found' });
+            }
+
+            res.json({ success: true, message: 'Notification deleted successfully' });
+        } catch (err) {
+            console.error('Error deleting notification:', err);
+            res.status(500).json({ success: false, message: 'Server error' });
+        }
+    });
+
 };
 
 module.exports = agent;

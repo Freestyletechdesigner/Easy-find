@@ -7,323 +7,519 @@
     <script>if(localStorage.getItem("daynight-theme")==="carbon"){document.documentElement.classList.add("carbon");}</script>
     <link rel="stylesheet" href="templatemo-daynight-style.css">
     <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
-    <!--
+    <style>
+        /* ── Project Modal ─────────────────────────────── */
+        .modal-overlay {
+            position:fixed;inset:0;background:rgba(0,0,0,.45);
+            z-index:500;display:none;align-items:center;justify-content:center;
+        }
+        .modal-overlay.open { display:flex; }
+        .modal-box {
+            background:var(--bg-primary);border-radius:14px;padding:28px;
+            width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.25);
+            animation:popIn .22s ease;
+        }
+        @keyframes popIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+        .modal-title{font-size:1.1rem;font-weight:700;margin-bottom:20px;color:var(--text-primary)}
+        .field-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+        .field-group label{font-size:.8rem;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.04em}
+        .field-group input,.field-group textarea,.field-group select{
+            padding:10px 13px;border:1px solid var(--border-color);border-radius:8px;
+            background:var(--bg-surface);color:var(--text-primary);font-size:.9rem;
+            transition:.15s;outline:none;
+        }
+        .field-group input:focus,.field-group textarea:focus,.field-group select:focus{
+            border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-light);
+        }
+        .field-group textarea{min-height:80px;resize:vertical}
+        .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
 
-TemplateMo 608 DayNight Admin
+        /* ── Progress bar range ────────────────────────── */
+        input[type=range]{width:100%;accent-color:var(--accent)}
+        .progress-label{font-size:.78rem;color:var(--text-secondary);text-align:right;margin-top:2px}
 
-https://templatemo.com/tm-608-daynight-admin
+        /* ── Kanban board ──────────────────────────────── */
+        .kanban-board{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;align-items:start;margin-top:1.5rem}
+        @media(max-width:1200px){.kanban-board{grid-template-columns:repeat(2,1fr)}}
+        @media(max-width:640px){.kanban-board{grid-template-columns:1fr}}
 
--->
+        .kanban-column{background:var(--bg-surface);border-radius:12px;padding:16px;min-height:200px}
+        .kanban-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+        .kanban-title{font-weight:700;font-size:.92rem;color:var(--text-primary)}
+        .kanban-count{background:var(--bg-primary);color:var(--text-secondary);font-size:.75rem;
+            font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid var(--border-color)}
+        .kanban-cards{display:flex;flex-direction:column;gap:10px;min-height:60px}
+
+        /* ── Project card ──────────────────────────────── */
+        .kanban-card{
+            background:var(--bg-primary);border-radius:10px;padding:14px;
+            border:1px solid var(--border-color);cursor:pointer;
+            transition:transform .18s,box-shadow .18s;position:relative;
+        }
+        .kanban-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+        .kanban-card-title{font-weight:600;font-size:.9rem;color:var(--text-primary);margin-bottom:5px}
+        .kanban-card-desc{font-size:.8rem;color:var(--text-secondary);line-height:1.5;margin-bottom:10px}
+        .kanban-card-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
+        .card-actions{display:flex;gap:6px;opacity:0;transition:.15s}
+        .kanban-card:hover .card-actions{opacity:1}
+        .card-action-btn{width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.75rem;transition:.15s}
+        .card-action-btn.edit{background:rgba(56,189,248,.1);color:var(--accent)}
+        .card-action-btn.edit:hover{background:var(--accent);color:#fff}
+        .card-action-btn.del{background:rgba(239,68,68,.1);color:var(--danger)}
+        .card-action-btn.del:hover{background:var(--danger);color:#fff}
+
+        /* ── Progress bar inside card ──────────────────── */
+        .progress-bar{height:4px;background:var(--bg-surface);border-radius:2px;margin-bottom:10px;overflow:hidden}
+        .progress-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .4s}
+
+        /* ── Badge ─────────────────────────────────────── */
+        .badge{padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:600;display:inline-flex;align-items:center}
+        .badge-blue{background:rgba(56,189,248,.15);color:#0ea5e9}
+        .badge-green{background:rgba(34,197,94,.15);color:#16a34a}
+        .badge-orange{background:rgba(245,158,11,.15);color:#d97706}
+        .badge-red{background:rgba(239,68,68,.15);color:#dc2626}
+        .badge-purple{background:rgba(139,92,246,.15);color:#7c3aed}
+
+        /* ── Avatar ────────────────────────────────────── */
+        .avatar{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:700;color:#fff}
+        .avatar.blue{background:#0ea5e9}
+        .avatar.green{background:#16a34a}
+        .avatar.orange{background:#d97706}
+        .avatar.purple{background:#7c3aed}
+        .avatar.red{background:#dc2626}
+        .avatar-group{display:flex;gap:4px}
+
+        /* ── Column status strip ───────────────────────── */
+        .col-todo .kanban-column{border-top:3px solid #94a3b8}
+        .col-inprogress .kanban-column{border-top:3px solid var(--accent)}
+        .col-review .kanban-column{border-top:3px solid var(--warning)}
+        .col-done .kanban-column{border-top:3px solid var(--success)}
+
+        /* ── Add card button ───────────────────────────── */
+        .add-card-btn{width:100%;padding:9px;border-radius:8px;border:1px dashed var(--border-color);
+            color:var(--text-secondary);font-size:.82rem;font-weight:500;
+            display:flex;align-items:center;justify-content:center;gap:6px;margin-top:10px;transition:.2s}
+        .add-card-btn:hover{background:var(--accent-light);border-color:var(--accent);color:var(--accent)}
+
+        /* ── Skeleton ──────────────────────────────────── */
+        .skel{background:var(--bg-surface);border-radius:8px;animation:shimmer 1.4s infinite}
+        .skel-h{height:14px;margin-bottom:8px}
+        .skel-sm{height:10px;width:60%}
+        @keyframes shimmer{0%,100%{opacity:1}50%{opacity:.5}}
+
+        /* ── Status move select ────────────────────────── */
+        .status-select{font-size:.75rem;padding:3px 8px;border-radius:6px;
+            border:1px solid var(--border-color);background:var(--bg-surface);color:var(--text-primary);cursor:pointer}
+        .btn { display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:.875rem;font-weight:600;transition:var(--transition);cursor:pointer }
+        .btn-primary{background:var(--accent);color:#fff;border:none}
+        .btn-primary:hover{background:var(--accent-hover)}
+        .btn-secondary{background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border-color)}
+        .btn-secondary:hover{border-color:var(--accent)}
+        .btn-danger{background:rgba(239,68,68,.1);color:var(--danger);border:1px solid transparent}
+        .btn-danger:hover{background:var(--danger);color:#fff}
+        .greeting{font-size:1.75rem;font-weight:700;color:var(--text-primary);margin-bottom:4px}
+        .greeting-sub{color:var(--text-secondary);font-size:.9rem}
+        #alert{position:fixed;top:72px;left:50%;transform:translateX(-50%);padding:10px 20px;
+            border-radius:8px;font-weight:600;display:none;z-index:9999;
+            box-shadow:0 4px 20px rgba(0,0,0,.15);min-width:240px;text-align:center}
+        #alert.success{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;display:block}
+        #alert.error{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;display:block}
+    </style>
 </head>
 <body>
-    <!-- Mobile Menu Overlay -->
-    <div class="mobile-menu-overlay"></div>
-    
-    <!-- Mobile Menu -->
-    <div class="mobile-menu">
-        <div class="mobile-menu-header">
-            <a href="/admin/dashboard" class="logo">
-                <div class="logo-icon">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                </div>
-                Admin
-            </a>
-            <button class="mobile-menu-close" onclick="closeMobileMenu()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"/>
-                    <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-            </button>
+
+<div class="mobile-menu-overlay" onclick="closeMobileMenu()"></div>
+<div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-menu-header">
+        <a href="/admin/dashboard" class="logo"><div class="logo-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>Admin</a>
+        <button class="mobile-menu-close" onclick="closeMobileMenu()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <nav class="mobile-menu-nav">
+        <a href="/admin/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+        <a href="/admin/projects" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Projects</a>
+        <a href="/admin/inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Inbox</a>
+        <a href="/admin/analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+        <a href="/admin/agents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Agents</a>
+        <a href="/admin/feedback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>FeedBack</a>
+        <a href="/admin/reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Reports</a>
+        <a href="/admin/settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>Settings</a>
+    </nav>
+    <div class="mobile-menu-footer">
+        <a href="/admin/login" class="mobile-logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Logout</a>
+        <div class="theme-toggle">
+            <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg></button>
+            <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
         </div>
-        <nav class="mobile-menu-nav">
-            <a href="/admin/dashboard">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="7" height="7" rx="1"/>
-                    <rect x="14" y="3" width="7" height="7" rx="1"/>
-                    <rect x="3" y="14" width="7" height="7" rx="1"/>
-                    <rect x="14" y="14" width="7" height="7" rx="1"/>
-                </svg>
-                Dashboard
-            </a>
-            <a href="/admin/projects" class="active">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                </svg>
-                Projects
-            </a>
-            <a href="/admin/inbox">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                    <polyline points="22,6 12,13 2,6"/>
-                </svg>
-                Inbox
-            </a>
-            <a href="/admin/analytics">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="20" x2="18" y2="10"/>
-                    <line x1="12" y1="20" x2="12" y2="4"/>
-                    <line x1="6" y1="20" x2="6" y2="14"/>
-                </svg>
-                Analytics
-            </a>
-            <a href="/admin/agents">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-                Agents
-            </a>
-            <a href="/admin/feedback">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                </svg>
-                FeedBack
-            </a>
-            <a href="/admin/reports">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-                    <line x1="4" y1="22" x2="4" y2="15"/>
-                </svg>
-                Reports
-            </a>
-            <a href="/admin/settings">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                </svg>
-                Settings
-            </a>
-        </nav>
-        <div class="mobile-menu-footer">
-            <a href="/admin/login" class="mobile-logout-btn">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16 17 21 12 16 7"/>
-                    <line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
-                Logout
-            </a>
+    </div>
+</div>
+
+<div id="alert"></div>
+
+<div class="app-container">
+<nav class="top-nav">
+    <div class="nav-container">
+        <div class="nav-left">
+            <a href="/admin/dashboard" class="logo"><div class="logo-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>Admin</a>
+            <div class="nav-menu">
+                <a href="/admin/dashboard" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+                <a href="/admin/projects" class="nav-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Projects</a>
+                <a href="/admin/inbox" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Inbox</a>
+                <a href="/admin/analytics" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+                <a href="/admin/agents" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Agents</a>
+                <a href="/admin/feedback" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>FeedBack</a>
+                <a href="/admin/reports" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Reports</a>
+                <a href="/admin/settings" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg>Settings</a>
+            </div>
+        </div>
+        <div class="nav-right">
             <div class="theme-toggle">
-                <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="5"/>
-                        <line x1="12" y1="1" x2="12" y2="3"/>
-                        <line x1="12" y1="21" x2="12" y2="23"/>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                        <line x1="1" y1="12" x2="3" y2="12"/>
-                        <line x1="21" y1="12" x2="23" y2="12"/>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                    </svg>
-                </button>
-                <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                    </svg>
-                </button>
+                <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/></svg></button>
+                <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
             </div>
+            <button class="user-menu"><div class="user-avatar">A</div><span class="user-name">Admin</span></button>
+            <a href="/admin/login" class="btn-logout" title="Logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></a>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
         </div>
     </div>
+</nav>
 
-    <div class="app-container">
-        <!-- Top Navigation -->
-        <nav class="top-nav">
-            <div class="nav-container">
-                <div class="nav-left">
-                    <a href="/admin/dashboard" class="logo">
-                        <div class="logo-icon">
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                            </svg>
-                        </div>
-                        Admin
-                    </a>
-                    <div class="nav-menu">
-                        <div class="nav-item">
-                            <a href="/admin/dashboard" class="nav-link">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="3" width="7" height="7" rx="1"/>
-                                    <rect x="14" y="3" width="7" height="7" rx="1"/>
-                                    <rect x="3" y="14" width="7" height="7" rx="1"/>
-                                    <rect x="14" y="14" width="7" height="7" rx="1"/>
-                                </svg>
-                                Dashboard
-                            </a>
-                        </div>
-                        <div class="nav-item">
-                            <a href="/admin/projects" class="nav-link active">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                                </svg>
-                                Projects
-                            </a>
-                        </div>
-                        <div class="nav-item">
-                            <a href="/admin/inbox" class="nav-link">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                                    <polyline points="22,6 12,13 2,6"/>
-                                </svg>
-                                Inbox
-                            </a>
-                        </div>
-                        <div class="nav-item">
-                            <a href="/admin/analytics" class="nav-link">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <line x1="18" y1="20" x2="18" y2="10"/>
-                                    <line x1="12" y1="20" x2="12" y2="4"/>
-                                    <line x1="6" y1="20" x2="6" y2="14"/>
-                                </svg>
-                                Analytics
-                            </a>
-                        </div>
-                        <div class="nav-item">
-                            <a href="/admin/agents" class="nav-link">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                                    <circle cx="9" cy="7" r="4"/>
-                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                                </svg>
-                                Agents
-                            </a>
-                        </div>
-                        <div class="nav-item">
-                            <a href="/admin/feedback" class="nav-link">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-                                </svg>
-                                FeedBack
-                            </a>
-                        </div>
-                        <div class="nav-item">
-                            <a href="/admin/reports" class="nav-link">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
-                                    <line x1="4" y1="22" x2="4" y2="15"/>
-                                </svg>
-                                Reports
-                            </a>
-                        </div>
-                        <div class="nav-item">
-                            <a href="/admin/settings" class="nav-link">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="3"/>
-                                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                                </svg>
-                                Settings
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                <div class="nav-right">
-                    <div class="theme-toggle">
-                        <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="5"/>
-                                <line x1="12" y1="1" x2="12" y2="3"/>
-                                <line x1="12" y1="21" x2="12" y2="23"/>
-                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                                <line x1="1" y1="12" x2="3" y2="12"/>
-                                <line x1="21" y1="12" x2="23" y2="12"/>
-                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-                            </svg>
-                        </button>
-                        <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <button class="user-menu">
-                        <div class="user-avatar">F</div>
-                        <span class="user-name">Freedom</span>
-                    </button>
-                    <a href="/admin/login" class="btn-logout" title="Logout">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                            <polyline points="16 17 21 12 16 7"/>
-                            <line x1="21" y1="12" x2="9" y2="12"/>
-                        </svg>
-                    </a>
-                    <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="3" y1="12" x2="21" y2="12"/>
-                            <line x1="3" y1="6" x2="21" y2="6"/>
-                            <line x1="3" y1="18" x2="21" y2="18"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start;">
-                <div>
-                    <h1 class="greeting">Projects</h1>
-                    <p class="greeting-sub">Manage and track your team's work</p>
-                </div>
-                <button class="btn btn-primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Project</button>
-            </div>
-
-            <!-- Kanban Board -->
-            <div class="kanban-board">
-                <!-- To Do -->
-                <div class="kanban-column">
-                    <div class="kanban-header"><span class="kanban-title">To Do</span><span class="kanban-count">4</span></div>
-                    <div class="kanban-cards">
-                        <div class="kanban-card"><div class="kanban-card-title">Design System Updates</div><div class="kanban-card-desc">Update color palette and typography scale for v2.0</div><div class="kanban-card-footer"><span class="badge badge-blue">Design</span><div class="avatar-group"><div class="avatar blue">SC</div></div></div></div>
-                        <div class="kanban-card"><div class="kanban-card-title">User Research Report</div><div class="kanban-card-desc">Compile findings from Q4 user interviews</div><div class="kanban-card-footer"><span class="badge badge-orange">Research</span><div class="avatar-group"><div class="avatar green">EW</div></div></div></div>
-                        <div class="kanban-card"><div class="kanban-card-title">Mobile App Wireframes</div><div class="kanban-card-desc">Create low-fidelity wireframes for iOS app</div><div class="kanban-card-footer"><span class="badge badge-blue">Design</span><div class="avatar-group"><div class="avatar blue">SC</div><div class="avatar purple">JL</div></div></div></div>
-                        <div class="kanban-card"><div class="kanban-card-title">API Documentation</div><div class="kanban-card-desc">Write comprehensive docs for REST endpoints</div><div class="kanban-card-footer"><span class="badge badge-green">Dev</span><div class="avatar-group"><div class="avatar orange">MT</div></div></div></div>
-                    </div>
-                </div>
-
-                <!-- In Progress -->
-                <div class="kanban-column">
-                    <div class="kanban-header"><span class="kanban-title">In Progress</span><span class="kanban-count">3</span></div>
-                    <div class="kanban-cards">
-                        <div class="kanban-card"><div class="kanban-card-title">Dashboard Redesign</div><div class="kanban-card-desc">Implement new analytics dashboard with charts</div><div class="progress-bar" style="margin-bottom: 0.75rem;"><div class="progress-fill accent" style="width: 65%;"></div></div><div class="kanban-card-footer"><span class="badge badge-green">Dev</span><div class="avatar-group"><div class="avatar blue">SC</div><div class="avatar orange">MT</div></div></div></div>
-                        <div class="kanban-card"><div class="kanban-card-title">Payment Integration</div><div class="kanban-card-desc">Integrate Stripe for subscription billing</div><div class="progress-bar" style="margin-bottom: 0.75rem;"><div class="progress-fill accent" style="width: 40%;"></div></div><div class="kanban-card-footer"><span class="badge badge-green">Dev</span><div class="avatar-group"><div class="avatar orange">MT</div></div></div></div>
-                        <div class="kanban-card"><div class="kanban-card-title">Email Templates</div><div class="kanban-card-desc">Design responsive email templates for campaigns</div><div class="progress-bar" style="margin-bottom: 0.75rem;"><div class="progress-fill accent" style="width: 80%;"></div></div><div class="kanban-card-footer"><span class="badge badge-blue">Design</span><div class="avatar-group"><div class="avatar green">EW</div></div></div></div>
-                    </div>
-                </div>
-
-                <!-- Review -->
-                <div class="kanban-column">
-                    <div class="kanban-header"><span class="kanban-title">Review</span><span class="kanban-count">2</span></div>
-                    <div class="kanban-cards">
-                        <div class="kanban-card"><div class="kanban-card-title">Authentication Flow</div><div class="kanban-card-desc">OAuth2 implementation with social login options</div><div class="kanban-card-footer"><span class="badge badge-green">Dev</span><div class="avatar-group"><div class="avatar purple">JL</div></div></div></div>
-                        <div class="kanban-card"><div class="kanban-card-title">Landing Page Copy</div><div class="kanban-card-desc">Review and finalize marketing copy for launch</div><div class="kanban-card-footer"><span class="badge badge-orange">Marketing</span><div class="avatar-group"><div class="avatar green">EW</div><div class="avatar blue">SC</div></div></div></div>
-                    </div>
-                </div>
-
-                <!-- Done -->
-                <div class="kanban-column">
-                    <div class="kanban-header"><span class="kanban-title">Done</span><span class="kanban-count">5</span></div>
-                    <div class="kanban-cards">
-                        <div class="kanban-card"><div class="kanban-card-title">Brand Guidelines</div><div class="kanban-card-desc">Complete brand identity documentation</div><div class="kanban-card-footer"><span class="badge badge-blue">Design</span><div class="avatar-group"><div class="avatar blue">SC</div></div></div></div>
-                        <div class="kanban-card"><div class="kanban-card-title">Database Migration</div><div class="kanban-card-desc">Migrate legacy data to new schema</div><div class="kanban-card-footer"><span class="badge badge-green">Dev</span><div class="avatar-group"><div class="avatar orange">MT</div></div></div></div>
-                        <div class="kanban-card"><div class="kanban-card-title">User Onboarding Flow</div><div class="kanban-card-desc">New user welcome sequence and tooltips</div><div class="kanban-card-footer"><span class="badge badge-blue">Design</span><div class="avatar-group"><div class="avatar green">EW</div><div class="avatar purple">JL</div></div></div></div>
-                        <div class="kanban-card"><div class="kanban-card-title">Performance Audit</div><div class="kanban-card-desc">Lighthouse audit and optimization</div><div class="kanban-card-footer"><span class="badge badge-green">Dev</span><div class="avatar-group"><div class="avatar orange">MT</div></div></div></div>
-                        <div class="kanban-card"><div class="kanban-card-title">Security Review</div><div class="kanban-card-desc">Third-party security assessment completed</div><div class="kanban-card-footer"><span class="badge badge-red">Security</span><div class="avatar-group"><div class="avatar purple">JL</div></div></div></div>
-                    </div>
-                </div>
-            </div>
-        </main>
-
-        <footer class="footer">
-            <p>&copy; 2026 <a href="/" style="color: #050;text-decoration:none;">Easy find</a>. All rights reserved.</p>
-        </footer>
+<main class="main-content">
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px">
+        <div>
+            <h1 class="greeting">Projects</h1>
+            <p class="greeting-sub">Manage and track work across all columns</p>
+        </div>
+        <button class="btn btn-primary" onclick="openModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Project
+        </button>
     </div>
-    <script src="templatemo-daynight-script.js"></script>
+
+    <!-- Kanban Board -->
+    <div class="kanban-board">
+        <div class="col-todo"><div class="kanban-column" id="col-todo">
+            <div class="kanban-header"><span class="kanban-title">📋 To Do</span><span class="kanban-count" id="count-todo">0</span></div>
+            <div class="kanban-cards" id="cards-todo"></div>
+            <button class="add-card-btn" onclick="openModal('todo')">＋ Add card</button>
+        </div></div>
+        <div class="col-inprogress"><div class="kanban-column" id="col-inprogress">
+            <div class="kanban-header"><span class="kanban-title">⚙️ In Progress</span><span class="kanban-count" id="count-inprogress">0</span></div>
+            <div class="kanban-cards" id="cards-inprogress"></div>
+            <button class="add-card-btn" onclick="openModal('inprogress')">＋ Add card</button>
+        </div></div>
+        <div class="col-review"><div class="kanban-column" id="col-review">
+            <div class="kanban-header"><span class="kanban-title">🔍 Review</span><span class="kanban-count" id="count-review">0</span></div>
+            <div class="kanban-cards" id="cards-review"></div>
+            <button class="add-card-btn" onclick="openModal('review')">＋ Add card</button>
+        </div></div>
+        <div class="col-done"><div class="kanban-column" id="col-done">
+            <div class="kanban-header"><span class="kanban-title">✅ Done</span><span class="kanban-count" id="count-done">0</span></div>
+            <div class="kanban-cards" id="cards-done"></div>
+            <button class="add-card-btn" onclick="openModal('done')">＋ Add card</button>
+        </div></div>
+    </div>
+</main>
+
+<footer class="footer"><p>&copy; 2026 <a href="/" style="color:#050;text-decoration:none">Easy find</a>. All rights reserved.</p></footer>
+</div>
+
+<!-- ── Create / Edit Modal ─────────────────────────────── -->
+<div class="modal-overlay" id="projectModal">
+    <div class="modal-box">
+        <div class="modal-title" id="modalTitle">New Project</div>
+        <input type="hidden" id="editId">
+
+        <div class="field-group">
+            <label>Title *</label>
+            <input type="text" id="projTitle" placeholder="Project title" maxlength="120">
+        </div>
+        <div class="field-group">
+            <label>Description</label>
+            <textarea id="projDesc" placeholder="Brief description..." maxlength="500"></textarea>
+        </div>
+        <div class="field-row">
+            <div class="field-group">
+                <label>Status</label>
+                <select id="projStatus">
+                    <option value="todo">To Do</option>
+                    <option value="inprogress">In Progress</option>
+                    <option value="review">Review</option>
+                    <option value="done">Done</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label>Tag</label>
+                <input type="text" id="projTag" placeholder="e.g. Design" maxlength="30">
+            </div>
+        </div>
+        <div class="field-row">
+            <div class="field-group">
+                <label>Tag colour</label>
+                <select id="projTagColor">
+                    <option value="blue">Blue</option>
+                    <option value="green">Green</option>
+                    <option value="orange">Orange</option>
+                    <option value="red">Red</option>
+                    <option value="purple">Purple</option>
+                </select>
+            </div>
+            <div class="field-group">
+                <label>Avatar initials</label>
+                <input type="text" id="projInitials" placeholder="e.g. AD" maxlength="3">
+            </div>
+        </div>
+        <div class="field-group" id="progressGroup">
+            <label>Progress: <span id="progressVal">0</span>%</label>
+            <input type="range" id="projProgress" min="0" max="100" value="0"
+                oninput="document.getElementById('progressVal').textContent=this.value">
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="saveBtn" onclick="saveProject()">Create</button>
+        </div>
+    </div>
+</div>
+
+<script src="templatemo-daynight-script.js"></script>
+<script>
+'use strict';
+
+// ── State ─────────────────────────────────────────────────
+let projects = [];
+let editingId = null;
+let defaultStatus = 'todo';
+
+// ── Alert helper ──────────────────────────────────────────
+function showAlert(msg, type = 'success') {
+    const el = document.getElementById('alert');
+    el.textContent = msg;
+    el.className = type;
+    clearTimeout(el._t);
+    el._t = setTimeout(() => { el.className = ''; }, 3500);
+}
+
+// ── Fetch all projects from backend ───────────────────────
+async function loadProjects() {
+    // Show skeletons
+    ['todo','inprogress','review','done'].forEach(col => {
+        document.getElementById('cards-' + col).innerHTML =
+            Array(2).fill(`<div class="kanban-card"><div class="skel skel-h"></div><div class="skel skel-sm"></div></div>`).join('');
+    });
+
+    try {
+        const res  = await fetch('/api/admin/projects', { credentials: 'include' });
+        const data = await res.json();
+        if (!data.success) { showAlert(data.message || 'Failed to load', 'error'); return; }
+        projects = data.projects;
+        renderBoard();
+    } catch (err) {
+        showAlert('Network error loading projects', 'error');
+    }
+}
+
+// ── Render all four columns ───────────────────────────────
+function renderBoard() {
+    const cols = { todo: [], inprogress: [], review: [], done: [] };
+    projects.forEach(p => {
+        if (cols[p.status]) cols[p.status].push(p);
+    });
+
+    Object.keys(cols).forEach(col => {
+        const container = document.getElementById('cards-' + col);
+        const countEl   = document.getElementById('count-' + col);
+        countEl.textContent = cols[col].length;
+
+        if (!cols[col].length) {
+            container.innerHTML = '<p style="font-size:.8rem;color:var(--text-secondary);text-align:center;padding:16px 0">No cards yet</p>';
+            return;
+        }
+
+        container.innerHTML = cols[col].map(p => cardHTML(p)).join('');
+    });
+}
+
+// ── Build one card ────────────────────────────────────────
+function cardHTML(p) {
+    const tagBadge = `<span class="badge badge-${p.tagColor || 'blue'}">${esc(p.tag || 'General')}</span>`;
+    const avatar   = `<div class="avatar ${p.avatarColor || 'blue'}">${esc(p.initials || 'AD')}</div>`;
+
+    const progressBar = (p.status === 'inprogress' || p.progress > 0)
+        ? `<div class="progress-bar"><div class="progress-fill" style="width:${p.progress || 0}%"></div></div>`
+        : '';
+
+    const statusOptions = ['todo','inprogress','review','done']
+        .map(s => `<option value="${s}" ${s === p.status ? 'selected' : ''}>${statusLabel(s)}</option>`)
+        .join('');
+
+    return `
+    <div class="kanban-card" data-id="${p._id}">
+        <div class="kanban-card-title">${esc(p.title)}</div>
+        ${p.description ? `<div class="kanban-card-desc">${esc(p.description)}</div>` : ''}
+        ${progressBar}
+        <div class="kanban-card-footer">
+            <div style="display:flex;align-items:center;gap:8px">
+                ${tagBadge}
+                <div class="avatar-group">${avatar}</div>
+            </div>
+            <div class="card-actions">
+                <select class="status-select" onchange="moveCard('${p._id}', this.value)" onclick="event.stopPropagation()" title="Move to column">
+                    ${statusOptions}
+                </select>
+                <button class="card-action-btn edit" onclick="editProject('${p._id}')" title="Edit">✎</button>
+                <button class="card-action-btn del" onclick="deleteProject('${p._id}')" title="Delete">✕</button>
+            </div>
+        </div>
+    </div>`;
+}
+
+function statusLabel(s) {
+    return { todo: 'To Do', inprogress: 'In Progress', review: 'Review', done: 'Done' }[s] || s;
+}
+
+function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Open modal (create) ───────────────────────────────────
+function openModal(status) {
+    editingId      = null;
+    defaultStatus  = status || 'todo';
+    document.getElementById('modalTitle').textContent = 'New Project';
+    document.getElementById('saveBtn').textContent    = 'Create';
+    document.getElementById('editId').value           = '';
+    document.getElementById('projTitle').value        = '';
+    document.getElementById('projDesc').value         = '';
+    document.getElementById('projStatus').value       = defaultStatus;
+    document.getElementById('projTag').value          = '';
+    document.getElementById('projTagColor').value     = 'blue';
+    document.getElementById('projInitials').value     = 'AD';
+    document.getElementById('projProgress').value     = 0;
+    document.getElementById('progressVal').textContent= '0';
+    document.getElementById('projectModal').classList.add('open');
+    document.getElementById('projTitle').focus();
+}
+
+function closeModal() {
+    document.getElementById('projectModal').classList.remove('open');
+}
+
+// Close on backdrop click
+document.getElementById('projectModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+});
+
+// Close on Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+// ── Save (create or update) ───────────────────────────────
+async function saveProject() {
+    const title = document.getElementById('projTitle').value.trim();
+    if (!title) { showAlert('Title is required', 'error'); document.getElementById('projTitle').focus(); return; }
+
+    const body = {
+        title,
+        description: document.getElementById('projDesc').value.trim(),
+        status:      document.getElementById('projStatus').value,
+        tag:         document.getElementById('projTag').value.trim() || 'General',
+        tagColor:    document.getElementById('projTagColor').value,
+        progress:    parseInt(document.getElementById('projProgress').value) || 0,
+        initials:    document.getElementById('projInitials').value.trim().toUpperCase() || 'AD',
+        avatarColor: document.getElementById('projTagColor').value, // match tag colour
+    };
+
+    const btn = document.getElementById('saveBtn');
+    btn.disabled  = true;
+    btn.textContent = editingId ? 'Saving…' : 'Creating…';
+
+    try {
+        const url    = editingId ? `/api/admin/projects/${editingId}` : '/api/admin/projects';
+        const method = editingId ? 'PATCH' : 'POST';
+        const res    = await fetch(url, {
+            method, credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!data.success) { showAlert(data.message || 'Failed to save', 'error'); return; }
+
+        if (editingId) {
+            projects = projects.map(p => p._id === editingId ? data.project : p);
+            showAlert('Project updated ✓');
+        } else {
+            projects.unshift(data.project);
+            showAlert('Project created ✓');
+        }
+
+        closeModal();
+        renderBoard();
+    } catch (err) {
+        showAlert('Network error', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = editingId ? 'Save' : 'Create';
+    }
+}
+
+// ── Edit project ──────────────────────────────────────────
+function editProject(id) {
+    const p = projects.find(x => x._id === id);
+    if (!p) return;
+
+    editingId = id;
+    document.getElementById('modalTitle').textContent  = 'Edit Project';
+    document.getElementById('saveBtn').textContent     = 'Save';
+    document.getElementById('editId').value            = id;
+    document.getElementById('projTitle').value         = p.title || '';
+    document.getElementById('projDesc').value          = p.description || '';
+    document.getElementById('projStatus').value        = p.status || 'todo';
+    document.getElementById('projTag').value           = p.tag || '';
+    document.getElementById('projTagColor').value      = p.tagColor || 'blue';
+    document.getElementById('projInitials').value      = p.initials || 'AD';
+    document.getElementById('projProgress').value      = p.progress || 0;
+    document.getElementById('progressVal').textContent = p.progress || 0;
+    document.getElementById('projectModal').classList.add('open');
+    document.getElementById('projTitle').focus();
+}
+
+// ── Move card to different column ─────────────────────────
+async function moveCard(id, newStatus) {
+    try {
+        const res  = await fetch(`/api/admin/projects/${id}`, {
+            method: 'PATCH', credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (!data.success) { showAlert('Failed to move card', 'error'); return; }
+        projects = projects.map(p => p._id === id ? data.project : p);
+        renderBoard();
+        showAlert(`Moved to ${statusLabel(newStatus)} ✓`);
+    } catch (err) {
+        showAlert('Network error', 'error');
+    }
+}
+
+// ── Delete project ────────────────────────────────────────
+async function deleteProject(id) {
+    if (!confirm('Delete this project? This cannot be undone.')) return;
+    try {
+        const res  = await fetch(`/api/admin/projects/${id}`, {
+            method: 'DELETE', credentials: 'include'
+        });
+        const data = await res.json();
+        if (!data.success) { showAlert(data.message || 'Failed to delete', 'error'); return; }
+        projects = projects.filter(p => p._id !== id);
+        renderBoard();
+        showAlert('Project deleted');
+    } catch (err) {
+        showAlert('Network error', 'error');
+    }
+}
+
+// ── Init ──────────────────────────────────────────────────
+loadProjects();
+</script>
 </body>
 </html>

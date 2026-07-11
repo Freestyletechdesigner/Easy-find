@@ -171,19 +171,21 @@ function listingCard(p) {
     const date     = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
     const isLand   = (p.type || '').toLowerCase() === 'land';
     const isVerified = (p.stand || '').toLowerCase() === 'verified agent';
+    const isClosed   = p.isClosed === true; // <-- Check deal closed status
 
     return `
         <div class="listing-card" data-title="${p.title || ''}, ${p.type || 'Property'}"
              data-location="${p.location || 'N/A'}" data-price="${p.price || 0}"
-             data-room="${p.beds || 0}, ${p.baths || 0}">
+             data-room="${p.beds || 0}, ${p.baths || 0}" style="${isClosed ? 'opacity: 0.95;' : ''}">
             <div class="card-image">
-                <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy" onerror="this.src='/icon/home icon.png'">
+                <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy" onerror="this.src='/icon/home icon.png'" style="${isClosed ? 'filter: grayscale(80%) opacity(0.65);' : ''}">
                 <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
                 ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
                 ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-circle-check"></i></span>` : ''}
+                ${isClosed ? `<span class="card-taken-badge">Property Taken</span>` : ''}
             </div>
             <div class="card-body">
-                <div class="card-price">₦${price}</div>
+                <div class="card-price" style="${isClosed ? 'color: #718096; text-decoration: line-through;' : ''}">₦${price}</div>
                 <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
                 <div class="card-stats">
                     ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}

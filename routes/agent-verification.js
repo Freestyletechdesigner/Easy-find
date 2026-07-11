@@ -3,6 +3,7 @@
 const axios     = require('axios');
 const crypto    = require('crypto');
 const AgentUser = require('../model/AgentUser');
+const { sendPushToAgents } = require('../utils/push.js');
 
 // ── Smile ID SDK ──────────────────────────────────────────────────────────────
 const smileIdentityCore = require('smile-identity-core');
@@ -267,6 +268,14 @@ function NIN_VERIFICATION(app) {
                     }
                 });
                 console.log(`[Smile ID] Agent ${agentId} verified ✓`);
+
+            // Push notification to agent — delivered even if they left the page
+            await sendPushToAgents({
+                agentIds: [agentId.toString()],
+                title:    '🎉 You are now a Verified Agent!',
+                message:  'Your identity has been confirmed. Your profile now shows the Verified Agent badge.',
+                url:      `${process.env.APP_URL?.split(',')[0] || 'https://easyfind.com.ng'}/agent-loged`,
+            });
             } else {
                 console.warn(`[Smile ID] Verification failed for ${agentId}: ${ResultText}`);
             }

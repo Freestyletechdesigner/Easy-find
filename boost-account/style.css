@@ -46,7 +46,7 @@ body {
 }
 .left ul li i { font-size: 18px; }
 /* ── RIGHT ── */
-.right { padding: 50px 40px; overflow-y: auto; }
+.right { padding: 50px 40px; overflow-y: auto; max-height: 90vh; }
 .right-header { text-align: center; margin-bottom: 32px; }
 .right-header h2 { font-size: 26px; color: #333; margin-bottom: 8px; }
 .right-header p  { color: #666; font-size: 14px; }

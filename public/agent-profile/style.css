@@ -9,6 +9,27 @@
     font-style: normal;
 }
 
+/* === Tokens === */
+:root{
+  --primary:#0d7068;
+  --primary-dark:#055361;
+  --primary-light:#e6f7f5;
+  --bg:#F8FAFC;
+  --white:#FFFFFF;
+  --text:#111827;
+  --muted:#6B7280;
+  --border:#E5E7EB;
+  --shadow-sm:0 1px 2px rgba(17,24,39,.06), 0 1px 3px rgba(17,24,39,.04);
+  --shadow-md:0 10px 24px rgba(17,24,39,.08);
+  --shadow-lg:0 24px 60px rgba(17,24,39,.14);
+  --radius:14px;
+  --radius-lg:20px;
+  --radius-xl:28px;
+  --container:1200px;
+  --nav-h:72px;
+  font-family:'Poppins',Arial,system-ui,-apple-system,sans-serif;
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 body { background: #e8f5f5; font-family: Arial, sans-serif; color: #222; overflow-x: hidden; }
@@ -28,22 +49,11 @@ header {
     top: 10px;
     z-index: 200;
 }
-.logo {
-    font-family: "HyperTrack", cursive;
-    font-size: 1.1rem;
-    text-decoration: none;
-    color: #000;
-    letter-spacing: 1px;
-}
-.logo span {
-    color: #fff;
-    background: #045712;
-    padding: 2px 8px;
-    margin-right: 4px;
-    border-radius: 8px;
-    font-family: "Logo";
-    font-size: 2rem;
-}
+.brand{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:17px; text-decoration: none; color: #000;}
+.brand-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;
+    background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+    color:#fff;font-weight:700;box-shadow:0 6px 14px rgba(13,112,104,.3)}
+
 .links a {
     text-decoration: none;
     padding: 8px 14px;
@@ -425,4 +435,26 @@ footer { text-align: center; padding: 22px; background: #fff; color: #888; borde
     font-size: 1.5rem;
     display: flex;
     align-items: center;
+}
+/* ── Taken Property Status Badge ── */
+.card-taken-badge {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: linear-gradient(135deg, #e53e3e 0%, #9b2c2c 100%);
+    color: white;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 10px rgba(229, 62, 62, 0.4);
+    z-index: 5;
+    animation: pulseBadgeTaken 2.5s infinite;
+}
+@keyframes pulseBadgeTaken {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }

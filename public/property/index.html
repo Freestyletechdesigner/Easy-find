@@ -15,12 +15,15 @@
     
           gtag('config', 'G-NK9XVCBPJM');
         </script>
-    </head>
+        <!-- OneSignal Web Push -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script src="/onesignal-init.js" defer></script>
+</head>
 </head>
 <body>
 
 <header>
-    <a href="/" class="logo"><span>E</span>asy Find</a>
+    <a href="/" class="brand"><span class="brand-mark">E</span>asy Find</a>
     <div class="verify">Verified <i class="fa-regular fa-circle-check"></i></div>
     <nav class="links">
         <a href="/">Home</a>
@@ -32,7 +35,7 @@
     </nav>
     <div class="nav2" id="nav2">
         <div class="top-nav">
-            <a href="#top" class="logo"><span>E</span>asy Find</a>
+            <a href="#top" class="brand"><span class="brand-mark">E</span>asy Find</a>
         </div>
         <a href="/"><i class="fa-solid fa-house"></i> Home</a>
         <a href="/#search-bar"><i class="fa-solid fa-magnifying-glass"></i> Search</a>
@@ -126,6 +129,36 @@
                         referrerpolicy="no-referrer-when-downgrade"
                         src="about:blank">
                     </iframe>
+                </div>
+            </div>
+            <!-- Comments Section -->
+            <div class="prop-section section" id="commentsSection">
+                <h2><i class="fa-solid fa-comments"></i> Q&amp;A &amp; Discussion (<span id="commentCount">0</span>)</h2>
+                
+                <!-- Comment Submission Form -->
+                <div class="comment-form-container">
+                    <form id="propertyCommentForm" class="comment-form">
+                        <div class="comment-input-row">
+                            <input type="text" id="commentNameInput" placeholder="Your name (optional)" maxlength="50">
+                        </div>
+                        <div class="comment-input-row">
+                            <textarea id="commentTextInput" placeholder="Have a question or feedback about this property? Ask here..." maxlength="500" required rows="3"></textarea>
+                        </div>
+                        <div class="comment-form-footer">
+                            <span id="commentCharCounter">0/500</span>
+                            <button type="submit" id="commentSubmitBtn"><i class="fa-solid fa-paper-plane"></i> Post Comment</button>
+                        </div>
+                    </form>
+                </div>
+            
+                <!-- Comment Feed List -->
+                <div class="comments-list" id="commentsList">
+                    <!-- Dynamic comments injected here by JS -->
+                </div>
+            
+                <!-- Load More Button -->
+                <div class="comments-load-more" id="commentsLoadMore" style="display: none;">
+                    <button id="btnLoadMoreComments"><i class="fa-solid fa-plus"></i> Load More Comments</button>
                 </div>
             </div>
 

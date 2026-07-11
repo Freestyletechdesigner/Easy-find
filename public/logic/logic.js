@@ -1,13 +1,22 @@
-﻿    //load
+﻿function debounce(func, timeout = 300) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { func.apply(this, args); }, timeout);
+    };
+}
+    //load
     const body = document.getElementById('body');
     const load = document.querySelector('.load');
-    
+    const preloader = document.getElementById('preloader');
+
     window.addEventListener('load', () => {
+        // Support both old preloader (.load) and new preloader (#preloader)
         setTimeout(() => {
-            body.style.display = 'block';
-            body.classList.add('loaded');
-            load.style.display = 'none';
-        }, 3000);
+            if (body) { body.style.display = 'block'; body.classList.add('loaded'); }
+            if (load) load.style.display = 'none';
+            if (preloader) preloader.classList.add('hide');
+        }, 2200);
         
         // Track page view
         trackPageView();
@@ -42,95 +51,13 @@
     const cardsContainer = document.getElementById('cardsContainer');
     const grid = cardsContainer;
 
-    const BATCH   = 8;   // cards added/removed at a time
-    const MAX_DOM = 50;  // max cards in the DOM at once
-
-    let allPosts  = [];  // full pool fetched from server
-    let cursor    = 0;   // index into allPosts for next batch
-    let isLoading = false;
-
-    // sentinel — triggers next batch when user reaches the bottom
-    const sentinel = document.createElement('div');
-    sentinel.id = 'scroll-sentinel';
-    sentinel.style.cssText = 'height:40px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:13px;';
-    grid.after(sentinel);
-
-    function shuffle(arr) {
-        for (let i = arr.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-    }
-
-    // get next 8 posts from the pool, looping and shuffling when exhausted
-    function nextBatch() {
-        const batch = [];
-        for (let i = 0; i < BATCH; i++) {
-            // when we reach the end, shuffle the pool and restart
-            if (cursor >= allPosts.length) {
-                shuffle(allPosts);
-                cursor = 0;
-            }
-            batch.push(allPosts[cursor++]);
-        }
-        return batch;
-    }
-
-    function addBatch() {
-        if (isLoading || !allPosts.length) return;
-        isLoading = true;
-
-        // show skeletons at the bottom
-        const frag = document.createDocumentFragment();
-        for (let i = 0; i < BATCH; i++) {
-            const sk = document.createElement("div");
-            sk.className = "skeleton-card scroll-skeleton";
-            sk.innerHTML = `<div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line" style="width:60%"></div><div class="skeleton skeleton-line" style="width:40%"></div><div class="skeleton skeleton-line" style="width:80%"></div></div>`;
-            frag.appendChild(sk);
-        }
-        grid.appendChild(frag);
-
-        setTimeout(() => {
-            requestAnimationFrame(() => {
-                // save scroll position before any DOM change
-                const scrollY = window.scrollY;
-
-                // remove skeletons
-                grid.querySelectorAll(".scroll-skeleton").forEach(s => s.remove());
-
-                // insert real cards
-                const batch = nextBatch();
-                const cardFrag = document.createDocumentFragment();
-                batch.forEach(p => {
-                    const tmp = document.createElement("div");
-                    tmp.innerHTML = propertyCard(p);
-                    cardFrag.appendChild(tmp.firstElementChild);
-                });
-                grid.appendChild(cardFrag);
-
-                // remove oldest cards only if user has scrolled far enough down
-                // so removing top cards does not affect visible area
-                const cards = grid.querySelectorAll(".listing-card");
-                if (cards.length > MAX_DOM) {
-                    const excess = cards.length - MAX_DOM;
-                    let removedHeight = 0;
-                    for (let i = 0; i < excess; i++) {
-                        removedHeight += cards[i].offsetHeight;
-                        cards[i].remove();
-                    }
-                    // restore scroll position to compensate for removed top cards
-                    window.scrollTo({ top: scrollY - removedHeight, behavior: "instant" });
-                }
-
-                isLoading = false;
-            });
-        }, 600);
-    }
-
+    // ── Homepage shows only 4 featured properties ─────────────
+    // Full browsing with infinite scroll is at /properties
     async function uploadProperty() {
-        // show skeletons while fetching
-        grid.innerHTML = Array(8).fill(`
+        if (!grid) return;
+
+        // Show 4 skeletons while fetching
+        grid.innerHTML = Array(4).fill(`
             <div class="skeleton-card">
                 <div class="skeleton skeleton-img"></div>
                 <div class="skeleton-body">
@@ -142,20 +69,16 @@
         `).join('');
 
         try {
-            const res  = await fetch('/api/post/property');
+            const res  = await fetch('/api/post/property/featured');
             const data = await res.json();
 
             grid.innerHTML = '';
 
             if (data.success && data.property.length) {
-                allPosts = data.property;
-                cursor   = 0;
-
-                // render first 50 cards (or all if less than 50)
-                const initial = allPosts.slice(0, MAX_DOM);
-                cursor = initial.length;
-                initial.forEach(p => grid.insertAdjacentHTML('beforeend', propertyCard(p)));
-                window.dispatchEvent(new Event('scroll'));
+                // Show only the first 4 properties as a preview
+                data.property.slice(0, 4).forEach(p => {
+                    grid.insertAdjacentHTML('beforeend', propertyCard(p));
+                });
             } else {
                 grid.innerHTML = '<p style="text-align:center;padding:40px;color:#888;">No properties listed yet.</p>';
             }
@@ -166,16 +89,9 @@
         }
     }
 
-    // observer fires when sentinel is 600px away from entering the viewport
-    const scrollObserver = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting) addBatch();
-    }, {
-        root: null,           // use the viewport
-        rootMargin: '0px 0px 100px 0px', // trigger 600px before sentinel is visible
-        threshold: 0
-    });
-
-    scrollObserver.observe(sentinel);
+    // Stub out allPosts for any references elsewhere in logic.js
+    let allPosts = [];
+    let cursor   = 0;
 
     // initial fetch
     uploadProperty();
@@ -183,7 +99,7 @@
     // re-fetch every 1 min to pick up new/boosted posts
     setInterval(async () => {
         try {
-            const res  = await fetch('/api/post/property');
+            const res  = await fetch('/api/post/property/featured');
             const data = await res.json();
             if (data.success && data.property.length) {
                 allPosts = data.property;
@@ -193,44 +109,45 @@
     },  60 * 1000);
 
         // set the card function up 
-        function  propertyCard(p) {
-        const imgSrc   = p.imageNames && p.imageNames.length
-            ? `/agent-loged/upload-property/${p.imageNames[0]}`
-            : 'profile.png';
-        const price = Number(p.price).toLocaleString();
-        const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-        const isLand     = (p.type  || '').toLowerCase() === 'land';
-        const isVerified = (p.stand || '').toLowerCase() === 'verified agent';
+ function  propertyCard(p) {
+    const imgSrc   = p.imageNames && p.imageNames.length
+        ? `/agent-loged/upload-property/${p.imageNames[0]}`
+        : 'profile.png';
+    const price = Number(p.price).toLocaleString();
+    const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const isLand     = (p.type  || '').toLowerCase() === 'land';
+    const isClosed   = p.isClosed === true; // <-- Check deal closed status
 
-        return `
-            <div class="listing-card section" data-title="${p.title}, ${p.type || 'Property'}" data-location="${p.location || 'N/A'}" data-price="${p.price}" data-room="${p.beds || 0} , ${p.baths || 0}">
-                <div class="card-image">
-                    <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
-                    <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
-                    ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
-                    ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-circle-check"></i></span>` : ''}
-                </div>
-                <div class="card-body">
-                    <div class="card-price">₦${price}</div>
-                    <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
-                    <div class="card-stats">
-                        ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
-                        ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
-                        ${isLand? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>` : ''}
-                    </div>
-                    <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
-                </div>
-                <div class="card-footer">
-                    <a href="/property?id=${p._id}" class="btn-view-details">
-                        View Details <i class="fas fa-arrow-right"></i>
-                    </a>
-                    <button class="btn-share-card" onclick="shareCard('${p._id}')">
-                        <i class="fas fa-share-alt"></i>
-                    </button>
-                </div>
+    return `
+        <div class="listing-card" data-title="${p.title}, ${p.type || 'Property'}" data-location="${p.location || 'N/A'}" data-price="${p.price}" data-room="${p.beds || 0} , ${p.baths || 0}" style="${isClosed ? 'opacity: 0.95;' : ''}">
+            <div class="card-image">
+                <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy" style="${isClosed ? 'filter: grayscale(80%) opacity(0.65);' : ''}">
+                <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
+                ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
+                <span class="card-verified-badge"><i class="fa-solid fa-circle-check"></i></span>
+                ${isClosed ? `<span class="card-taken-badge">Property Taken</span>` : ''}
             </div>
-        `;
-    }
+            <div class="card-body">
+                <div class="card-price" style="${isClosed ? 'color: #718096; text-decoration: line-through;' : ''}">₦${price}</div>
+                <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
+                <div class="card-stats">
+                    ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
+                    ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bath"></i> ${p.baths || 0} Baths</span>`}
+                    ${isLand? `<span class="card-stat"><i class="fas fa-ruler-combined"></i> ${p.area || 0}</span>` : ''}
+                </div>
+                <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} <i class="fas fa-eye"></i> views ${p.view || 0}</div>
+            </div>
+            <div class="card-footer">
+                <a href="/property?id=${p._id}" class="btn-view-details">
+                    View Details <i class="fas fa-arrow-right"></i>
+                </a>
+                <button class="btn-share-card" onclick="shareCard('${p._id}')">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
 
     //share link
     window.shareCard = function(id) {
@@ -264,504 +181,6 @@
         alertBox.success('Copied', 'Property link copied to clipboard');
     }
 
-    //type of search
-    const propertyBtn = document.querySelector('.property-btn');
-    const hotelBtn = document.querySelector('.hotel-btn');
-    const t_point = document.querySelector('.type-point');
-    const propertySearch = document.getElementById('full-search-property');
-    const hotelSearch = document.getElementById('full-search-hotel')
-    const property = document.getElementById('available-home');
-
-    propertyBtn.style.backgroundColor = '#eee';
-     //for switching from hotel to house
-    propertyBtn.addEventListener('click', () => {
-        t_point.style.marginLeft = '30px';
-        t_point.style.backgroundColor = '#fff';
-        propertyBtn.style.backgroundColor = '#eee';
-        hotelBtn.style.backgroundColor = '#fff';
-        hotelBtn.style.color = '#000';
-        propertySearch.style.display = 'flex';
-        hotelSearch.style.display = 'none';
-        property.style.display = '';
-        searchSection.style.display = ''
-    });
-     //for switching from house to hotel
-    hotelBtn.addEventListener('click', () => {
-        t_point.style.marginLeft = '250px';
-        t_point.style.backgroundColor = '#055';
-        hotelBtn.style.backgroundColor = '#055';
-        hotelBtn.style.color = '#fff';
-        propertyBtn.style.backgroundColor = '#fff';
-        hotelSearch.style.display = 'flex';
-        propertySearch.style.display = 'none';
-    });
-
-
-
-    //search all 
-    const roomAddHouse = document.querySelector('.room-add-house');
-    const roomRemoveHouse = document.querySelector('.room-remove-house');
-    const roomValueHouse = document.getElementById('room-value-house');
-    const cardsForAll = document.querySelectorAll('.listing-card');
-    const searchBtnHouse = document.getElementById('search-btn-house');
-
-    let count = 0;
-
-    roomAddHouse.addEventListener('click', () => {
-        count++;
-        roomValueHouse.value = count;
-    });
-
-    roomRemoveHouse.addEventListener('click', () => {
-        if (count > 0) {
-            count--;
-            roomValueHouse.value = count;
-        }
-    });
-
-
-    searchBtnHouse.addEventListener('click', () => {
-        const cardsForAll = document.querySelectorAll('.listing-card');
-        const locationValueHouse = document.getElementById('location-house').value.toLowerCase();
-        const propertyValueHouse = document.getElementById('property-house').value.toLowerCase();
-        const priceValueHouse = document.getElementById('price-house').value;
-        const roomaHouse = roomValueHouse.value;
-
-        cardsForAll.forEach(cfa => {
-
-            let dataNameA = cfa.dataset.title.toLowerCase();
-            let dataLocationA = cfa.dataset.location.toLowerCase();
-            let dataPriceA = cfa.dataset.price;
-            let dataRoomA = cfa.dataset.room;
-
-            let show = true;
-
-            if (propertyValueHouse !== '' && !dataNameA.includes(propertyValueHouse))
-                show = false
-
-            if (locationValueHouse !== '' && !dataLocationA.includes(locationValueHouse))
-                show = false
-
-            if (priceValueHouse !== '' && !dataPriceA.includes(priceValueHouse))
-                show = false
-
-            if (roomaHouse !== '' && !dataRoomA.includes(roomaHouse))
-                show = false
-
-            cfa.style.display = show ? '' : 'none';
-
-            document.getElementById('loadMoreBtn').style.display = 'none'
-        });
-    });
-
-
-    // AI Property + Agent Search
-    const searchSection  = document.getElementById('search-bar');
-    const searchBar      = document.getElementById('search');
-    const searchClear    = document.getElementById('searchClear');
-    const holdListAgent  = document.getElementById('search-agent-list');
-    const searchInput    = document.getElementById('search');
-
-    let aiSearchActive = false;
-
-    function debounce(func, delay) {
-        let timeoutId;
-        return (...args) => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => func.apply(this, args), delay);
-        };
-    }
-
-    // Build coloured pills showing what the AI parsed from the query
-    function buildUnderstoodBadge(parsed) {
-        if (!parsed) return '';
-        const pills = [];
-        const pill = (icon, label) =>
-            `<span style="background:#e6f7f5;color:#0d7068;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:500;">${icon} ${label}</span>`;
-        if (parsed.type)     pills.push(pill('<i class="fa-solid fa-house"></i>', parsed.type));
-        if (parsed.category) pills.push(pill('<i class="fa-solid fa-tag"></i>', parsed.category === 'shortlet' ? 'Short-let' : parsed.category === 'rent' ? 'For Rent' : 'For Sale'));
-        if (parsed.minBeds !== null && parsed.maxBeds !== null && parsed.minBeds === parsed.maxBeds)
-                             pills.push(pill('<i class="fa-solid fa-bed"></i>', `${parsed.minBeds} bed${parsed.minBeds !== 1 ? 's' : ''}`));
-        else if (parsed.minBeds !== null) pills.push(pill('<i class="fa-solid fa-bed"></i>', `≥${parsed.minBeds} bed room`));
-        else if (parsed.maxBeds !== null) pills.push(pill('<i class="fa-solid fa-bed"></i>', `≤${parsed.maxBeds} bed room`));
-        if (parsed.maxPrice) pills.push(pill('<i class="fa-solid fa-sack-dollar"></i>', `under ₦${Number(parsed.maxPrice).toLocaleString()}`));
-        if (parsed.minPrice) pills.push(pill('<i class="fa-solid fa-sack-dollar"></i>', `above ₦${Number(parsed.minPrice).toLocaleString()}`));
-        if (parsed.location) pills.push(pill('<i class="fa-solid fa-location-dot"></i>', parsed.location));
-        return pills.join(' ');
-    }
-
-    // AI Property Search — replaces cards in the grid
-    async function fetchAndRenderProperties(query) {
-        try {
-            const grid = document.getElementById('cardsContainer');
-            grid.innerHTML = Array(4).fill(`
-                <div class="skeleton-card">
-                    <div class="skeleton skeleton-img"></div>
-                    <div class="skeleton-body">
-                        <div class="skeleton skeleton-line" style="width:60%"></div>
-                        <div class="skeleton skeleton-line" style="width:40%"></div>
-                        <div class="skeleton skeleton-line" style="width:80%"></div>
-                    </div>
-                </div>
-            `).join('');
-
-            const res  = await fetch(`/api/search/property?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-
-            grid.innerHTML = '';
-            document.getElementById('loadMoreBtn').style.display = 'none';
-            aiSearchActive = true;
-
-            if (!data.success || !data.properties.length) {
-                const understood = buildUnderstoodBadge(data.parsed);
-                grid.innerHTML = `
-                    <div style="grid-column:1/-1;text-align:center;padding:50px 20px;color:#888;">
-                        ${understood ? `<div style="margin-bottom:12px;">${understood}</div>` : ''}
-                        <p style="font-size:15px;">No properties found matching your search. Try different keywords.</p>
-                        <button onclick="clearAISearch()" style="margin-top:16px;background:#0d7068;color:#fff;border:none;border-radius:20px;padding:8px 20px;font-size:13px;cursor:pointer;">Show all properties</button>
-                    </div>`;
-                return;
-            }
-
-            const understood = buildUnderstoodBadge(data.parsed);
-            if (understood) {
-                const badgeRow = document.createElement('div');
-                badgeRow.id = 'ai-understood-row';
-                badgeRow.style.cssText = 'grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:0 4px 12px;';
-                badgeRow.innerHTML = `<span style="font-size:13px;color:#555;"><i class="fa-solid fa-robot"></i>:</span> ${understood}
-                    <button onclick="clearAISearch()" style="margin-left:auto;background:#f2f2f2;border:none;border-radius:20px;padding:4px 14px;font-size:12px;cursor:pointer;color:#555;">✕ Clear</button>`;
-                grid.appendChild(badgeRow);
-            }
-
-            data.properties.forEach(p => {
-                grid.insertAdjacentHTML('beforeend', propertyCard(p));
-            });
-
-            window.dispatchEvent(new Event('scroll'));
-        } catch (err) {
-            console.error('AI property search error:', err);
-        }
-    }
-
-    // Clear AI search and restore normal feed
-    window.clearAISearch = function() {
-        searchBar.value = '';
-        if (searchClear) searchClear.style.display = 'none';
-        holdListAgent.style.display = 'none';
-        aiSearchActive = false;
-        uploadProperty();
-    };
-
-    // Agent dropdown search
-    async function fetchAndRenderAgents(query) {
-        try {
-            const res  = await fetch(`/api/search/agent?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            if (!data.success) return;
-            renderAgents(data.agents);
-        } catch (err) {
-            console.error('Search agent error:', err);
-        }
-    }
-
-    function renderAgents(agents) {
-        if (agents.length === 0) {
-            holdListAgent.innerHTML = '<div class="agent-search-empty">No agents found</div>';
-            holdListAgent.style.display = 'block';
-            return;
-        }
-        holdListAgent.innerHTML = agents.map(a => `
-            <a href="/agent-profile?id=${a._id}" class="agent-search-item">
-                <div class="agent-search-avatar">
-                    ${a.profilePicture
-                        ? `<img src="${a.profilePicture}" alt="${a.name}">`
-                        : `<span>${a.name ? a.name[0].toUpperCase() : '?'}</span>`
-                    }
-                </div>
-                <div class="agent-search-info">
-                    <p class="agent-search-name">${a.name}</p>
-                    <p class="agent-search-stand">${a.stand && a.stand.toLowerCase() === 'verified agent' ? '<i class="fa-solid fa-circle-check"></i> ' + a.stand : ''}</p>
-                </div>
-            </a>
-        `).join('');
-        holdListAgent.style.display = 'block';
-    }
-
-    // Combined debounced handler — fires both property AI + agent dropdown
-    const handleSearch = debounce((value) => {
-        if (!value) {
-            holdListAgent.style.display = 'none';
-            if (aiSearchActive) { aiSearchActive = false; uploadProperty(); }
-            return;
-        }
-        fetchAndRenderAgents(value);
-        fetchAndRenderProperties(value);
-    }, 400);
-
-    function initSearch() {
-        if (!searchInput) return;
-
-        searchInput.addEventListener('input', (e) => {
-            const value = e.target.value.trim();
-            if (searchClear) searchClear.style.display = value ? 'block' : 'none';
-            handleSearch(value);
-        });
-
-        if (searchClear) {
-            searchClear.addEventListener('click', () => { window.clearAISearch(); });
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!searchInput.contains(e.target) && !holdListAgent.contains(e.target)) {
-                holdListAgent.style.display = 'none';
-            }
-        });
-    }
-
-// Call once on DOM ready
-initSearch();
-
-// ── Voice Search (Push-to-Talk) ───────────────────────────────────────────────
-// Hold the mic button → speak → release → search fires automatically
-(function initVoiceSearch() {
-    const micBtn  = document.getElementById('searchMic');
-    const micIcon = document.getElementById('micIcon');
-    const input   = document.getElementById('search');
-
-    if (!micBtn) return;
-
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-        micBtn.style.display = 'none';
-        return;
-    }
-
-    const recognition = new SpeechRecognition();
-    recognition.lang           = 'en-NG';
-    recognition.continuous     = false;
-    recognition.interimResults = true;
-
-    let isListening  = false;
-    let finalText    = '';
-
-    function startListening() {
-        if (isListening) return;
-        finalText = '';
-        try {
-            recognition.start();
-        } catch (e) { /* already started */ }
-    }
-
-    function stopListening() {
-        if (!isListening) return;
-        recognition.stop();
-    }
-
-    // ── Mouse events (desktop) ────────────────────────────
-    micBtn.addEventListener('mousedown',  (e) => { e.preventDefault(); startListening(); });
-    micBtn.addEventListener('mouseup',    ()  => stopListening());
-    micBtn.addEventListener('mouseleave', ()  => { if (isListening) stopListening(); });
-
-    // ── Touch events (mobile) ─────────────────────────────
-    micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startListening(); }, { passive: false });
-    micBtn.addEventListener('touchend',   (e) => { e.preventDefault(); stopListening();  }, { passive: false });
-
-    // ── Recognition lifecycle ─────────────────────────────
-    recognition.addEventListener('start', () => {
-        isListening = true;
-        micBtn.classList.add('listening');
-        micIcon.className    = 'fa-solid fa-microphone-lines';
-        input.placeholder    = 'Listening... speak now';
-    });
-
-    recognition.addEventListener('result', (e) => {
-        let interim = '';
-        finalText   = '';
-        for (const result of e.results) {
-            if (result.isFinal) finalText  += result[0].transcript;
-            else                interim    += result[0].transcript;
-        }
-        // Show live transcription in the input while holding
-        input.value = finalText || interim;
-        const clearBtn = document.getElementById('searchClear');
-        if (clearBtn) clearBtn.style.display = input.value ? 'block' : 'none';
-    });
-
-    recognition.addEventListener('end', () => {
-        isListening           = false;
-        micBtn.classList.remove('listening');
-        micIcon.className     = 'fa-solid fa-microphone';
-        input.placeholder     = 'Street, location, price, or agent name...';
-
-        // Use finalText if available, fall back to whatever is in the input
-        const query = (finalText || input.value).trim();
-        if (query) {
-            input.value = query;
-            const clearBtn = document.getElementById('searchClear');
-            if (clearBtn) clearBtn.style.display = 'block';
-            handleSearch(query);
-        }
-    });
-
-    recognition.addEventListener('error', (e) => {
-        isListening           = false;
-        micBtn.classList.remove('listening');
-        micIcon.className     = 'fa-solid fa-microphone';
-        input.placeholder     = 'Street, location, price, or agent name...';
-
-        if (e.error === 'not-allowed') {
-            micBtn.title = 'Microphone access denied — allow it in browser settings';
-        } else if (e.error === 'no-speech') {
-            micBtn.title = 'No speech detected — try again';
-        } else {
-            micBtn.title = 'Voice error — try again';
-        }
-        setTimeout(() => { micBtn.title = 'Hold to speak'; }, 3000);
-    });
-})();
-
-
-
-    //card load
-    const btnShow = document.getElementById("loadMoreBtn");
-
-    function hidecard() { /* no-op — infinite scroll handles display */ }
-
-    // Load More button triggers next batch (fallback for users who don't scroll)
-    btnShow.addEventListener('click', () => {
-        if (!isLoading) {
-            currentPage++;
-            uploadProperty(currentPage);
-        }
-    });
-
-    //HOTEL BOOKING FORM
-    const bookRoomSection = document.querySelector('.book-room');
-    const priceBook = document.getElementById('price-book');
-    const submitBook = document.getElementById('submit-book');
-    const bookForm = document.getElementById('book-form');
-    const bookBtn = document.querySelectorAll('.book-btn');
-    const bgf2 = document.querySelector('.bgf2');
-
-    bookRoomSection.style.display = 'none';
-    let selectedPrice = 0;
-
-    bookBtn.forEach(bBtn => {
-        bBtn.addEventListener('click', () => {
-            bookRoomSection.style.display = 'block';
-            bgf2.style.display = 'block'
-            selectedPrice = parseInt(bBtn.dataset.bookprice);
-            priceBook.textContent = `Total: ₦0`
-        });
-    });
-    bgf2.addEventListener('click', () => {
-        bookRoomSection.style.display = 'none';
-        bgf2.style.display = 'none'
-    });
-
-    bookForm.addEventListener('input', (e) => {
-        e.preventDefault();
-
-        const bookerName = document.getElementById('booker-name').value;
-        const booker_e_or_n = document.getElementById('booker-e-or-n').value;
-        const checkIn = document.getElementById('checkin').value;
-        const checkOut = document.getElementById('checkout').value;
-        const guests = document.getElementById('guests').value;
-
-        if (bookerName && booker_e_or_n && checkIn && checkOut && guests) {
-            const inDate = new Date(checkIn);
-            const outDate = new Date(checkOut);
-            const night = Math.ceil((outDate - inDate) / (1000 * 60 * 60 * 24));
-            let resultBook = night * selectedPrice;
-            priceBook.textContent = `Total: ₦${resultBook.toLocaleString()}`;
-            submitBook.style.opacity = '1';
-            submitBook.disabled = false;
-        } else {
-            submitBook.style.opacity = '0.5';
-            submitBook.disabled = true;
-        }
-
-    });
-
-    submitBook.addEventListener('click', async (e) => {
-        e.preventDefault();
-        
-        const bookerName = document.getElementById('booker-name').value;
-        const bookerContact = document.getElementById('booker-e-or-n').value;
-        const checkIn = document.getElementById('checkin').value;
-        const checkOut = document.getElementById('checkout').value;
-        const guests = document.getElementById('guests').value;
-
-        // Disable button during submission
-        submitBook.disabled = true;
-        submitBook.textContent = 'Submitting...';
-
-        try {
-            const response = await fetch('/api/bookings', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    bookerName,
-                    bookerContact,
-                    checkIn,
-                    checkOut,
-                    guests,
-                    roomPrice: selectedPrice
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                // Store booking data for payment
-                localStorage.setItem('currentBooking', JSON.stringify({
-                    id: data.bookingId,
-                    checkIn,
-                    checkOut,
-                    guests,
-                    nights: data.nights,
-                    totalPrice: data.totalPrice,
-                    bookerContact
-                }));
-                localStorage.setItem('currentBookingId', data.bookingId);
-                
-                // Show success message and redirect to payment
-                alertBox.success(
-                    'Booking Created Successfully!',
-                    `Your booking ID is: ${data.bookingId}\n\nRedirecting to payment page...`,
-                    () => {
-                        window.location.href = `/payment.html?booking=${data.bookingId}`;
-                    }
-                );
-                
-                // Auto redirect after 2 seconds
-                setTimeout(() => {
-                    window.location.href = `/payment.html?booking=${data.bookingId}`;
-                }, 2000);
-            } else {
-                alertBox.error('Booking Failed', data.message);
-            }
-        } catch (error) {
-            console.error('Booking error:', error);
-            alertBox.error('Booking Error', 'An error occurred. Please try again.');
-        } finally {
-            submitBook.disabled = false;
-            submitBook.textContent = 'Submit Booking';
-        }
-    });
-
-    //service btn
-    document.querySelectorAll('.service-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.listing-card').forEach(perCard => {
-                perCard.style.display = 'block';
-            });
-            btnShow.style.display = 'none'
-        })
-    })
-
     // scroll animation
     let sections = document.querySelectorAll('.section');
 
@@ -793,80 +212,6 @@ initSearch();
         })
 
     });
-
-    // scroll animation count
-    // scroll animation count
-    const initScrollCounters = () => {
-        const counters = [
-            { selector: '.anime-count1', target: 98, suffix: '%' },
-            { selector: '.anime-count2', target: 80, suffix: '%' },
-            { selector: '.anime-count3', target: 99, suffix: '%' }
-        ];
-
-        const animateCount = (el, target, suffix, duration = 2000) => {
-            let startTime = null;
-            const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
-
-            const updateCount = (timestamp) => {
-                if (!startTime) startTime = timestamp;
-                const elapsed = timestamp - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const easedProgress = easeOutCubic(progress);
-                const currentValue = Math.floor(easedProgress * target);
-
-                el.textContent = `${currentValue}${suffix}`;
-
-                if (progress < 1) {
-                    requestAnimationFrame(updateCount);
-                } else {
-                    el.textContent = `${target}${suffix}`;
-                }
-            };
-
-            requestAnimationFrame(updateCount);
-        };
-
-        // Reset all counters to 0% initially
-        const counterData = [];
-        counters.forEach(({ selector, target, suffix }) => {
-            const el = document.querySelector(selector);
-            if (el) {
-                el.textContent = `0${suffix}`;
-                counterData.push({ el, target, suffix });
-            }
-        });
-
-        if (!counterData.length) return;
-
-        // Use IntersectionObserver for high performance trigger on scroll
-        if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries, obs) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const targetEl = entry.target;
-                        const data = counterData.find(d => d.el === targetEl);
-                        if (data) {
-                            animateCount(targetEl, data.target, data.suffix, 2000); // 2 seconds duration
-                        }
-                        obs.unobserve(targetEl);
-                    }
-                });
-            }, {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
-            });
-
-            counterData.forEach(data => observer.observe(data.el));
-        } else {
-            // Fallback: Animate immediately if IntersectionObserver is not supported
-            counterData.forEach(data => {
-                animateCount(data.el, data.target, data.suffix, 2000);
-            });
-        }
-    };
-
-    // Initialize the scroll counters
-    initScrollCounters();
 
     // Load verified agents with pagination
     let agentPage       = 1;
@@ -969,6 +314,8 @@ initSearch();
     const feedbackClose = document.getElementById('feedbackClose');
     let feedbackLoaded = false;
     let selectedRating = 5;
+
+    loadFeedbacks();
 
     function openFeedback() {
         clientsFB.classList.add('feed-move');
@@ -1083,6 +430,7 @@ initSearch();
     const logoutBtn = document.querySelector('.btn-logout');
     const loginNav = document.getElementById('login-nav-hero');
     const holdLogin = document.querySelector('.hold-login');
+    const navSignin = document.querySelectorAll('.nav-sign-in')
 
     holdLogin.style.right = '-10rem'
 
@@ -1105,17 +453,19 @@ initSearch();
                 loginNav.style.display = 'none';
                 logoutBtn.style.display = 'flex';
                 userLog.style.display = 'flex';
+                navSignin.forEach(n => n.style.display = 'none');
                 userLog.textContent = data.user.name[0].toUpperCase();
             } else if (dataAgent.success) {
                 loginNav.style.display = 'none';
                 logoutBtn.style.display = 'flex';
                 userLog.style.display = 'flex';
+                navSignin.forEach(n => n.style.display = 'none');
                 if (dataAgent.agent.profilePicture) {
                     userLog.innerHTML = `<img src="${dataAgent.agent.profilePicture}" alt="${dataAgent.agent.name}" style="width:40px;height:40px;object-fit:cover;border-radius:50%;">`;
                     userLog.style.background = 'transparent';
                     userLog.style.right = '2.1rem';
                     userLog.style.padding = '0';
-                    userLog.style.border = '3px solid #0b6a6dff';
+                    userLog.style.border = '3px solid #00b5bbff';
                 } else {
                     userLog.textContent = dataAgent.agent.name[0].toUpperCase();
                 }
@@ -1749,23 +1099,68 @@ if (loginForm) {
 
     initWebSocket();
 
-    // Serve term to first user
-    const serveTermsCheck = document.getElementById('serveTerms');
-    const serve = document.querySelector('.serve-terms');
-
-    async function serveTerms() {
+    // Agent search 
+    const agentSearchInput = document.getElementById('agent-search-input');
+    const searchAgentList = document.getElementById('search-agent-list');
+    // Agent dropdown search
+    async function fetchAndRenderAgents(query) {
         try {
-            const res = await fetch('/api/first-visit');
+            const res  = await fetch(`/api/search/agent?q=${encodeURIComponent(query)}`);
             const data = await res.json();
-            if (data.firstVisit) return serve.style.display = 'flex'
-            serve.style.display = 'none'
-        } catch (error) {
-            console.log(error)
+            if (!data.success) return;
+            renderAgents(data.agents);
+        } catch (err) {
+            console.error('Search agent error:', err);
         }
     }
-    serveTerms()
 
-    serveTermsCheck.addEventListener('input', () => {
-        serve.style.display = 'none'
-    });
+    function renderAgents(agents) {
+        if (agents.length === 0) {
+            searchAgentList.innerHTML = '<div class="agent-search-empty">No agents found</div>';
+            searchAgentList.style.display = 'block';
+            return;
+        }
+        searchAgentList.innerHTML = agents.map(a => `
+            <a href="/agent-profile?id=${a._id}" class="agent-search-item">
+                <div class="agent-search-avatar">
+                    ${a.profilePicture
+                        ? `<img src="${a.profilePicture}" alt="${a.name}">`
+                        : `<span>${a.name ? a.name[0].toUpperCase() : '?'}</span>`
+                    }
+                </div>
+                <div class="agent-search-info">
+                    <p class="agent-search-name">${a.name}</p>
+                    <p class="agent-search-stand">${a.stand && a.stand.toLowerCase() === 'verified agent' ? '<i class="fa-solid fa-circle-check"></i> ' + a.stand : ''}</p>
+                </div>
+            </a>
+        `).join('');
+        searchAgentList.style.display = 'block';
+    }
+    // debounced handler
+    const handleSearch = debounce((value) => {
+        if (!value) {
+            searchAgentList.style.display = 'none';
+            return;
+        }
+        fetchAndRenderAgents(value);
+    }, 400);
 
+    // Agent search 
+    function initSearch() {
+        if (!agentSearchInput) return;
+
+        agentSearchInput.addEventListener('input', (e) => {
+            
+            const value = e.target.value.trim().toLowerCase(); 
+            handleSearch(value);
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!agentSearchInput.contains(e.target) && !searchAgentList.contains(e.target)) {
+                searchAgentList.style.display = 'none';
+            }
+        });
+    }
+
+    // Call once on DOM ready
+    initSearch();

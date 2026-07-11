@@ -17,7 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
             : data.agent.name;
             loadProfilePicture();
 
-            if (data.agent.stand && data.agent.stand.toLowerCase() === 'verified agent') {
+            // Check if agent stand is "verified agent"
+            const isVerified = data.agent.stand && data.agent.stand.toLowerCase() === 'verified agent';
+
+            if (isVerified) {
                 document.querySelectorAll('[href="/agent-verification"]').forEach(el => {
                     el.style.display = 'none';
                 });
@@ -27,6 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 verify.style.display = 'none'
                 verifyText.style.display = 'none'
             }
+
+            // Check if the agent has boosted their account or an individual listing
+            const isBoosted = !!(data.agent.boosted || data.agent.isBoosted || data.agent.boost);
+
+            // Dynamically populate notifications based on agent's real-time state
+            initializeNotifications(isVerified, isBoosted);
+
             return true;
         } catch (error) {
             window.location.href = '/login-agent';
@@ -85,22 +95,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const groupBeds   = document.getElementById('groupBeds');
     const groupBaths = document.getElementById('groupBaths');
     const landPlot = document.getElementById('groupLand');
-    landPlot.style.display = 'none'
+    if (landPlot) landPlot.style.display = 'none';
 
     function handleTypeChange() {
         const isLand = typeSelect.value === 'land';
-        groupBeds.style.display  = isLand ? 'none' : '';
-        groupBaths.style.display = isLand ? 'none' : '';
+        if (groupBeds) groupBeds.style.display  = isLand ? 'none' : '';
+        if (groupBaths) groupBaths.style.display = isLand ? 'none' : '';
         if (isLand) {
-            propertyForm.querySelector('[name="beds"]').value  = '';
-            propertyForm.querySelector('[name="baths"]').value = '';
-            landPlot.style.display = ''
+            if (propertyForm) {
+                const bedsInput = propertyForm.querySelector('[name="beds"]');
+                const bathsInput = propertyForm.querySelector('[name="baths"]');
+                if (bedsInput) bedsInput.value = '';
+                if (bathsInput) bathsInput.value = '';
+            }
+            if (landPlot) landPlot.style.display = '';
         } else {
-            landPlot.style.display = 'none'
+            if (landPlot) landPlot.style.display = 'none';
         }
     }
 
-    typeSelect.addEventListener('change', handleTypeChange);
+    if (typeSelect) {
+        typeSelect.addEventListener('change', handleTypeChange);
+    }
 
     // ── Modal ─────────────────────────────────────────────
     window.openModal = function () {
@@ -117,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function resetForm() {
-        propertyForm.reset();
+        if (propertyForm) propertyForm.reset();
         selectedImages = [];
         // clear pinned coordinates
         const latInput = document.getElementById('propLatitude');
@@ -138,6 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initializeFeatures() {
         const container = document.getElementById('featuresContainer');
+        if (!container) return;
         container.innerHTML = '';
         availableFeatures.forEach(feature => {
             const tag = document.createElement('div');
@@ -160,12 +177,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateFeaturesInput() {
-        document.getElementById('featuresInput').value = Array.from(selectedFeatures).join(',');
+        const input = document.getElementById('featuresInput');
+        if (input) input.value = Array.from(selectedFeatures).join(',');
     }
 
     // ── Image Upload & Drag-Drop ──────────────────────────
-    const imagedrop            = document.querySelector('.image-upload-zone');
-    const propertyForm         = document.getElementById('propertyForm');
+    const propertyForm = document.getElementById('propertyForm');
 
     // Live price formatter for post form
     const postPriceInput = document.getElementById('postPrice')
@@ -178,72 +195,126 @@ document.addEventListener('DOMContentLoaded', () => {
             this.setSelectionRange(len, len);
         });
     }
-    const imageInput           = document.getElementById('fileInput');
+
+    const imageInput = document.getElementById('fileInput');
     const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+    
+    // Explicit array declaration to prevent ReferenceErrors during execution
     let selectedImages = [];
 
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        imagedrop.addEventListener(eventName, preventDefaults, false);
-        document.body.addEventListener(eventName, preventDefaults, false);
-    });
+    // Setup drag & drop targets
+    const newPostDropZone = document.querySelector('#propertyForm .image-upload-zone');
+    const editPostDropZone = document.querySelector('#editPropertyForm .image-upload-zone');
+    const editFileInput = document.getElementById('editFileInput');
 
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
     }
 
-    ['dragenter', 'dragover'].forEach(eventName => {
-        imagedrop.addEventListener(eventName, () => {
-            imagedrop.style.borderColor = '#0d7068';
-            imagedrop.style.background  = 'linear-gradient(135deg, #e8fffe 0%, #d4fcfb 100%)';
-        });
+    // Prevent global browser drop behavior (which opens the image file in the browser window)
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        document.body.addEventListener(eventName, preventDefaults, false);
     });
 
-    ['dragleave', 'drop'].forEach(eventName => {
-        imagedrop.addEventListener(eventName, () => {
-            imagedrop.style.borderColor = '#66eae3';
-            imagedrop.style.background  = 'linear-gradient(135deg, #f5fdfd 0%, #e8fffe 100%)';
-        });
-    });
-
-    imagedrop.addEventListener('drop', (e) => handleFiles(e.dataTransfer.files));
-    imageInput.addEventListener('change', (e) => handleFiles(e.target.files));
-
- async function handleFiles(files) {
-    const newFiles = [];
-
-    for (const file of Array.from(files)) {
-        // 1. Validation: Is it an image?
-        if (!file.type.startsWith('image/')) {
-            alertBox.error('Invalid File', `${file.name} is not an image file`);
-            continue;
+    // Unified file handling logic for both Upload and Edit actions
+    async function handleFiles(files, isEdit = false) {
+        const containerId = isEdit ? 'editImagePreviewContainer' : 'imagePreviewContainer';
+        const container = document.getElementById(containerId);
+        
+        if (!container) {
+            console.error(`Container ${containerId} not found!`);
+            return;
         }
 
-        // 2. Pre-processing: Attempt compression first
-        let fileToProcess = file;
-        if (file.size > 1 * 1024 * 1024) {
-            try {
-                fileToProcess = await compressImage(file);
-            } catch (err) {
-                console.error("Compression failed, using original:", err);
+        const newFiles = [];
+
+        for (const file of Array.from(files)) {
+            if (!file.type.startsWith('image/')) {
+                alertBox.error('Invalid File', `${file.name} is not an image file`);
+                continue;
             }
+
+            // Create temporary preview loading item
+            const tempItem = document.createElement('div');
+            tempItem.className = 'preview-item';
+            tempItem.innerHTML = `<div class="spinner-container"><i class="fa-solid fa-spinner spinner2"></i></div>`;
+            container.appendChild(tempItem);
+
+            let fileToProcess = file;
+            if (file.size > 1 * 1024 * 1024) {
+                try {
+                    fileToProcess = await compressImage(file);
+                } catch (err) {
+                    console.error("Compression failed, using original:", err);
+                }
+            }
+
+            tempItem.remove();
+
+            if (fileToProcess.size > 10 * 1024 * 1024) {
+                alertBox.error('File Too Large', `${file.name} remains above 10MB.`);
+                continue;
+            }
+
+            newFiles.push(fileToProcess);
         }
 
-        // 3. Validation: Check if the file (or compressed result) is still too large
-        if (fileToProcess.size > 10 * 1024 * 1024) {
-            alertBox.error('File Too Large', `${file.name} remains above 10MB even after compression.`);
-            continue; 
+        if (isEdit) {
+            editImages = [...editImages, ...newFiles];
+            updateEditPreview();
+        } else {
+            selectedImages = [...selectedImages, ...newFiles];
+            updateImagePreview();
         }
-
-        newFiles.push(fileToProcess);
     }
 
-    // 4. Update state
-    selectedImages = [...selectedImages, ...newFiles];
-    updateImagePreview();
-}
+    // Configure drag action stylings and callback execution
+    function setupDragAndDrop(dropZone, isEdit) {
+        if (!dropZone) return;
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.style.borderColor = '#0d7068';
+                dropZone.style.background  = 'linear-gradient(135deg, #e8fffe 0%, #d4fcfb 100%)';
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => {
+                dropZone.style.borderColor = '#66eae3';
+                dropZone.style.background  = 'linear-gradient(135deg, #f5fdfd 0%, #e8fffe 100%)';
+            });
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            if (e.dataTransfer && e.dataTransfer.files) {
+                handleFiles(e.dataTransfer.files, isEdit);
+            }
+        });
+    }
+
+    // Initialize both drag and drop zones
+    setupDragAndDrop(newPostDropZone, false);
+    setupDragAndDrop(editPostDropZone, true);
+
+    // Stop click events bubbling up from input elements to parent divs to prevent recursive click loops
+    if (imageInput) {
+        imageInput.addEventListener('click', (e) => e.stopPropagation());
+        imageInput.addEventListener('change', (e) => handleFiles(e.target.files, false));
+    }
+
+    if (editFileInput) {
+        editFileInput.addEventListener('click', (e) => e.stopPropagation());
+        editFileInput.addEventListener('change', (e) => handleFiles(e.target.files, true));
+    }
 
     function updateImagePreview() {
+        if (!imagePreviewContainer) return;
         imagePreviewContainer.innerHTML = '';
         selectedImages.forEach((file, index) => {
             const reader = new FileReader();
@@ -464,7 +535,7 @@ window.submitProperty = async function () {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            alertBox.success('Success', 'Property posted successfully! make sure to delete the property after sale', () => {
+            alertBox.success('Success', 'Property posted successfully! make sure to click on Deal Close after sell', () => {
                 // Clear out map coordinate inputs completely so the next listing is clean
                 if (latInput) latInput.value = '';
                 if (lngInput) lngInput.value = '';
@@ -605,6 +676,28 @@ async function getCoordinatesWithFallback(locationText) {
                 }
             }
         );
+    };
+
+window.toggleDeal = async function(id, isClosed) {
+        try {
+            const res = await fetch(`/api/agent/property/${id}/deal`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isClosed })
+            });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                alertBox.success('Success', data.message, () => {
+                    // Instantly reload agent property deck
+                    loadProperties(true);
+                });
+            } else {
+                alertBox.error('Failed', data.message || 'Could not update deal status.');
+            }
+        } catch (err) {
+            console.error('Deal Toggle Error:', err);
+            alertBox.error('Error', 'Something went wrong. Please check your network connection.');
+        }
     };
 
     window.shareProperty = async function(id) {
@@ -840,7 +933,7 @@ async function getCoordinatesWithFallback(locationText) {
         }
     });
 
-    function propertyCard(p) {
+function propertyCard(p) {
         const imgSrc = p.imageNames && p.imageNames.length
             ? `/agent-loged/upload-property/${p.imageNames[0]}`
             : 'profile.png';
@@ -848,15 +941,19 @@ async function getCoordinatesWithFallback(locationText) {
         const date = new Date(p.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
         const isLand = (p.type || '').toLowerCase() === 'land';
         const isVerified = (p.stand || '').toLowerCase() === 'verified agent';
+        const isClosed = p.isClosed === true; 
 
         // Explicitly forces opacity and transform values inline to bypass legacy stylesheet classes cleanly
         return `
             <div class="property-card" id="card-${p._id}" data-property="${encodeURIComponent(JSON.stringify(p))}" style="opacity: 1 !important; transform: none !important; visibility: visible !important;">
                 <div class="card-image">
-                    <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy">
+                    <!-- Apply visual transparency filter when a property is closed -->
+                    <img src="${imgSrc}" alt="${p.type || 'Property'}" loading="lazy" style="${isClosed ? 'filter: grayscale(80%) opacity(0.65);' : ''}">
                     <span class="card-type-badge">${p.type || 'Property'}${p.title ? ', ' + p.title : ''}</span>
                     ${p.category ? `<span class="card-category-badge ${p.category}">${p.category === 'shortlet' ? 'Short-let' : p.category === 'rent' ? 'For Rent' : 'For Sale'}</span>` : ''}
                     ${isVerified ? `<span class="card-verified-badge"><i class="fa-solid fa-circle-check"></i></span>` : ''}
+                    <!-- Inject "Property Taken" visual badge when closed -->
+                    ${isClosed ? `<span class="card-taken-badge">Property Taken</span>` : ''}
 
                     <div class="card-menu-wrap">
                         <button class="card-menu-btn" onclick="toggleCardMenu('${p._id}')">
@@ -870,7 +967,7 @@ async function getCoordinatesWithFallback(locationText) {
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="card-price">₦${price}</div>
+                    <div class="card-price" style="${isClosed ? 'color: #718096; text-decoration: line-through;' : ''}">₦${price}</div>
                     <div class="card-location"><i class="fas fa-map-marker-alt"></i> ${p.location || 'N/A'}</div>
                     <div class="card-stats">
                         ${isLand ? '' : `<span class="card-stat"><i class="fas fa-bed"></i> ${p.beds || 0} Beds</span>`}
@@ -879,10 +976,19 @@ async function getCoordinatesWithFallback(locationText) {
                     </div>
                     <div class="card-date"><i class="fas fa-calendar-alt"></i> Listed ${date} | <i class="fas fa-eye"></i> ${p.view || 0} views</div>
                 </div>
-                <div class="card-footer">
-                    <a href="/property?id=${p._id}" class="btn-view-details">
+                <div class="card-footer" style="display: flex; gap: 8px;">
+                    <a href="/property?id=${p._id}" class="btn-view-details" style="flex: 1.2;">
                         View Details <i class="fas fa-arrow-right"></i>
                     </a>
+                    <!-- Flex aligned dynamic action trigger button -->
+                    ${isClosed
+                        ? `<button class="btn-deal-close closed" onclick="toggleDeal('${p._id}', false)" style="flex: 1;" title="Reopen listing to public">
+                             <i class="fa-solid fa-rotate-left"></i> Reopen
+                           </button>`
+                        : `<button class="btn-deal-close" onclick="toggleDeal('${p._id}', true)" style="flex: 1;" title="Mark property as closed/taken">
+                             <i class="fa-solid fa-handshake"></i> Deal Close
+                           </button>`
+                    }
                 </div>
             </div>
         `;
@@ -972,11 +1078,8 @@ async function getCoordinatesWithFallback(locationText) {
     const editGroupLand   = document.getElementById('editGroupLand');
     const editForm        = document.getElementById('editPropertyForm');
     const editPreview     = document.getElementById('editImagePreviewContainer');
-    const editFileInput   = document.getElementById('editFileInput');
-    let editImages        = [];
     let editSelectedFeatures = new Set();
     let currentEditId     = null;
-    let existingImages    = [];
 
     function handleEditTypeChange() {
         const isLand = editTypeSelect.value === 'land';
@@ -1070,40 +1173,6 @@ async function getCoordinatesWithFallback(locationText) {
         updateEditPreview();
     };
 
-editFileInput.addEventListener('change', async (e) => {
-    const files = Array.from(e.target.files);
-    
-    for (const file of files) {
-        // 1. Validation: Is it an image?
-        if (!file.type.startsWith('image/')) {
-            alertBox.error('Invalid File', `${file.name} is not an image file`);
-            continue;
-        }
-
-        // 2. Pre-processing: Attempt compression if > 1MB
-        let fileToProcess = file;
-        if (file.size > 1 * 1024 * 1024) {
-            try {
-                // Using the same helper function used for new posts
-                fileToProcess = await compressImage(file);
-            } catch (err) {
-                console.error("Compression failed, using original:", err);
-            }
-        }
-
-        // 3. Validation: Enforce the 6MB limit
-        if (fileToProcess.size > 10 * 1024 * 1024) {
-            alertBox.error('File Too Large', `${file.name} remains above 10MB even after compression.`);
-            continue;
-        }
-
-        // 4. Add to state
-        editImages.push(fileToProcess);
-    }
-    
-    updateEditPreview();
-});
-
     window.editPost = async function(id) {
         currentEditId = id;
         editImages = [];
@@ -1170,7 +1239,7 @@ editFileInput.addEventListener('change', async (e) => {
 
         // [Validation logic remains exactly as you had it]
         const emojiOrSymbol = /[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FEFF}!@#$%^&*()+=\[\]{}<>?\\|`~]/u;
-        const textOnly      = /^[a-zA-Z0-9\s,.\-'"\/]+$/;
+        const textOnly      = /^[a-zA-Z0-9\s,.\-'"\/()]+$/;
         const numbersOnly   = /^\d+(\.\d+)?$/;
 
         const title    = document.getElementById('editTitle').value.trim();
@@ -1516,3 +1585,230 @@ window.generateAIDescription = async function(mode) {
         btn.innerHTML = originalHtml;
     }
 };
+
+// Dynamic Notifications Initialization and click redirection system
+    let mockNotifications = [];
+
+    async function initializeNotifications(isVerified, isBoosted) {
+        // System onboarding suggestions (remains static)
+        const systemNotifications = [
+            { 
+                id: "system-boost", 
+                type: "updates", 
+                message: isBoosted 
+                    ? "Your account or listing has been boosted! 🚀 Making sales faster with premium reach." 
+                    : "Boost your profile or per one property to make your sell faster! 🚀", 
+                unread: !isBoosted,
+                url: isBoosted ? null : "/boost-account",
+                isDynamic: false
+            },
+            { 
+                id: "system-verify", 
+                type: "alerts", 
+                message: isVerified 
+                    ? "your account has been verified you can now post unlimited property and make sell faster with trust." 
+                    : "Action Required: Please verify your account to list properties worth above ₦1M.", 
+                unread: !isVerified,
+                url: isVerified ? null : "/agent-verification",
+                isDynamic: false
+            },
+            { 
+                id: "system-welcome", 
+                type: "updates", 
+                message: "Welcome to Easyfind! Start listing your vacant property for free.", 
+                unread: false,
+                url: null,
+                isDynamic: false
+            }
+        ];
+
+        try {
+            // Retrieve actual comment notifications from the database
+            const res = await fetch('/api/agent/notifications', { credentials: 'include' });
+            const data = await res.json();
+            
+            let dbNotifications = [];
+            if (data.success && data.notifications) {
+                dbNotifications = data.notifications.map(n => ({
+                    id: n._id,
+                    type: n.type || "alerts",
+                    message: n.message,
+                    unread: n.unread,
+                    url: `/property?id=${n.propertyId}`,
+                    isDynamic: true // Flag to handle database deletion on click
+                }));
+            }
+
+            // Combine comment alerts with onboarding system notifications
+            mockNotifications = [...dbNotifications, ...systemNotifications];
+        } catch (err) {
+            console.error("Failed to load real-time database notifications:", err);
+            mockNotifications = systemNotifications;
+        } finally {
+            updateBadgeCount();
+            renderNotifications();
+        }
+    }
+
+    // Document Object Selectors
+    const notiTrigger = document.getElementById('notiTrigger');
+    const notiPanel = document.getElementById('notiPanel');
+    const closePanel = document.getElementById('closePanel');
+    const notiOverlay = document.getElementById('notiOverlay');
+    const notiBody = document.getElementById('notiBody');
+    const notiBadge = document.getElementById('notiBadge');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+
+    let activeTab = "all";
+
+    // Open / Close Sliding Panel Controls
+    function togglePanel() {
+        notiPanel.classList.toggle('open');
+        notiOverlay.classList.toggle('active');
+    }
+
+    if (notiTrigger) notiTrigger.addEventListener('click', togglePanel);
+    if (closePanel) closePanel.addEventListener('click', togglePanel);
+    if (notiOverlay) notiOverlay.addEventListener('click', togglePanel);
+
+    // Helper Engine function to handle adding/removing shaking classes cleanly
+    function triggerBellShake() {
+        if (notiTrigger) {
+            notiTrigger.classList.add('shake');
+            setTimeout(() => {
+                notiTrigger.classList.remove('shake');
+            }, 600);
+        }
+    }
+
+    // Dynamic Badge Counter Updater
+    function updateBadgeCount() {
+        if (!notiBadge || !notiTrigger) return;
+        const unreadCount = mockNotifications.filter(n => n.unread).length;
+        if(unreadCount > 0) {
+            notiBadge.textContent = unreadCount;
+            notiBadge.style.display = "block";
+            triggerBellShake();
+        } else {
+            notiBadge.style.display = "none";
+            notiTrigger.classList.remove('shake');
+        }
+    }
+
+    // Layout Dynamic Feed Renderer with Staggered Cascading Animation Delay
+    function renderNotifications() {
+        if (!notiBody) return;
+        notiBody.innerHTML = "";
+        
+        const filtered = mockNotifications.filter(item => activeTab === "all" || item.type === activeTab);
+        
+        if(filtered.length === 0) {
+            notiBody.innerHTML = `<div style="text-align:center; color:#718096; margin-top:40px; font-size:0.9rem;">No notifications found</div>`;
+            return;
+        }
+
+        filtered.forEach((noti, index) => {
+            const card = document.createElement('div');
+            card.className = `noti-item ${noti.unread ? 'unread' : ''}`;
+            card.setAttribute('data-type', noti.type);
+            card.setAttribute('data-id', noti.id);
+            card.style.animationDelay = `${index * 0.06}s`;
+
+            const icon = noti.type === 'alerts' ? 'fa-solid fa-triangle-exclamation' : 'fa-solid fa-circle-info';
+
+            card.innerHTML = `
+                <div class="noti-icon-wrapper">
+                    <i class="${icon}"></i>
+                </div>
+                <div class="noti-content">
+                    <p>${noti.message}</p>                
+                </div>
+            `;
+
+            // Handle Card Click (Mark as Read, auto-delete comments, and redirect)
+            card.addEventListener('click', async function(e) {
+                createRippleEffect(e, card);
+                
+                if (noti.isDynamic) {
+                    // Update layout values locally
+                    if(noti.unread) {
+                        noti.unread = false;
+                        card.classList.remove('unread');
+                        updateBadgeCount();
+                    }
+
+                    // Delete notification from the DB
+                    try {
+                        await fetch(`/api/agent/notifications/${noti.id}`, { 
+                            method: 'DELETE',
+                            credentials: 'include'
+                        });
+                    } catch (err) {
+                        console.error("Failed to delete notification on redirect:", err);
+                    }
+
+                    // Redirect to property
+                    if (noti.url) {
+                        setTimeout(() => {
+                            window.location.href = noti.url;
+                        }, 350);
+                    }
+                } else {
+                    // For static onboarding triggers
+                    if(noti.unread) {
+                        setTimeout(() => {
+                            noti.unread = false;
+                            card.classList.remove('unread');
+                            updateBadgeCount();
+                        }, 300);
+                    }
+
+                    if (noti.url) {
+                        setTimeout(() => {
+                            window.location.href = noti.url;
+                        }, 400);
+                    }
+                }
+            });
+
+            notiBody.appendChild(card);
+        });
+    }
+
+    // Advanced Custom Vector Ripple Generator Function
+    function createRippleEffect(e, element) {
+        const ripple = document.createElement('span');
+        ripple.classList.add('noti-ripple');
+        
+        const rect = element.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        ripple.style.left = `${x}px`;
+        ripple.style.top = `${y}px`;
+        
+        const size = Math.max(rect.width, rect.height);
+        ripple.style.width = ripple.style.height = `${size}px`;
+        ripple.style.transform = "translate(-50%, -50%)";
+
+        element.appendChild(ripple);
+        ripple.addEventListener('animationend', () => ripple.remove());
+    }
+
+    // Horizontal Sub-Tab Switching Controls
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            activeTab = btn.getAttribute('data-tab');
+            renderNotifications();
+        });
+    });
+
+    // AUTOMATION HOOK: Loop animation every 5 seconds if unread cards sit in panel while hidden
+    setInterval(() => {
+        const unreadCount = mockNotifications.filter(n => n.unread).length;
+        if (unreadCount > 0 && notiPanel && !notiPanel.classList.contains('open')) {
+            triggerBellShake();
+        }
+    }, 5000);

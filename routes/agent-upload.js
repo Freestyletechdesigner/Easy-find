@@ -7,6 +7,7 @@ const rateLimit = require('express-rate-limit');
 const AgentPost = require('../model/AgentPost.js');
 const AgentUser = require('../model/AgentUser.js');
 const { sendPropertyListingNotification } = require('../utils/property-notification.js');
+const { sendPushToAgents, sendPushToAllAgents } = require('../utils/push.js');
 
 const ROOT = path.join(__dirname, '..');
 const UPLOAD_DIR = path.join(ROOT, 'agent-loged', 'upload-property');
@@ -231,6 +232,16 @@ async function processAndSaveImages(files, agentId, agentName = '') {
         const agentName = req.session.agent.name || '';
 
         try {
+
+            // Check if agent is verified before allowing listings >= 1M
+            const agentUser = await AgentUser.findById(agentId).select('stand').lean();
+            const isVerified = agentUser?.stand && agentUser.stand.toLowerCase() === 'verified agent';
+            if (Number(price) >= 1000000 && !isVerified) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Account verification is required to list properties priced at ₦1,000,000 or above.'
+                });
+            }
             // Process and compress files through memory buffer loop pipeline
             const imageNames = req.files && req.files.length ? await processAndSaveImages(req.files, agentId, agentName) : [];
 
@@ -280,6 +291,22 @@ async function processAndSaveImages(files, agentId, agentName = '') {
                             propertyId:  newPost._id.toString()
                         });
                     }
+
+                    // Push notification to agent — confirmed their listing is live
+                    await sendPushToAgents({
+                        agentIds: [agentId.toString()],
+                        title:    '✅ Your property is now live!',
+                        message:  `"${title || type || 'Your property'}" in ${location || 'Enugu'} has been published successfully.`,
+                        url:      `${process.env.APP_URL?.split(',')[0] || 'https://easyfind.com.ng'}/property?id=${newPost._id}`,
+                    });
+
+                    // Push notification to ALL users — new property alert
+                    const priceFormatted = price ? `₦${Number(price).toLocaleString('en-NG')}` : '';
+                    await sendPushToAllAgents({
+                        title:   `🏠 New ${type || 'property'} just listed!`,
+                        message: `${priceFormatted ? priceFormatted + ' — ' : ''}${location || 'Enugu'}. Check it out on Easy Find.`,
+                        url:     `${process.env.APP_URL?.split(',')[0] || 'https://easyfind.com.ng'}/property?id=${newPost._id}`,
+                    });
                 } catch (emailErr) {
                     console.error('[Mailer] Failed to send listing notification:', emailErr.message);
                 }
@@ -326,12 +353,14 @@ async function processAndSaveImages(files, agentId, agentName = '') {
         }
     });
 
-    // GET Request for all properties
+    // GET Request for all properties (supports pagination via ?page=1&limit=20)
     app.get('/api/post/property', async (req, res) => {
         try {
-            const now = new Date();
-            const limit = 20;
-    
+            const now   = new Date();
+            const page  = Math.max(1, parseInt(req.query.page)  || 1);
+            const limit = Math.min(40, parseInt(req.query.limit) || 20);
+            const skip  = (page - 1) * limit;
+
             const pipeline = [
                 { $addFields: { agentObjId: { $toObjectId: '$agentId' } } },
                 { 
@@ -363,17 +392,69 @@ async function processAndSaveImages(files, agentId, agentName = '') {
                     }
                 },
                 { $sort: { priority: 1, _id: -1 } },
+                { $skip: skip },
                 { $limit: limit },
                 { $addFields: { stand: '$agent.stand' } },
                 { $project: { agent: 0, agentObjId: 0 } }
+            ];
+
+            // Count total active properties for hasMore
+            const [properties, totalCount] = await Promise.all([
+                AgentPost.aggregate(pipeline),
+                AgentPost.aggregate([
+                    { $addFields: { agentObjId: { $toObjectId: '$agentId' } } },
+                    { $lookup: { from: 'agentusers', localField: 'agentObjId', foreignField: '_id', as: 'agent' } },
+                    { $unwind: '$agent' },
+                    { $match: { 'agent.status': 'active' } },
+                    { $count: 'total' }
+                ])
+            ]);
+
+            const total   = totalCount[0]?.total || 0;
+            const hasMore = skip + properties.length < total;
+
+            return res.json({ success: true, property: properties, hasMore, total, page });
+
+        } catch (err) {
+            console.error('[POST/PROPERTY] error:', err);
+            return res.status(500).json({ success: false, message: 'Error loading properties' });
+        }
+    });
+
+    // GET Request for verified and boosted properties (shuffled)
+    app.get('/api/post/property/featured', async (req, res) => {
+        try {
+            const now = new Date();
+    
+            const pipeline = [
+                { $addFields: { agentObjId: { $toObjectId: '$agentId' } } },
+                { 
+                    $lookup: { 
+                        from: 'agentusers', 
+                        localField: 'agentObjId', 
+                        foreignField: '_id', 
+                        as: 'agent' 
+                    } 
+                },
+                { $unwind: '$agent' },
+                // Filter 1: Active agents only
+                { $match: { 
+                    'agent.status': 'active',
+                    'agent.stand': 'Verified Agent' 
+                } },
+                // FIX: Generate the random value in a separate field first
+                { $addFields: { randomSort: { $rand: {} } } },
+                // FIX: Sort by the generated field
+                { $sort: { randomSort: 1 } },
+                { $project: { agent: 0, agentObjId: 0, randomSort: 0 } }
             ];
     
             const properties = await AgentPost.aggregate(pipeline);
             return res.json({ success: true, property: properties });
     
         } catch (err) {
-            console.error('[POST/PROPERTY] error:', err);
-            return res.status(500).json({ success: false, message: 'Error loading properties' });
+            console.error('[POST/PROPERTY/FEATURED] error:', err);
+            return res.status(500).json({ success: false, message: 'Error loading featured properties' });
         }
     });
 
@@ -521,6 +602,16 @@ async function processAndSaveImages(files, agentId, agentName = '') {
             : [];
     
         try {
+
+            // Check if agent is verified before allowing edits >= 1M
+            const agentUser = await AgentUser.findById(agentId).select('stand').lean();
+            const isVerified = agentUser?.stand && agentUser.stand.toLowerCase() === 'verified agent';
+            if (Number(price) >= 1000000 && !isVerified) {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Account verification is required to update properties priced at ₦1,000,000 or above.'
+                });
+            }
             const id = req.params.id;
             const agentPost = await AgentPost.findById(id);
     
@@ -622,6 +713,41 @@ async function processAndSaveImages(files, agentId, agentName = '') {
         }
     });
 
+// Toggle Deal status (Close / Reopen property)
+    app.patch('/api/agent/property/:id/deal', requireAgent, async (req, res) => {
+        try {
+            const agentId = req.session.agent.id;
+            const propertyId = req.params.id;
+            const { isClosed } = req.body; // Expects a boolean value
+
+            const agentPost = await AgentPost.findById(propertyId);
+
+            if (!agentPost) {
+                return res.status(404).json({ success: false, message: 'Property not found' });
+            }
+
+            if (agentPost.agentId.toString() !== agentId.toString()) {
+                return res.status(403).json({ success: false, message: 'Not authorized to modify this property' });
+            }
+
+            agentPost.isClosed = !!isClosed;
+            
+            // Record when the listing was closed, or reset it if reopened
+            agentPost.closedAt = isClosed ? new Date() : null; 
+            
+            await agentPost.save();
+
+            res.json({ 
+                success: true, 
+                message: isClosed ? 'Listing marked as taken!' : 'Listing successfully reopened.',
+                isClosed: agentPost.isClosed 
+            });
+        } catch (err) {
+            console.error('[DEAL_TOGGLE] Error:', err);
+            res.status(500).json({ success: false, message: 'Error updating deal status.' });
+        }
+    });
+
     app.get('/sitemap.xml', async (req, res) => {
         try {
             const properties = await AgentPost.find({}, '_id date'); // Only fetch what you need for better performance
@@ -702,3 +828,47 @@ setInterval(() => {
         });
     });
 }, 60 * 1000);
+
+// Background Auto-Clean: Deletes closed properties older than 2 weeks (14 days)
+const autoDeleteClosedProperties = async () => {
+    try {
+        const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+        
+        // Find all documents marked closed where the closure date is older than 14 days
+        const expiredPosts = await AgentPost.find({
+            isClosed: true,
+            closedAt: { $lte: twoWeeksAgo }
+        });
+
+        if (expiredPosts.length === 0) return;
+
+        console.log(`[Auto-Clean] Found ${expiredPosts.length} expired closed properties. Purging listings...`);
+
+        for (const post of expiredPosts) {
+            // 1. Delete associated optimized images from storage safely
+            if (post.imageNames && post.imageNames.length) {
+                post.imageNames.forEach(img => {
+                    const imgPath = path.join(UPLOAD_DIR, img);
+                    try {
+                        if (fs.existsSync(imgPath)) {
+                            fs.unlinkSync(imgPath);
+                        }
+                    } catch (err) {
+                        console.error(`[Auto-Clean] Failed to delete file ${img}:`, err.message);
+                    }
+                });
+            }
+            
+            // 2. Erase the listing document from the collection
+            await AgentPost.findByIdAndDelete(post._id);
+        }
+
+        console.log(`[Auto-Clean] Successfully purged ${expiredPosts.length} expired listings.`);
+    } catch (err) {
+        console.error('[Auto-Clean] Error executing backgrounds clean-up task:', err);
+    }
+};
+
+// Initiate task 5 seconds after startup, then run once every 24 hours
+setTimeout(autoDeleteClosedProperties, 5000);
+setInterval(autoDeleteClosedProperties, 24 * 60 * 60 * 1000);

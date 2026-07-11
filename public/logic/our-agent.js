@@ -1,22 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ── Hamburger nav ─────────────────────────────────────
-    const nav2      = document.getElementById('nav2');
-    const hamburger = document.getElementById('hamburger');
-
-    if (hamburger && nav2) {
-        hamburger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            nav2.classList.toggle('active');
-            hamburger.classList.toggle('active');
-        });
-        window.addEventListener('click', (e) => {
-            if (!hamburger.contains(e.target) && !nav2.contains(e.target)) {
-                nav2.classList.remove('active');
-                hamburger.classList.remove('active');
-            }
-        });
-    }
 
     // ── Scroll animation ──────────────────────────────────
     const animObserver = new IntersectionObserver((entries) => {

@@ -68,6 +68,14 @@ const postSchema = new mongoose.Schema({
         type: Number,
         default: null
     },
+    isClosed: { 
+        type: Boolean,
+        default: false
+    },
+    closedAt: {
+        type: Date,
+        default: null
+    },
     boostPost: {
         type: Boolean,
         default: false

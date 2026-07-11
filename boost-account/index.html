@@ -15,7 +15,10 @@
     
           gtag('config', 'G-NK9XVCBPJM');
         </script>
-    </head>
+        <!-- OneSignal Web Push -->
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script src="/onesignal-init.js" defer></script>
+</head>
 </head>
 <body>
 
@@ -62,25 +65,57 @@
 
         <!-- STEP 1 — Plan -->
         <div class="view active" id="view1">
-            <div class="plan-card selected" onclick="selectPlan('post', 950, this)">
+
+            <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:10px">📌 Post Boost Plans</p>
+
+            <div class="plan-card" onclick="selectPlan('post_starter', 300, 'Starter Post Boost — 1 Day', this)">
+                <div class="plan-icon" style="background:rgba(34,197,94,.12)"><i class="fas fa-bolt" style="color:#22c55e"></i></div>
+                <div class="plan-info">
+                    <b>Starter Post</b>
+                    <span>1 Day • Great for a quick push</span>
+                </div>
+                <div class="plan-price">₦300</div>
+            </div>
+
+            <div class="plan-card selected" onclick="selectPlan('post_standard', 700, 'Standard Post Boost — 3 Days', this)">
                 <div class="plan-icon"><i class="fas fa-bolt"></i></div>
                 <div class="plan-info">
-                    <b>Boost Single Post</b>
+                    <b>Standard Post <span style="background:#27a594;color:#fff;font-size:10px;padding:2px 7px;border-radius:99px;margin-left:4px">Popular</span></b>
                     <span>3 Days • Priority in search results</span>
                 </div>
-                <div class="plan-price">₦950</div>
+                <div class="plan-price">₦700</div>
             </div>
 
-            <div class="plan-card" onclick="selectPlan('profile', 3500, this)">
-                <div class="plan-icon"><i class="fas fa-award"></i></div>
+            <div class="plan-card" onclick="selectPlan('post_pro', 1500, 'Pro Post Boost — 7 Days', this)">
+                <div class="plan-icon" style="background:rgba(139,92,246,.12)"><i class="fas fa-fire" style="color:#8b5cf6"></i></div>
                 <div class="plan-info">
-                    <b>Boost Profile</b>
-                    <span>1 Month • Featured Agent badge</span>
+                    <b>Pro Post</b>
+                    <span>7 Days • Maximum exposure</span>
                 </div>
-                <div class="plan-price">₦3,500</div>
+                <div class="plan-price">₦1,500</div>
             </div>
 
-            <button class="btn btn-primary" style="margin-top: 8px;" onclick="nextStep()">
+            <p style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#888;margin:16px 0 10px">🏆 Profile Boost Plans</p>
+
+            <div class="plan-card" onclick="selectPlan('profile_basic', 2000, 'Profile Basic Boost — 14 Days', this)">
+                <div class="plan-icon" style="background:rgba(245,158,11,.12)"><i class="fas fa-award" style="color:#f59e0b"></i></div>
+                <div class="plan-info">
+                    <b>Profile Basic</b>
+                    <span>14 Days • Featured Agent badge</span>
+                </div>
+                <div class="plan-price">₦2,000</div>
+            </div>
+
+            <div class="plan-card" onclick="selectPlan('profile_premium', 5000, 'Profile Premium Boost — 30 Days', this)">
+                <div class="plan-icon" style="background:rgba(234,179,8,.12)"><i class="fas fa-crown" style="color:#eab308"></i></div>
+                <div class="plan-info">
+                    <b>Profile Premium</b>
+                    <span>30 Days • Top Agent placement</span>
+                </div>
+                <div class="plan-price">₦5,000</div>
+            </div>
+
+            <button class="btn btn-primary" style="margin-top: 16px;" onclick="nextStep()">
                 Continue <i class="fas fa-arrow-right"></i>
             </button>
         </div>
