@@ -362,6 +362,7 @@ app.use('/password-reset', express.static('password-reset', staticOpts));
 app.use('/verification-payment', express.static('verification-payment', staticOpts));
 // Terms 
 app.use('/terms', express.static('public/terms.html'));
+app.use('/private-policy', express.static('public/private-policy.html'));
 
 // ── Agent Verification page — gate by payment ─────────
 // Session-independent: reads agentId from Paystack metadata so it works
