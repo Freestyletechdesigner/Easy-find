@@ -320,166 +320,184 @@
 
 <script src="logic/alert-box.js"></script>
 <script>
+/* ═══════════════════════════════════════════════
+   Easy Find — Properties Infinite Scroll
+   Works correctly with any number of properties.
+   Never loops or repeats.
+═══════════════════════════════════════════════ */
 'use strict';
 
-// ── Config ─────────────────────────────────────────────────
-const BATCH    = 8;
-const MAX_DOM  = 64;
-const PAGE_SIZE = 16;
+var BATCH     = 8;      // cards to render per scroll trigger
+var MAX_DOM   = 64;     // max cards in DOM before pruning old ones
+var PAGE_SIZE = 20;     // properties to fetch per API request
 
-// ── State ──────────────────────────────────────────────────
-let allPosts    = [];
-let cursor      = 0;
-let isLoading   = false;
-let searchMode  = false;
-let currentPage = 1;
-let hasMorePages = true;
+var allPosts    = [];   // accumulated pool from all fetched pages
+var cursor      = 0;   // how many from allPosts have been rendered
+var isLoading   = false;
+var isFetching  = false; // separate flag for API calls
+var searchMode  = false;
+var nextPage    = 1;
+var noMorePages = false; // true when API says hasMore: false
 
-// ── DOM refs ───────────────────────────────────────────────
-const grid      = document.getElementById('propGrid');
-const sentinel  = document.getElementById('prop-sentinel');
-const propEnd   = document.getElementById('prop-end');
-const propEmpty = document.getElementById('prop-empty');
+var grid      = document.getElementById('propGrid');
+var sentinel  = document.getElementById('prop-sentinel');
+var propEnd   = document.getElementById('prop-end');
+var propEmpty = document.getElementById('prop-empty');
 
-// ── Helpers ────────────────────────────────────────────────
-function fmt(n) { return '\u20a6' + Number(n).toLocaleString('en-NG'); }
-
-function skeletonHTML() {
-    return '<div class="p-skeleton"><div class="skel skel-img"></div><div class="skel-body">' +
-        '<div class="skel skel-line" style="width:55%"></div>' +
-        '<div class="skel skel-line" style="width:40%"></div>' +
-        '<div class="skel skel-line" style="width:70%"></div></div></div>';
+// ── Currency formatter ─────────────────────────────────────
+function fmt(n) {
+    return '₦' + Number(n || 0).toLocaleString('en-NG');
 }
 
+// ── Skeleton HTML ──────────────────────────────────────────
+function skel() {
+    return '<div class="p-skeleton"><div class="skel skel-img"></div>' +
+        '<div class="skel-body">' +
+        '<div class="skel skel-line" style="width:55%"></div>' +
+        '<div class="skel skel-line" style="width:40%"></div>' +
+        '<div class="skel skel-line" style="width:70%"></div>' +
+        '</div></div>';
+}
+
+// ── Card HTML ──────────────────────────────────────────────
 function cardHTML(p) {
-    const img      = p.imageNames && p.imageNames.length
+    var img = (p.imageNames && p.imageNames.length)
         ? '/agent-loged/upload-property/' + p.imageNames[0]
         : '/image/IMG_7296.JPG';
-    const price    = fmt(p.price);
-    const date     = new Date(p.date).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
-    const isLand   = (p.type || '').toLowerCase() === 'land';
-    const isVer    = (p.stand || '').toLowerCase().includes('verified');
-    const cat      = p.category || '';
-    const catLabel = cat === 'shortlet' ? 'Short-let' : cat === 'rent' ? 'For Rent' : 'For Sale';
+    var price  = fmt(p.price);
+    var date   = new Date(p.date).toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+    var isLand = (p.type||'').toLowerCase() === 'land';
+    var isVer  = (p.stand||'').toLowerCase().indexOf('verified') > -1;
+    var cat    = p.category || '';
+    var catLbl = cat === 'shortlet' ? 'Short-let' : cat === 'rent' ? 'For Rent' : 'For Sale';
+    var stats  = isLand
+        ? '<span class="p-stat"><i class="fas fa-ruler-combined"></i>' + (p.area||'—') + '</span>'
+        : '<span class="p-stat"><i class="fas fa-bed"></i>' + (p.beds||0) + ' Beds</span>' +
+          '<span class="p-stat"><i class="fas fa-bath"></i>' + (p.baths||0) + ' Baths</span>';
     return '<article class="p-card">' +
         '<div class="p-card-media">' +
-        '<img src="' + img + '" alt="' + (p.title || 'Property') + '" loading="lazy">' +
-        '<span class="p-badge">' + (p.type || 'Property') + (p.title ? ', ' + p.title : '') + '</span>' +
-        (cat ? '<span class="p-cat ' + cat + '">' + catLabel + '</span>' : '') +
+        '<img src="' + img + '" alt="' + (p.title||'Property') + '" loading="lazy">' +
+        '<span class="p-badge">' + (p.type||'Property') + (p.title ? ', '+p.title : '') + '</span>' +
+        (cat ? '<span class="p-cat ' + cat + '">' + catLbl + '</span>' : '') +
         (isVer ? '<span class="p-verified"><i class="fa-solid fa-circle-check"></i></span>' : '') +
         '</div>' +
         '<div class="p-card-body">' +
         '<div class="p-price">' + price + '</div>' +
-        '<div class="p-location"><i class="fas fa-map-marker-alt"></i> ' + (p.location || 'N/A') + '</div>' +
-        '<div class="p-stats">' +
-        (isLand
-            ? '<span class="p-stat"><i class="fas fa-ruler-combined"></i>' + (p.area || '\u2014') + '</span>'
-            : '<span class="p-stat"><i class="fas fa-bed"></i>' + (p.beds || 0) + ' Beds</span>' +
-              '<span class="p-stat"><i class="fas fa-bath"></i>' + (p.baths || 0) + ' Baths</span>') +
-        '</div>' +
-        '<div class="p-date"><i class="fas fa-calendar-alt"></i> ' + date + ' &nbsp;<i class="fas fa-eye"></i> ' + (p.view || 0) + '</div>' +
+        '<div class="p-location"><i class="fas fa-map-marker-alt"></i> ' + (p.location||'N/A') + '</div>' +
+        '<div class="p-stats">' + stats + '</div>' +
+        '<div class="p-date"><i class="fas fa-calendar-alt"></i> ' + date + '  <i class="fas fa-eye"></i> ' + (p.view||0) + '</div>' +
         '<div class="p-card-foot">' +
         '<a href="/property?id=' + p._id + '" class="p-view-btn">View Details <i class="fas fa-arrow-right"></i></a>' +
-        '<button class="p-share-btn" onclick="shareProperty(\'' + p._id + '\')"><i class="fas fa-share-alt"></i></button>' +
+        '<button class="p-share-btn" onclick="shareCard(\'' + p._id + '\')"><i class="fas fa-share-alt"></i></button>' +
         '</div></div></article>';
 }
 
-window.shareProperty = function(id) {
-    const url = location.origin + '/property?id=' + id;
-    if (navigator.share) {
-        navigator.share({ title: 'Easy Find property', url }).catch(function() { copyText(url); });
-    } else { copyText(url); }
+window.shareCard = function(id) {
+    var url = location.origin + '/property?id=' + id;
+    if (navigator.share) navigator.share({title:'Easy Find property',url}).catch(function(){copyText(url);});
+    else copyText(url);
 };
 function copyText(url) {
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(url).then(function() { flashMsg('Link copied ✓'); });
-    }
+    if (navigator.clipboard) navigator.clipboard.writeText(url).then(function(){ flash('Link copied ✓'); });
 }
-function flashMsg(msg) {
+function flash(msg) {
     var t = document.createElement('div');
-    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);' +
-        'background:#0d7068;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;z-index:9999';
+    t.style.cssText = 'position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0d7068;color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;z-index:9999;pointer-events:none';
     t.textContent = msg;
     document.body.appendChild(t);
-    setTimeout(function() { t.remove(); }, 2200);
+    setTimeout(function(){ t.remove(); }, 2200);
 }
 
-// ── Fetch one page from API ────────────────────────────────
-async function loadPage() {
-    if (!hasMorePages || isLoading) return;
-    try {
-        const res  = await fetch('/api/post/property?page=' + currentPage + '&limit=' + PAGE_SIZE);
-        const data = await res.json();
-        if (data.success && data.property.length) {
-            allPosts     = allPosts.concat(data.property);
-            hasMorePages = !!data.hasMore;
-            currentPage++;
-        } else {
-            hasMorePages = false;
-        }
-    } catch (err) {
-        console.error('loadPage error:', err);
-        hasMorePages = false;
-    }
+// ── Fetch ONE page from the API ────────────────────────────
+function fetchNextPage() {
+    if (isFetching || noMorePages) return Promise.resolve();
+    isFetching = true;
+    return fetch('/api/post/property?page=' + nextPage + '&limit=' + PAGE_SIZE)
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            isFetching = false;
+            if (data.success && data.property && data.property.length) {
+                allPosts    = allPosts.concat(data.property);
+                noMorePages = !data.hasMore;
+                nextPage++;
+            } else {
+                noMorePages = true;
+            }
+        })
+        .catch(function(err){
+            isFetching  = false;
+            noMorePages = true;
+            console.error('[properties] fetch error:', err);
+        });
 }
 
-// ── Fetch first page and render ───────────────────────────
-async function fetchProperties() {
-    allPosts     = [];
-    cursor       = 0;
-    currentPage  = 1;
-    hasMorePages = true;
+// ── Initial load ───────────────────────────────────────────
+function loadInitial() {
+    allPosts    = [];
+    cursor      = 0;
+    nextPage    = 1;
+    noMorePages = false;
+    isLoading   = false;
+    isFetching  = false;
 
-    grid.innerHTML     = Array(4).fill(skeletonHTML()).join('');
+    grid.innerHTML = Array(4).fill(skel()).join('');
     propEmpty.style.display = 'none';
     propEnd.style.display   = 'none';
-    sentinel.style.display  = 'none';  // HIDDEN until first batch renders
-    sentinel.textContent    = '';
+    sentinel.style.display  = 'none';
 
-    await loadPage();
-
-    grid.innerHTML = '';
-
-    if (allPosts.length === 0) {
-        propEmpty.style.display = 'block';
-        sentinel.style.display  = 'none';
-        return;
-    }
-
-    // Render first batch
-    renderNextBatch();
+    fetchNextPage().then(function(){
+        grid.innerHTML = '';
+        if (allPosts.length === 0) {
+            propEmpty.style.display = 'block';
+            return;
+        }
+        renderCards(); // render first BATCH
+        // Show sentinel ONLY if there's something more to show
+        updateSentinel();
+    });
 }
 
-// ── Render next BATCH from allPosts ───────────────────────
-function renderNextBatch() {
+// ── Update sentinel visibility ─────────────────────────────
+function updateSentinel() {
+    var moreInPool = cursor < allPosts.length;
+    var moreOnServer = !noMorePages;
+    if (moreInPool || moreOnServer) {
+        sentinel.style.display = 'flex';
+    } else {
+        sentinel.style.display = 'none';
+        propEnd.style.display  = 'block';
+    }
+}
+
+// ── Render next BATCH of cards from pool ───────────────────
+function renderCards() {
     if (isLoading) return;
 
-    // All rendered — check if more pages exist
+    // If pool is exhausted but server has more, fetch first then render
     if (cursor >= allPosts.length) {
-        if (hasMorePages && !searchMode) {
-            isLoading = true;  // Block re-entry
-            sentinel.style.display  = 'flex';
+        if (noMorePages) {
+            sentinel.style.display = 'none';
+            propEnd.style.display  = 'block';
+        } else {
+            isLoading = true;
             sentinel.innerHTML = '<i class="fa-solid fa-spinner fa-spin" style="margin-right:8px"></i> Loading more...';
-            loadPage().then(function() {
+            sentinel.style.display = 'flex';
+            fetchNextPage().then(function(){
                 isLoading = false;
-                if (allPosts.length > cursor) {
-                    renderNextBatch();
+                if (cursor < allPosts.length) {
+                    renderCards();
                 } else {
-                    hasMorePages = false;
                     sentinel.style.display = 'none';
                     propEnd.style.display  = 'block';
                 }
             });
-        } else {
-            sentinel.style.display = 'none';
-            propEnd.style.display  = 'block';
         }
         return;
     }
 
     isLoading = true;
 
-    // Show skeleton cards
+    // Insert skeleton placeholders
     var skels = [];
     for (var i = 0; i < BATCH; i++) {
         var s = document.createElement('div');
@@ -492,11 +510,14 @@ function renderNextBatch() {
         skels.push(s);
     }
 
-    setTimeout(function() {
-        requestAnimationFrame(function() {
+    setTimeout(function(){
+        requestAnimationFrame(function(){
             var scrollY = window.scrollY;
-            skels.forEach(function(s) { s.remove(); });
 
+            // Remove skeletons
+            skels.forEach(function(s){ s.remove(); });
+
+            // Insert real cards
             var frag = document.createDocumentFragment();
             var end  = Math.min(cursor + BATCH, allPosts.length);
             for (var j = cursor; j < end; j++) {
@@ -507,7 +528,7 @@ function renderNextBatch() {
             grid.appendChild(frag);
             cursor = end;
 
-            // Prune DOM
+            // Prune old cards if too many in DOM
             var cards = grid.querySelectorAll('.p-card');
             if (cards.length > MAX_DOM) {
                 var excess = cards.length - MAX_DOM;
@@ -516,239 +537,161 @@ function renderNextBatch() {
                     removedH += cards[k].offsetHeight;
                     cards[k].remove();
                 }
-                window.scrollTo({ top: scrollY - removedH, behavior: 'instant' });
+                window.scrollTo({top: scrollY - removedH, behavior:'instant'});
             }
 
             isLoading = false;
-
-            // Only show sentinel if there are genuinely more cards to load
-            // (either in the current pool or on a next page)
-            var stillMore = (cursor < allPosts.length) || hasMorePages;
-            if (stillMore) {
-                sentinel.style.display = 'flex';
-                sentinel.innerHTML = cursor < allPosts.length
-                    ? ''
-                    : '<i class="fa-solid fa-spinner fa-spin" style="margin-right:8px"></i> Loading more...';
-            } else {
-                sentinel.style.display = 'none';
-                propEnd.style.display  = 'block';
-            }
+            updateSentinel();
         });
-    }, 300);
+    }, 280);
 }
 
 // ── IntersectionObserver ───────────────────────────────────
-var scrollObserver = new IntersectionObserver(function(entries) {
-    if (entries[0].isIntersecting && !isLoading && !searchMode) {
-        renderNextBatch();
+var observer = new IntersectionObserver(function(entries){
+    if (entries[0].isIntersecting && !isLoading && !isFetching && !searchMode) {
+        renderCards();
     }
-}, { rootMargin: '0px 0px 400px 0px' });
-scrollObserver.observe(sentinel);
+}, { rootMargin: '0px 0px 400px 0px', threshold: 0 });
+observer.observe(sentinel);
 
-// ── AI Search ─────────────────────────────────────────────
-async function doAISearch(q) {
+// ── AI Search ──────────────────────────────────────────────
+function doAISearch(q) {
     if (!q || !q.trim()) { resetSearch(); return; }
     searchMode = true;
     sentinel.style.display = 'none';
     propEnd.style.display  = 'none';
     propEmpty.style.display= 'none';
-    grid.innerHTML = Array(4).fill(skeletonHTML()).join('');
+    grid.innerHTML = Array(4).fill(skel()).join('');
 
-    try {
-        var res  = await fetch('/api/search/property?q=' + encodeURIComponent(q));
-        var data = await res.json();
-        grid.innerHTML = '';
-
-        if (!data.success || !data.properties || !data.properties.length) {
-            propEmpty.style.display = 'block';
-            var aiRow = document.getElementById('ai-understood-row');
-            if (aiRow) { aiRow.innerHTML = ''; aiRow.style.display = 'none'; }
-            return;
-        }
-
-        var aiRow2 = document.getElementById('ai-understood-row');
-        if (aiRow2 && data.parsed) {
-            var pills = buildPills(data.parsed);
-            if (pills) {
-                aiRow2.innerHTML = '<span style="font-size:13px;color:#555">AI understood:</span>' + pills +
-                    '<button class="ai-clear" onclick="resetSearch()">&#x2715; Clear</button>';
-                aiRow2.style.display = 'flex';
+    fetch('/api/search/property?q=' + encodeURIComponent(q))
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            grid.innerHTML = '';
+            if (!data.success || !data.properties || !data.properties.length) {
+                propEmpty.style.display = 'block';
+                var ar = document.getElementById('ai-understood-row');
+                if (ar) { ar.innerHTML = ''; ar.style.display = 'none'; }
+                return;
             }
-        }
-
-        data.properties.forEach(function(p) {
-            grid.insertAdjacentHTML('beforeend', cardHTML(p));
+            var ar2 = document.getElementById('ai-understood-row');
+            if (ar2 && data.parsed) {
+                var pills = buildPills(data.parsed);
+                if (pills) {
+                    ar2.innerHTML = '<span style="font-size:13px;color:#555">AI understood:</span> ' + pills +
+                        ' <button class="ai-clear" onclick="resetSearch()">× Clear</button>';
+                    ar2.style.display = 'flex';
+                }
+            }
+            data.properties.forEach(function(p){
+                grid.insertAdjacentHTML('beforeend', cardHTML(p));
+            });
+        })
+        .catch(function(){
+            grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:60px;color:#aaa">Search error. Please try again.</p>';
         });
-
-    } catch (err) {
-        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;padding:60px;color:#aaa">Search error. Please try again.</p>';
-    }
 }
 
 function buildPills(parsed) {
     var pills = [];
     function p(icon, label) { return '<span class="ai-pill">' + icon + ' ' + label + '</span>'; }
-    if (parsed.type) pills.push(p('\uD83C\uDFE0', parsed.type));
-    if (parsed.category) pills.push(p('\uD83C\uDFF7\uFE0F', parsed.category === 'shortlet' ? 'Short-let' : parsed.category === 'rent' ? 'For Rent' : 'For Sale'));
+    if (parsed.type)     pills.push(p('🏠', parsed.type));
+    if (parsed.category) pills.push(p('🏷️', parsed.category==='shortlet'?'Short-let':parsed.category==='rent'?'For Rent':'For Sale'));
     if (parsed.minBeds !== null && parsed.maxBeds !== null && parsed.minBeds === parsed.maxBeds)
-        pills.push(p('\uD83D\uDECF\uFE0F', parsed.minBeds + ' bed' + (parsed.minBeds !== 1 ? 's' : '')));
-    if (parsed.maxPrice) pills.push(p('\uD83D\uDCB0', 'under \u20a6' + Number(parsed.maxPrice).toLocaleString()));
-    if (parsed.location) pills.push(p('\uD83D\uDCCD', parsed.location));
+        pills.push(p('🛏️', parsed.minBeds + ' bed' + (parsed.minBeds!==1?'s':'')));
+    if (parsed.maxPrice) pills.push(p('💰', 'under ' + fmt(parsed.maxPrice)));
+    if (parsed.location) pills.push(p('📍', parsed.location));
     return pills.join(' ');
 }
 
-function buildQueryFromFilters() {
-    var ai    = (document.getElementById('aiSearch').value || '').trim();
+function buildQuery() {
+    var parts = [];
+    var ai    = (document.getElementById('aiSearch').value||'').trim();
     var type  = document.getElementById('filterType').value;
     var cat   = document.getElementById('filterCat').value;
     var price = document.getElementById('filterPrice').value.replace(/[^0-9]/g,'');
-    var parts = [];
     if (ai)    parts.push(ai);
     if (type)  parts.push(type);
-    if (cat)   parts.push(cat === 'shortlet' ? 'shortlet' : cat === 'rent' ? 'for rent' : 'for sale');
+    if (cat)   parts.push(cat==='shortlet'?'shortlet':cat==='rent'?'for rent':'for sale');
     if (price) parts.push('under ' + price);
     return parts.join(' ');
 }
 
-document.getElementById('doSearch').addEventListener('click', function() {
-    var q = buildQueryFromFilters();
-    if (q.trim()) doAISearch(q); else resetSearch();
+document.getElementById('doSearch').addEventListener('click', function(){
+    var q = buildQuery(); if (q.trim()) doAISearch(q); else resetSearch();
 });
-
-document.getElementById('aiSearch').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') {
-        var q = buildQueryFromFilters();
-        if (q.trim()) doAISearch(q); else resetSearch();
-    }
+document.getElementById('aiSearch').addEventListener('keydown', function(e){
+    if (e.key==='Enter') { var q = buildQuery(); if (q.trim()) doAISearch(q); else resetSearch(); }
 });
-
 window.resetSearch = function() {
     searchMode = false;
     document.getElementById('aiSearch').value    = '';
     document.getElementById('filterType').value  = '';
     document.getElementById('filterCat').value   = '';
     document.getElementById('filterPrice').value = '';
-    var sc = document.getElementById('searchClear');
-    if (sc) sc.style.display = 'none';
-    var ar = document.getElementById('ai-understood-row');
-    if (ar) { ar.innerHTML = ''; ar.style.display = 'none'; }
-    fetchProperties();
+    var sc = document.getElementById('searchClear'); if (sc) sc.style.display = 'none';
+    var ar = document.getElementById('ai-understood-row'); if (ar) { ar.innerHTML=''; ar.style.display='none'; }
+    loadInitial();
 };
 document.getElementById('resetSearch').addEventListener('click', resetSearch);
-
-document.getElementById('filterPrice').addEventListener('input', function() {
+document.getElementById('filterPrice').addEventListener('input', function(){
     var raw = this.value.replace(/[^0-9]/g,'');
     this.value = raw ? Number(raw).toLocaleString('en-NG') : '';
 });
 
-// ── WebSocket live toasts ──────────────────────────────────
-(function connectWS() {
+// ── WebSocket new-property toasts ──────────────────────────
+(function ws() {
     try {
-        var proto = location.protocol === 'https:' ? 'wss' : 'ws';
-        var ws    = new WebSocket(proto + '://' + location.host);
-        ws.onmessage = function(e) {
-            try {
-                var msg = JSON.parse(e.data);
-                if (msg.type === 'NEW_PROPERTY' && msg.property) {
-                    showToast(msg.property);
-                    if (!searchMode) { allPosts.unshift(msg.property); }
-                }
-            } catch(_) {}
+        var W = new WebSocket((location.protocol==='https:'?'wss':'ws') + '://' + location.host);
+        W.onmessage = function(e) {
+            try { var m=JSON.parse(e.data); if (m.type==='NEW_PROPERTY'&&m.property) toast(m.property); } catch(_){}
         };
-        ws.onclose = function() { setTimeout(connectWS, 5000); };
-    } catch(_) {}
+        W.onclose = function(){ setTimeout(ws, 5000); };
+    } catch(_){}
 })();
-
-function showToast(p) {
-    var img = p.imageNames && p.imageNames.length
-        ? '/agent-loged/upload-property/' + p.imageNames[0]
-        : '/image/IMG_7296.JPG';
+function toast(p) {
+    var img = (p.imageNames&&p.imageNames.length) ? '/agent-loged/upload-property/'+p.imageNames[0] : '/image/IMG_7296.JPG';
     var t = document.createElement('div');
-    t.style.cssText = 'pointer-events:auto;background:rgba(13,112,104,.96);color:#fff;' +
-        'border-radius:16px;padding:14px 16px;box-shadow:0 15px 40px rgba(0,0,0,.25);' +
-        'display:flex;gap:14px;align-items:center;cursor:pointer;' +
-        'transition:all .5s;transform:translateX(120%);opacity:0;max-width:340px;';
-    t.innerHTML = '<img src="' + img + '" style="width:60px;height:60px;border-radius:10px;object-fit:cover;flex-shrink:0" alt="">' +
-        '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#8af7eb">New listing</div>' +
-        '<div style="font-size:13.5px;font-weight:700;margin:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (p.title || p.type || 'Property') + '</div>' +
-        '<div style="font-size:11px;color:#c9ece8">📍 ' + (p.location || '') + '</div>' +
-        '<div style="font-size:14px;font-weight:700;margin-top:3px">₦' + Number(p.price||0).toLocaleString() + '</div>' +
-        '</div>' +
-        '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;align-self:flex-start">&#x00D7;</button>';
-    t.addEventListener('click', function(e) {
-        if (e.target.tagName !== 'BUTTON') location.href = '/property?id=' + p._id;
-    });
-    var c = document.getElementById('realtime-toast-container');
-    if (c) c.appendChild(t);
-    requestAnimationFrame(function() { t.style.transform = 'translateX(0)'; t.style.opacity = '1'; });
-    setTimeout(function() {
-        t.style.opacity = '0'; t.style.transform = 'translateX(120%)';
-        setTimeout(function() { t.remove(); }, 500);
-    }, 6000);
+    t.style.cssText = 'pointer-events:auto;background:rgba(13,112,104,.96);color:#fff;border-radius:16px;padding:14px 16px;box-shadow:0 15px 40px rgba(0,0,0,.25);display:flex;gap:14px;align-items:center;cursor:pointer;transition:all .5s;transform:translateX(120%);opacity:0;max-width:340px;';
+    t.innerHTML = '<img src="'+img+'" style="width:60px;height:60px;border-radius:10px;object-fit:cover;flex-shrink:0" alt="">' +
+        '<div style="flex:1;min-width:0"><div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#8af7eb">New listing</div>' +
+        '<div style="font-size:13.5px;font-weight:700;margin:2px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (p.title||p.type||'Property') + '</div>' +
+        '<div style="font-size:11px;color:#c9ece8">📍 ' + (p.location||'') + '</div>' +
+        '<div style="font-size:14px;font-weight:700;margin-top:3px">' + fmt(p.price) + '</div></div>' +
+        '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,.6);font-size:20px;cursor:pointer;align-self:flex-start">×</button>';
+    t.addEventListener('click', function(e){ if (e.target.tagName!=='BUTTON') location.href='/property?id='+p._id; });
+    var c = document.getElementById('realtime-toast-container'); if (c) c.appendChild(t);
+    requestAnimationFrame(function(){ t.style.transform='translateX(0)'; t.style.opacity='1'; });
+    setTimeout(function(){ t.style.opacity='0'; t.style.transform='translateX(120%)'; setTimeout(function(){ t.remove(); },500); }, 6000);
 }
 
 // ── Voice search ───────────────────────────────────────────
-(function initVoice() {
-    var micBtn  = document.getElementById('searchMic');
-    var micIcon = document.getElementById('micIcon');
-    var input   = document.getElementById('aiSearch');
-    var clearBtn= document.getElementById('searchClear');
+(function voice() {
+    var micBtn=document.getElementById('searchMic'), micIcon=document.getElementById('micIcon');
+    var inp=document.getElementById('aiSearch'), clr=document.getElementById('searchClear');
     if (!micBtn) return;
-    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { micBtn.style.display = 'none'; return; }
-    var rec = new SR();
-    rec.lang = 'en-NG'; rec.continuous = false; rec.interimResults = true;
-    var listening = false; var finalText = '';
-    function start() { if (listening) return; finalText = ''; try { rec.start(); } catch(_) {} }
-    function stop()  { if (!listening) return; rec.stop(); }
-    micBtn.addEventListener('mousedown',  function(e) { e.preventDefault(); start(); });
-    micBtn.addEventListener('mouseup',    function() { stop(); });
-    micBtn.addEventListener('mouseleave', function() { if (listening) stop(); });
-    micBtn.addEventListener('touchstart', function(e) { e.preventDefault(); start(); }, { passive: false });
-    micBtn.addEventListener('touchend',   function(e) { e.preventDefault(); stop(); },  { passive: false });
-    rec.addEventListener('start',  function() { listening = true;  micBtn.classList.add('listening');    micIcon.className = 'fa-solid fa-microphone-lines'; input.placeholder = 'Listening...'; });
-    rec.addEventListener('result', function(e) {
-        var interim = ''; finalText = '';
-        for (var i = 0; i < e.results.length; i++) {
-            if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
-            else interim += e.results[i][0].transcript;
-        }
-        input.value = finalText || interim;
-        if (clearBtn) clearBtn.style.display = input.value ? 'block' : 'none';
+    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+    if (!SR) { micBtn.style.display='none'; return; }
+    var rec=new SR(); rec.lang='en-NG'; rec.continuous=false; rec.interimResults=true;
+    var on=false, final='';
+    function start(){ if(on)return; final=''; try{rec.start();}catch(_){} }
+    function stop(){ if(!on)return; rec.stop(); }
+    micBtn.addEventListener('mousedown',  function(e){e.preventDefault();start();});
+    micBtn.addEventListener('mouseup',    stop);
+    micBtn.addEventListener('mouseleave', function(){if(on)stop();});
+    micBtn.addEventListener('touchstart', function(e){e.preventDefault();start();},{passive:false});
+    micBtn.addEventListener('touchend',   function(e){e.preventDefault();stop();},{passive:false});
+    rec.addEventListener('start',  function(){ on=true;  micBtn.classList.add('listening');    micIcon.className='fa-solid fa-microphone-lines'; inp.placeholder='Listening...'; });
+    rec.addEventListener('result', function(e){
+        var interim=''; final='';
+        for(var i=0;i<e.results.length;i++){ if(e.results[i].isFinal) final+=e.results[i][0].transcript; else interim+=e.results[i][0].transcript; }
+        inp.value = final||interim; if(clr) clr.style.display = inp.value?'block':'none';
     });
-    rec.addEventListener('end',   function() {
-        listening = false; micBtn.classList.remove('listening'); micIcon.className = 'fa-solid fa-microphone';
-        input.placeholder = 'e.g. 2 bedroom flat in GRA under 2 million...';
-        var q = (finalText || input.value).trim();
-        if (q) { input.value = q; if (clearBtn) clearBtn.style.display = 'block'; doAISearch(q); }
-    });
-    rec.addEventListener('error', function() {
-        listening = false; micBtn.classList.remove('listening'); micIcon.className = 'fa-solid fa-microphone';
-        input.placeholder = 'e.g. 2 bedroom flat in GRA under 2 million...';
-    });
+    rec.addEventListener('end',   function(){ on=false; micBtn.classList.remove('listening'); micIcon.className='fa-solid fa-microphone'; inp.placeholder='e.g. 2 bedroom flat in GRA under 2 million...'; var q=(final||inp.value).trim(); if(q){inp.value=q;if(clr)clr.style.display='block';doAISearch(q);} });
+    rec.addEventListener('error', function(){ on=false; micBtn.classList.remove('listening'); micIcon.className='fa-solid fa-microphone'; inp.placeholder='e.g. 2 bedroom flat in GRA under 2 million...'; });
 })();
 
-// ── Init ──────────────────────────────────────────────────
-fetchProperties();
-
-setInterval(function() {
-    if (searchMode) return;
-    // Only silently check for new listings — do NOT reset cursor or re-render
-    fetch('/api/post/property?page=1&limit=' + PAGE_SIZE)
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            if (!d.success || !d.property.length) return;
-            // Only prepend genuinely new listings (not already in pool)
-            var existingIds = new Set(allPosts.map(function(p) { return p._id; }));
-            var newOnes = d.property.filter(function(p) { return !existingIds.has(p._id); });
-            if (newOnes.length > 0) {
-                // Prepend new listings to pool — they will appear when user scrolls up
-                allPosts = newOnes.concat(allPosts);
-                // Don't touch cursor or re-render — just update the pool
-            }
-        }).catch(function() {});
-}, 60000);
+// ── INIT ───────────────────────────────────────────────────
+loadInitial();
 </script>
 </body>
 </html>

@@ -535,7 +535,7 @@ window.submitProperty = async function () {
         const data = await response.json();
 
         if (response.ok && data.success) {
-            alertBox.success('Success', 'Property posted successfully! make sure to click on Deal Close after sell', () => {
+            alertBox.success('Success', 'Property posted successfully! make sure to click on Deal Close after sale', () => {
                 // Clear out map coordinate inputs completely so the next listing is clean
                 if (latInput) latInput.value = '';
                 if (lngInput) lngInput.value = '';
@@ -1597,7 +1597,7 @@ window.generateAIDescription = async function(mode) {
                 type: "updates", 
                 message: isBoosted 
                     ? "Your account or listing has been boosted! 🚀 Making sales faster with premium reach." 
-                    : "Boost your profile or per one property to make your sell faster! 🚀", 
+                    : "Boost your profile or per one property to make your sale faster! 🚀", 
                 unread: !isBoosted,
                 url: isBoosted ? null : "/boost-account",
                 isDynamic: false
@@ -1606,7 +1606,7 @@ window.generateAIDescription = async function(mode) {
                 id: "system-verify", 
                 type: "alerts", 
                 message: isVerified 
-                    ? "your account has been verified you can now post unlimited property and make sell faster with trust." 
+                    ? "your account has been verified you can now post unlimited property and make sale faster with trust." 
                     : "Action Required: Please verify your account to list properties worth above ₦1M.", 
                 unread: !isVerified,
                 url: isVerified ? null : "/agent-verification",
