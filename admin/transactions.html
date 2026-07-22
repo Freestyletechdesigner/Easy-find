@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions - DayNight Admin</title>
+    <script>
+        if (localStorage.getItem("daynight-theme") === "carbon") {
+            document.documentElement.classList.add("carbon");
+        }
+    </script>
+    <link rel="stylesheet" href="templatemo-daynight-style.css">
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .ri-loader-4-line {
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay"></div>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu">
+        <div class="mobile-menu-header">
+            <a href="/admin/dashboard" class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </div>
+                Admin
+            </a>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <nav class="mobile-menu-nav">
+            <a href="/admin/dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/admin/projects">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                Projects
+            </a>
+            <a href="/admin/inbox">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                Inbox
+            </a>
+            <a href="/admin/analytics">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                Analytics
+            </a>
+            <a href="/admin/agents">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Agents
+            </a>
+            <a href="/admin/feedback">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                FeedBack
+            </a>
+            <a href="/admin/reports">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                    <line x1="4" y1="22" x2="4" y2="15"/>
+                </svg>
+                Reports
+            </a>
+            <a href="/admin/transactions" class="active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <line x1="12" y1="4" x2="12" y2="20"/>
+                </svg>
+                Transactions
+            </a>
+        </nav>
+        <div class="mobile-menu-footer">
+            <a href="/admin/login" class="mobile-logout-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Logout
+            </a>
+            <div class="theme-toggle">
+                <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/>
+                        <line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/>
+                        <line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                </button>
+                <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="nav-container">
+                <div class="nav-left">
+                    <a href="/admin/dashboard" class="logo">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                        </div>
+                        Admin
+                    </a>
+                    <div class="nav-menu">
+                        <div class="nav-item">
+                            <a href="/admin/dashboard" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                                </svg>
+                                Dashboard
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/projects" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                Projects
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/inbox" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                    <polyline points="22,6 12,13 2,6"/>
+                                </svg>
+                                Inbox
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/analytics" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="20" x2="18" y2="10"/>
+                                    <line x1="12" y1="20" x2="12" y2="4"/>
+                                    <line x1="6" y1="20" x2="6" y2="14"/>
+                                </svg>
+                                Analytics
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/agents" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                </svg>
+                                Agents
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/feedback" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                FeedBack
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/reports" class="nav-link">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                                    <line x1="4" y1="22" x2="4" y2="15"/>
+                                </svg>
+                                Reports
+                            </a>
+                        </div>
+                        <div class="nav-item">
+                            <a href="/admin/transactions" class="nav-link active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <line x1="12" y1="4" x2="12" y2="20"/>
+                </svg>
+                                Transactions
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="nav-right">
+                    <div class="theme-toggle">
+                        <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/>
+                                <line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                            </svg>
+                        </button>
+                        <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="user-menu">
+                        <div class="user-avatar">A</div>
+                        <span class="user-name">Admin</span>
+                    </button>
+                    <a href="/admin/login" class="btn-logout" title="Logout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                    </a>
+                    <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <h1 class="greeting">Transactions</h1>
+                    <p class="greeting-sub">Manage and audit payment transactions</p>
+                </div>
+                <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+                    <button class="btn btn-secondary" id="exportCsvBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Inflow (30 Days)</div>
+                    <div class="stat-value" id="statInflow">₦0</div>
+                    <div class="stat-change positive">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                        Active period
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Transactions</div>
+                    <div class="stat-value" id="statTotalCount">0</div>
+                    <div class="stat-change positive">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                        All-time successful
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Pending Payments</div>
+                    <div class="stat-value" id="statPendingCount">0</div>
+                    <div class="stat-change orange">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        Awaiting confirmation
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Failed Payments</div>
+                    <div class="stat-value" id="statFailedCount">0</div>
+                    <div class="stat-change negative">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                        Unsuccessful attempts
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Card -->
+            <div class="card">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <h3 class="card-title">Transaction Ledger</h3>
+                        <p class="card-subtitle">Detailed payment audit records</p>
+                    </div>
+                    <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                        <div class="inbox-search" style="padding: 0.375rem 0.75rem;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="txSearch" placeholder="Search reference, type...">
+                        </div>
+                        <select class="form-input" id="typeFilter" style="width: auto; padding: 0.375rem 1.75rem 0.375rem 0.75rem;">
+                            <option value="">All Types</option>
+                            <option value="boost_post">Boost Post</option>
+                            <option value="boost_profile">Boost Profile</option>
+                            <option value="verification">Verification</option>
+                        </select>
+                        <select class="form-input" id="statusFilter" style="width: auto; padding: 0.375rem 1.75rem 0.375rem 0.75rem;">
+                            <option value="">All Statuses</option>
+                            <option value="success">Success</option>
+                            <option value="pending">Pending</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Type</th>
+                                <th>Reference</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="txTableBody">
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ri-loader-4-line" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 8px;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                                    Loading transactions...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem; border-top: 1px solid var(--border-color); flex-wrap: wrap; gap: 1rem;">
+                    <span style="font-size: 0.8125rem; color: var(--text-secondary);" id="paginationInfo">Showing 0–0 of 0 transactions</span>
+                    <div style="display: flex; gap: 0.375rem;" id="paginationList"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+           <p>&copy; 2026 <a href="/" style="color: var(--accent); text-decoration: none;">Easy find</a>. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="templatemo-daynight-script.js"></script>
+    <script>
+        'use strict';
+
+        let currentPage = 1;
+        const currentLimit = 15;
+        let currentType = '';
+        let currentStatus = '';
+        let searchQuery = '';
+
+        function formatCurrency(amount) {
+            return '₦' + Number(amount || 0).toLocaleString('en-US', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function getInitials(name) {
+            if (!name) return '??';
+            const parts = name.trim().split(/\s+/);
+            if (parts.length >= 2) {
+                return (parts[0][0] + parts[1][0]).toUpperCase();
+            }
+            return parts[0].substring(0, 2).toUpperCase();
+        }
+
+        function getAvatarColor(name) {
+            const colors = ['#38BDF8', '#22C55E', '#F59E0B', '#EF4444', '#A855F7', '#EC4899'];
+            if (!name) return '#7A8699';
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        async function fetchStats() {
+            try {
+                const res = await fetch('/api/admin/transactions/stats');
+                const data = await res.json();
+
+                if (data.success) {
+                    const monthlySum = data.daily ? data.daily.reduce((acc, curr) => acc + (curr.revenue || 0), 0) : 0;
+                    document.getElementById('statInflow').textContent = formatCurrency(monthlySum);
+                    document.getElementById('statTotalCount').textContent = (data.totalCount || 0).toLocaleString();
+                }
+
+                const [pendingRes, failedRes] = await Promise.all([
+                    fetch('/api/admin/transactions?status=pending&limit=1'),
+                    fetch('/api/admin/transactions?status=failed&limit=1')
+                ]);
+                
+                const pendingData = await pendingRes.json();
+                const failedData = await failedRes.json();
+
+                if (pendingData.success) {
+                    document.getElementById('statPendingCount').textContent = (pendingData.total || 0).toLocaleString();
+                }
+                if (failedData.success) {
+                    document.getElementById('statFailedCount').textContent = (failedData.total || 0).toLocaleString();
+                }
+            } catch (err) {
+                console.error('Error loading transaction statistics:', err);
+            }
+        }
+
+        async function fetchTransactions() {
+            try {
+                const tbody = document.getElementById('txTableBody');
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 3rem; color: var(--text-secondary);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ri-loader-4-line" style="width: 20px; height: 20px; display: inline-block; vertical-align: middle; margin-right: 8px;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            Updating ledger...
+                        </td>
+                    </tr>
+                `;
+
+                const queryParams = new URLSearchParams({
+                    page: currentPage,
+                    limit: currentLimit,
+                    type: currentType,
+                    status: currentStatus,
+                    search: searchQuery
+                });
+
+                const res = await fetch(`/api/admin/transactions?${queryParams.toString()}`);
+                const data = await res.json();
+
+                if (data.success) {
+                    renderTable(data.transactions);
+                    renderPagination(data.total, data.page, data.hasMore);
+                } else {
+                    showTableError(data.message || 'Error occurred while querying database.');
+                }
+            } catch (err) {
+                console.error('Error fetching transactions:', err);
+                showTableError('Failed to establish server connection.');
+            }
+        }
+
+        function showTableError(message) {
+            document.getElementById('txTableBody').innerHTML = `
+                <tr>
+                    <td colspan="7">
+                        <div class="empty-state" style="color: var(--danger);">
+                            <h3>Data Load Failure</h3>
+                            <p>${message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        function renderTable(transactions) {
+            const tbody = document.getElementById('txTableBody');
+            if (!transactions || transactions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7">
+                            <div class="empty-state">
+                                <h3>No transactions found</h3>
+                                <p>No results matched your search or selection filters.</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = transactions.map(tx => {
+                const displayId = tx._id ? tx._id.toString().substring(0, 8).toUpperCase() : 'N/A';
+                
+                const userRef = tx.user || tx.userId || {};
+                const customerName = userRef.name || tx.customerName || userRef.email || tx.email || 'Anonymous';
+                const initials = getInitials(customerName);
+                const avatarBg = getAvatarColor(customerName);
+                const amountDisplay = formatCurrency(tx.amount);
+                
+                let typeLabel = 'Other';
+                let typeBadgeColor = 'badge-blue';
+                if (tx.type === 'boost_post') {
+                    typeLabel = 'Boost Post';
+                } else if (tx.type === 'boost_profile') {
+                    typeLabel = 'Boost Profile';
+                } else if (tx.type === 'verification') {
+                    typeLabel = 'Verification';
+                }
+
+                let statusBadgeClass = 'badge-gray';
+                const rawStatus = tx.status || 'unknown';
+                const statusLabel = rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1);
+                if (rawStatus === 'success') statusBadgeClass = 'badge-green';
+                else if (rawStatus === 'pending') statusBadgeClass = 'badge-yellow';
+                else if (rawStatus === 'failed') statusBadgeClass = 'badge-red';
+
+                const reference = tx.reference || 'N/A';
+                const formattedDate = tx.createdAt ? new Date(tx.createdAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                }) : 'N/A';
+
+                return `
+                    <tr>
+                        <td style="font-family: monospace; font-weight: 500;">TXN-${displayId}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                <div class="user-avatar" style="width: 28px; height: 28px; font-size: 0.75rem; background: ${avatarBg}; color: white; display: flex; align-items: center; justify-content: center; border-radius: 6px;">
+                                    ${initials}
+                                </div>
+                                <span style="font-weight: 500;">${customerName}</span>
+                            </div>
+                        </td>
+                        <td><strong>${amountDisplay}</strong></td>
+                        <td><span class="badge ${typeBadgeColor}">${typeLabel}</span></td>
+                        <td style="color: var(--text-secondary); font-family: monospace;">${reference}</td>
+                        <td><span class="badge ${statusBadgeClass}">${statusLabel}</span></td>
+                        <td style="color: var(--text-secondary);">${formattedDate}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderPagination(total, page, hasMore) {
+            const info = document.getElementById('paginationInfo');
+            const list = document.getElementById('paginationList');
+            
+            const start = total === 0 ? 0 : (page - 1) * currentLimit + 1;
+            const end = Math.min(page * currentLimit, total);
+            
+            info.textContent = `Showing ${start}–${end} of ${total.toLocaleString()} transactions`;
+            
+            const totalPages = Math.ceil(total / currentLimit);
+            let html = '';
+            
+            html += `<button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" ${page === 1 ? 'disabled' : ''} onclick="changePage(${page - 1})">Prev</button>`;
+            
+            const range = 2;
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === 1 || i === totalPages || (i >= page - range && i <= page + range)) {
+                    const isActive = i === page;
+                    const buttonStyle = isActive 
+                        ? 'background: var(--accent); color: white; border-color: var(--accent); font-weight: 600;' 
+                        : '';
+                    html += `<button class="btn btn-secondary" style="padding: 0.25rem 0.625rem; min-width: 32px; ${buttonStyle}" onclick="changePage(${i})">${i}</button>`;
+                } else if (i === page - range - 1 || i === page + range + 1) {
+                    html += `<span style="align-self: center; color: var(--text-secondary); padding: 0 4px;">...</span>`;
+                }
+            }
+            
+            html += `<button class="btn btn-secondary" style="padding: 0.25rem 0.5rem;" ${!hasMore ? 'disabled' : ''} onclick="changePage(${page + 1})">Next</button>`;
+            
+            list.innerHTML = html;
+        }
+
+        window.changePage = function(targetPage) {
+            currentPage = targetPage;
+            fetchTransactions();
+        };
+
+        async function exportToCSV() {
+            const btn = document.getElementById('exportCsvBtn');
+            const originalContent = btn.innerHTML;
+            try {
+                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ri-loader-4-line" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; margin-right: 4px;"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Exporting...`;
+                btn.disabled = true;
+
+                const exportParams = new URLSearchParams({
+                    limit: 1000,
+                    type: currentType,
+                    status: currentStatus,
+                    search: searchQuery
+                });
+
+                const res = await fetch(`/api/admin/transactions?${exportParams.toString()}`);
+                const data = await res.json();
+                
+                if (!data.success || !data.transactions) {
+                    alert('Failed to retrieve list data for CSV generation.');
+                    return;
+                }
+
+                const headers = ['Transaction ID', 'Customer', 'Amount (NGN)', 'Type', 'Reference', 'Status', 'Date'];
+                const records = data.transactions.map(tx => {
+                    const userRef = tx.user || tx.userId || {};
+                    const customerName = userRef.name || tx.customerName || userRef.email || tx.email || 'Anonymous';
+                    return [
+                        tx._id || '',
+                        customerName.replace(/"/g, '""'),
+                        tx.amount || 0,
+                        tx.type || '',
+                        tx.reference || '',
+                        tx.status || '',
+                        tx.createdAt ? new Date(tx.createdAt).toISOString() : ''
+                    ];
+                });
+
+                const csvString = [
+                    headers.join(','),
+                    ...records.map(r => r.map(cell => `"${cell}"`).join(','))
+                ].join('\n');
+
+                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `transactions_export_${new Date().toISOString().slice(0, 10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+            } catch (err) {
+                console.error('CSV Export failure:', err);
+                alert('An unexpected error interrupted your export.');
+            } finally {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('typeFilter').addEventListener('change', (e) => {
+                currentType = e.target.value;
+                currentPage = 1;
+                fetchTransactions();
+            });
+
+            document.getElementById('statusFilter').addEventListener('change', (e) => {
+                currentStatus = e.target.value;
+                currentPage = 1;
+                fetchTransactions();
+            });
+
+            let inputDelayTimer;
+            document.getElementById('txSearch').addEventListener('input', (e) => {
+                clearTimeout(inputDelayTimer);
+                inputDelayTimer = setTimeout(() => {
+                    searchQuery = e.target.value.trim();
+                    currentPage = 1;
+                    fetchTransactions();
+                }, 400);
+            });
+
+            document.getElementById('exportCsvBtn').addEventListener('click', exportToCSV);
+
+            fetchStats();
+            fetchTransactions();
+        });
+    </script>
+</body>
+
+</html>

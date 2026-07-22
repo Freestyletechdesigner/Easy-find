@@ -1,10 +1,11 @@
-const axios = require('axios');
-const crypto = require('crypto');
-const cron = require('node-cron');
+const axios     = require('axios');
+const crypto    = require('crypto');
+const cron      = require('node-cron');
 const { check, validationResult } = require('express-validator');
 const AgentUser = require('../model/AgentUser.js');
 const AgentPost = require('../model/AgentPost.js');
 const { sendPushToAgents } = require('../utils/push.js');
+const Transaction = require('../model/Transaction.js');
 
 function requireAgentAuth(req, res, next) {
     if (!req.session.agent) {
@@ -29,13 +30,16 @@ async function applyBoost(planKey, agentId, postId) {
     const expiry = new Date();
     expiry.setDate(expiry.getDate() + pkg.days);
 
+    // Fetch agent for transaction record
+    let agent = null;
+    try { agent = await AgentUser.findById(agentId).select('name email').lean(); } catch(_) {}
+
     if (pkg.type === 'profile') {
         await AgentUser.findByIdAndUpdate(agentId, {
             boostAccount:       true,
             boostAccountExpiry: expiry
         });
         console.log(`[Boost] Profile boost (${planKey}, ${pkg.days}d) for agent ${agentId}`);
-        // Push notification to agent
         await sendPushToAgents({
             agentIds: [agentId.toString()],
             title:    '🚀 Your profile boost is active!',
@@ -48,13 +52,29 @@ async function applyBoost(planKey, agentId, postId) {
             boostPostExpiry: expiry
         });
         console.log(`[Boost] Post boost (${planKey}, ${pkg.days}d) for post ${postId}`);
-        // Push notification to agent
         await sendPushToAgents({
             agentIds: [agentId.toString()],
             title:    '⚡ Your post boost is live!',
             message:  `Your listing is now boosted for ${pkg.days} day${pkg.days > 1 ? 's' : ''}. It will appear at the top of search results.`,
             url:      `${process.env.APP_URL?.split(',')[0] || 'https://easyfind.com.ng'}/property?id=${postId}`,
         });
+    }
+
+    // Record transaction
+    try {
+        await Transaction.create({
+            agentId:    agentId.toString(),
+            agentName:  agent?.name  || '',
+            agentEmail: agent?.email || '',
+            type:       pkg.type === 'profile' ? 'boost_profile' : 'boost_post',
+            plan:       planKey,
+            amount:     pkg.price,
+            status:     'success',
+            postId:     postId || null,
+            expiresAt:  expiry,
+        });
+    } catch (txErr) {
+        console.error('[Transaction] Failed to record boost payment:', txErr.message);
     }
 }
 

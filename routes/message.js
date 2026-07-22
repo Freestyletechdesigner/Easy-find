@@ -30,7 +30,7 @@ const messageAPI = (app) => {
                 const newMessage = new message({
                     name,
                     email,
-                    subject: subjet || 'No Subject',
+                    subject: subjet || 'No Subject or Appeal',
                     phoneNumber,
                     message: text,
                     status: 'unread',

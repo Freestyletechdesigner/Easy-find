@@ -974,7 +974,7 @@ if (loginForm) {
 
     const waLink = document.querySelector('.wa-link');
     waLink.addEventListener('click', () => {
-        const waURL = 'https://wa.me/2347042648065?text=Hello Easy Find'
+        const waURL = 'https://wa.me/2347035932876?text=Hello Easy Find'
         window.open(waURL, '_blank')
     });
 

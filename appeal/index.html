@@ -151,14 +151,13 @@
         }
     </style>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-NK9XVCBPJM"></script>
-        <script>
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-    
-          gtag('config', 'G-NK9XVCBPJM');
-        </script>
-    </head>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-NK9XVCBPJM');
+    </script>
 </head>
 <body>
 
@@ -215,10 +214,7 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
-    emailjs.init({ publicKey: '70lYopHB9mhxod8Pz' });
-
     const alertEl  = document.getElementById('alert');
     const submitBtn = document.getElementById('submitBtn');
 
@@ -246,18 +242,29 @@
         submitBtn.innerHTML = '<i class="fas fa-spinner spin-icon"></i> Sending...';
 
         try {
-            await emailjs.send('service_2gmwz4n', 'template_ta3lzir', {
-                agent_name:    name,
-                agent_email:   email,
-                agent_phone:   phone || 'Not provided',
-                agent_message: message,
-                sent_at:       new Date().toLocaleString('en-GB')
+            // Send to backend API (saves to admin inbox)
+            const response = await fetch('/api/contact/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    name: name,
+                    email: email,
+                    subject: 'Appeal Message',
+                    phoneNumber: phone || 'Not provided',
+                    text: message
+                })
             });
+
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
 
             showAlert('Your appeal has been sent. We will get back to you within 24–48 hours.', 'success');
             document.getElementById('appealForm').reset();
         } catch (err) {
-            console.error('EmailJS error:', err);
+            console.error('Submission error:', err);
             showAlert('Failed to send. Please try again or contact us directly.', 'error');
         } finally {
             submitBtn.disabled = false;

@@ -2735,6 +2735,10 @@ header {
 }
 
 .social-icon.facebook:hover {
+    background: linear-gradient(135deg, #003cff 0%, #0042a5 100%);
+}
+
+.social-icon.x:hover {
     background: linear-gradient(135deg, #4b4b4b 0%, #000000 100%);
 }
 

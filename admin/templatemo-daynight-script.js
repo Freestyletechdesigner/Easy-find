@@ -74,7 +74,7 @@ function getGreeting() {
 function setGreeting() {
     const greetingEl = document.getElementById('greeting');
     if (greetingEl) {
-        greetingEl.textContent = getGreeting() + ', Freedom';
+        greetingEl.textContent = getGreeting() + ', Admin';
     }
 }
 

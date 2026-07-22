@@ -17,6 +17,7 @@ const axios     = require('axios');
 const crypto    = require('crypto');
 const AgentUser = require('../model/AgentUser');
 const { sendPushToAgents } = require('../utils/push.js');
+const Transaction = require('../model/Transaction.js');
 
 // ── Dojah config ──────────────────────────────────────────────────────────────
 const DOJAH_APP_ID    = process.env.DOJAH_APP_ID;
@@ -135,6 +136,23 @@ function NIN_VERIFICATION(app) {
                     }
 
                     await AgentUser.findByIdAndUpdate(agentId, { verifyPayment: true });
+
+                    // Record transaction
+                    try {
+                        const agent = await AgentUser.findById(agentId).select('name email').lean();
+                        await Transaction.create({
+                            agentId,
+                            agentName:  agent?.name  || '',
+                            agentEmail: agent?.email || '',
+                            type:       'verification',
+                            plan:       'nin_verification',
+                            amount:     3000,
+                            reference:  paymentRef,
+                            status:     'success',
+                        });
+                    } catch (txErr) {
+                        console.error('[Transaction] Failed to record verification payment:', txErr.message);
+                    }
 
                     if (req.session?.agent) {
                         req.session.agent.verifyPayment = true;

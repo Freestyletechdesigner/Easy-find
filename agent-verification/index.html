@@ -6,268 +6,120 @@
     <title>Agent Verification | Easy Find</title>
     <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        @font-face {
-            font-family: "HyperTrack";
-            src: url("/agent-loged/fonts/Hyper-Track-BF6923fcf16dfa7.otf") format("opentype");
-        }
-        @font-face {
-            font-family: "Logo";
-            src: url("/agent-loged/fonts/LeagueSpartan-Bold.otf") format("opentype");
-        }
-
-        /* === Tokens === */
-        :root{
-          --primary:#0d7068;
-          --primary-dark:#055361;
-          --primary-light:#e6f7f5;
-          --bg:#F8FAFC;
-          --white:#FFFFFF;
-          --text:#111827;
-          --muted:#6B7280;
-          --border:#E5E7EB;
-          --shadow-sm:0 1px 2px rgba(17,24,39,.06), 0 1px 3px rgba(17,24,39,.04);
-          --shadow-md:0 10px 24px rgba(17,24,39,.08);
-          --shadow-lg:0 24px 60px rgba(17,24,39,.14);
-          --radius:14px;
-          --radius-lg:20px;
-          --radius-xl:28px;
-          --container:1200px;
-          --nav-h:72px;
-          font-family:'Poppins',Arial,system-ui,-apple-system,sans-serif;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            background: #e8f5f5;
-            font-family: Arial, sans-serif;
-            color: #111;
-            min-height: 100vh;
-        }
-
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 92%;
-            max-width: 1200px;
-            margin: 12px auto;
-            padding: 10px 24px;
-            border-radius: 14px;
-            background: #fff;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-            position: sticky;
-            top: 10px;
-            z-index: 100;
-        }
-        .brand{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:17px; text-decoration: none; color: #000;}
-        .brand-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;
-            background:linear-gradient(135deg,var(--primary),var(--primary-dark));
-            color:#fff;font-weight:700;box-shadow:0 6px 14px rgba(13,112,104,.3)}
-        header nav a { text-decoration: none; color: #333; font-weight: 600; padding: 8px 14px; border-radius: 8px; transition: background 0.2s; }
-        header nav a:hover { background: #eee; }
-
-        @keyframes fadeInUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
-
-        .page-wrap {
-            max-width: 680px;
-            margin: 40px auto 80px;
-            padding: 0 16px;
-            animation: fadeInUp 0.7s ease-out;
-        }
-
-        /* Hero */
-        .hero {
-            text-align: center;
-            margin-bottom: 32px;
-        }
-        .badge-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: #e6f4ea;
-            color: #055;
-            font-weight: 700;
-            font-size: 0.78rem;
-            padding: 8px 18px;
-            border-radius: 50px;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            border: 1px solid #b2d8b2;
-            animation: pulse 2.5s infinite;
-        }
-        .hero h1 { font-size: 2rem; font-weight: 800; color: #050; margin: 14px 0 8px; }
-        .hero p  { color: #555; font-size: 0.95rem; line-height: 1.6; }
-
-        /* Cards */
-        .card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 28px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
-            margin-bottom: 20px;
-        }
-
-        /* Step list */
-        .steps {
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            margin-bottom: 28px;
-        }
-        .step-row {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-        }
-        .step-circle {
-            width: 34px;
-            height: 34px;
-            min-width: 34px;
-            background: #f0faf0;
-            border: 2px solid #050;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.85rem;
-            color: #050;
-        }
-        .step-row.done .step-circle { background: #050; color: #fff; border-color: #050; }
-        .step-text h4 { font-size: 0.92rem; color: #222; margin-bottom: 2px; }
-        .step-text p  { font-size: 0.82rem; color: #777; }
-
-        /* Already verified */
-        .verified-banner {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            background: #e6f4ea;
-            border: 1.5px solid #86c98a;
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-        }
-        .verified-banner i { font-size: 1.8rem; color: #2e7d32; }
-        .verified-banner strong { color: #1b5e20; font-size: 1rem; display: block; }
-        .verified-banner span  { color: #388e3c; font-size: 0.85rem; }
-
-        /* Verify button */
-        .btn-start {
-            width: 100%;
-            padding: 16px;
-            background: #050;
-            color: #fff;
-            border: none;
-            border-radius: 14px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.25s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 4px 16px rgba(0,80,0,0.25);
-            position: relative;
-            overflow: hidden;
-        }
-        .btn-start:hover:not(:disabled) { background: #033; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,80,0,0.3); }
-        .btn-start:disabled { background: #aaa; cursor: not-allowed; transform: none; box-shadow: none; }
-
-        /* Laser scan animation on button */
-        .btn-start::after {
-            content: '';
-            position: absolute;
-            top: -100%;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: #0f0;
-            box-shadow: 0 0 10px #0f0;
-            opacity: 0;
-        }
-        .btn-start.scanning::after {
-            opacity: 1;
-            animation: laser 1.2s infinite linear;
-        }
-        @keyframes laser { 0% { top: -5%; } 100% { top: 105%; } }
-
-        .spinner {
-            width: 18px; height: 18px;
-            border: 2px solid rgba(255,255,255,0.35);
-            border-top-color: #fff;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            display: none;
-        }
-
-        /* Status message */
-        .status-msg {
-            text-align: center;
-            margin-top: 14px;
-            font-size: 0.88rem;
-            color: #555;
-            min-height: 20px;
-        }
-        .status-msg.success { color: #2e7d32; font-weight: 600; }
-        .status-msg.error   { color: #c62828; font-weight: 600; }
-
-        /* Info note */
-        .info-note {
-            background: #f0f7ff;
-            border-left: 3px solid #1976d2;
-            border-radius: 0 10px 10px 0;
-            padding: 12px 16px;
-            font-size: 0.84rem;
-            color: #1565c0;
-            margin-top: 16px;
-        }
-
-        footer { text-align: center; padding: 25px 0; font-size: 14px; color: #666; }
-        footer a { color: #050; text-decoration: none; font-weight: 600; }
-
-        @media (max-width: 600px) {
-            .hero h1 { font-size: 1.5rem; }
-            .card { padding: 20px; }
-        }
-    </style>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-NK9XVCBPJM"></script>
-        <script>
-          window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
-          gtag('js', new Date());
-    
-          gtag('config', 'G-NK9XVCBPJM');
-        </script>
-        <!-- OneSignal Web Push -->
+    <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-NK9XVCBPJM');</script>
     <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script src="/onesignal-init.js" defer></script>
-</head>
+    <style>
+        :root {
+            --primary:#0d7068; --primary-dark:#055361; --primary-light:#e6f7f5;
+            --bg:#e8f5f5; --text:#111827; --muted:#6b7280; --border:#e5e7eb;
+            font-family:'Poppins',Arial,sans-serif;
+        }
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{background:var(--bg);color:var(--text);min-height:100vh}
+
+        /* ── Header ─── */
+        header{display:flex;justify-content:space-between;align-items:center;width:92%;max-width:1200px;margin:12px auto;padding:10px 24px;border-radius:14px;background:#fff;box-shadow:0 4px 16px rgba(0,0,0,.08);position:sticky;top:10px;z-index:100}
+        .brand{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:17px;text-decoration:none;color:#000}
+        .brand-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;font-weight:700}
+        header nav a{text-decoration:none;color:#333;font-weight:600;padding:8px 14px;border-radius:8px;transition:background .2s}
+        header nav a:hover{background:#eee}
+
+        /* ── Page ─── */
+        .page-wrap{max-width:680px;margin:40px auto 80px;padding:0 16px}
+
+        /* ── Hero ─── */
+        .hero{text-align:center;margin-bottom:28px}
+        .badge-pill{display:inline-flex;align-items:center;gap:8px;background:#e6f4ea;color:#055;font-weight:700;font-size:.78rem;padding:8px 18px;border-radius:50px;letter-spacing:1px;text-transform:uppercase;border:1px solid #b2d8b2;animation:pulse 2.5s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+        .hero h1{font-size:2rem;font-weight:800;color:#050;margin:14px 0 8px}
+        .hero p{color:#555;font-size:.95rem;line-height:1.6}
+
+        /* ── Card ─── */
+        .card{background:#fff;border-radius:16px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.07);margin-bottom:20px}
+
+        /* ── Form ─── */
+        .form-group{margin-bottom:18px}
+        .form-group label{display:block;font-size:.82rem;font-weight:700;color:#444;text-transform:uppercase;letter-spacing:.04em;margin-bottom:7px}
+        .form-group input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:.95rem;background:#fafafa;color:var(--text);transition:.2s;outline:none}
+        .form-group input:focus{border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px var(--primary-light)}
+        .form-group .hint{font-size:.78rem;color:var(--muted);margin-top:5px}
+
+        /* ── Camera ─── */
+        .camera-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:18px}
+        .camera-box{width:100%;max-width:320px;aspect-ratio:4/3;background:#0f172a;border-radius:16px;overflow:hidden;position:relative;border:3px solid var(--primary)}
+        .camera-box video{width:100%;height:100%;object-fit:cover;display:block}
+        .camera-box canvas{display:none}
+        .cam-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.6);color:#fff;font-size:.85rem;text-align:center;padding:16px;gap:10px}
+        .cam-overlay i{font-size:2rem;color:#66eae3}
+        .preview-img{width:100%;max-width:320px;border-radius:16px;border:3px solid #22c55e;display:none}
+        .cam-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+
+        /* ── Buttons ─── */
+        .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 20px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:.2s}
+        .btn-primary{background:var(--primary);color:#fff;box-shadow:0 4px 14px rgba(13,112,104,.3);width:100%;padding:14px}
+        .btn-primary:hover:not(:disabled){background:var(--primary-dark);transform:translateY(-1px)}
+        .btn-primary:disabled{background:#aaa;cursor:not-allowed;transform:none;box-shadow:none}
+        .btn-outline{background:#f3f4f6;color:#374151;border:1px solid var(--border)}
+        .btn-outline:hover{border-color:var(--primary);color:var(--primary)}
+        .btn-danger{background:#fee2e2;color:#991b1b;border:1px solid #fca5a5}
+        .btn-danger:hover{background:#fca5a5}
+
+        /* ── Spinner ─── */
+        .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:none}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        /* ── Status ─── */
+        .status-msg{text-align:center;margin-top:14px;font-size:.88rem;color:#555;min-height:20px;line-height:1.5}
+        .status-msg.success{color:#2e7d32;font-weight:600}
+        .status-msg.error{color:#c62828;font-weight:600}
+        .status-msg.info{color:#1565c0;font-weight:500}
+
+        /* ── Verified banner ─── */
+        .verified-banner{display:none;align-items:center;gap:14px;background:#e6f4ea;border:1.5px solid #86c98a;border-radius:12px;padding:16px 20px;margin-bottom:20px}
+        .verified-banner i{font-size:1.8rem;color:#2e7d32}
+        .verified-banner strong{color:#1b5e20;font-size:1rem;display:block}
+        .verified-banner span{color:#388e3c;font-size:.85rem}
+
+        /* ── Steps ─── */
+        .steps{display:flex;flex-direction:column;gap:12px;margin-bottom:22px}
+        .step-row{display:flex;align-items:flex-start;gap:12px}
+        .step-num{width:30px;height:30px;min-width:30px;background:#f0faf0;border:2px solid #050;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;color:#050}
+        .step-text h4{font-size:.9rem;color:#222;margin-bottom:2px}
+        .step-text p{font-size:.8rem;color:#777}
+
+        /* ── Progress bar ─── */
+        .progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:12px 0 4px}
+        .progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),#22c55e);border-radius:3px;transition:width .4s}
+        .progress-label{font-size:.78rem;color:var(--muted);text-align:right}
+
+        /* ── Info note ─── */
+        .info-note{background:#f0f7ff;border-left:3px solid #1976d2;border-radius:0 10px 10px 0;padding:12px 16px;font-size:.82rem;color:#1565c0;margin-top:14px}
+
+        footer{text-align:center;padding:25px 0;font-size:14px;color:#666}
+        footer a{color:#050;text-decoration:none;font-weight:600}
+
+        @media(max-width:600px){.hero h1{font-size:1.5rem}.card{padding:20px}}
+    </style>
 </head>
 <body>
 
 <header>
     <a href="/" class="brand"><span class="brand-mark">E</span>asy Find</a>
-    <nav>
-        <a href="/agent-loged"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
-    </nav>
+    <nav><a href="/agent-loged"><i class="fa-solid fa-arrow-left"></i> Dashboard</a></nav>
 </header>
 
 <div class="page-wrap">
 
     <div class="hero">
-        <div class="badge-pill"><i class="fa-solid fa-shield-halved"></i> Secure Identity Verification</div>
+        <div class="badge-pill"><i class="fa-solid fa-shield-halved"></i> Identity Verification</div>
         <h1>Agent Verification</h1>
-        <p>Complete your NIN + face verification to earn the <strong>Verified Agent</strong> badge and build trust with clients.</p>
+        <p>Enter your NIN and take a live selfie to earn the <strong>Verified Agent</strong> badge.</p>
     </div>
 
-    <!-- Already verified banner (hidden by default) -->
-    <div class="verified-banner" id="verifiedBanner" style="display:none;">
+    <!-- Already verified -->
+    <div class="verified-banner" id="verifiedBanner">
         <i class="fa-solid fa-circle-check"></i>
         <div>
             <strong>You are a Verified Agent</strong>
@@ -276,45 +128,83 @@
     </div>
 
     <div class="card" id="verifyCard">
-        <h3 style="margin-bottom:20px;color:#050;font-size:1rem;text-transform:uppercase;letter-spacing:0.5px;">
-            <i class="fa-solid fa-fingerprint" style="margin-right:8px;"></i>What happens during verification
-        </h3>
 
+        <!-- Steps -->
         <div class="steps">
             <div class="step-row">
-                <div class="step-circle">1</div>
-                <div class="step-text">
-                    <h4>Enter your NIN</h4>
-                    <p>Your 11-digit National Identification Number</p>
-                </div>
+                <div class="step-num" id="step1num">1</div>
+                <div class="step-text"><h4>Enter your NIN</h4><p>Your 11-digit National Identification Number</p></div>
             </div>
             <div class="step-row">
-                <div class="step-circle">2</div>
-                <div class="step-text">
-                    <h4>Take a selfie</h4>
-                    <p>A live selfie to match your NIN photo</p>
-                </div>
+                <div class="step-num" id="step2num">2</div>
+                <div class="step-text"><h4>Take a selfie</h4><p>Look at the camera and click capture</p></div>
             </div>
             <div class="step-row">
-                <div class="step-circle">3</div>
-                <div class="step-text">
-                    <h4>Instant result</h4>
-                    <p>Get your Verified Agent badge immediately on success</p>
-                </div>
+                <div class="step-num" id="step3num">3</div>
+                <div class="step-text"><h4>Verify</h4><p>We'll match your selfie to your NIN record</p></div>
             </div>
         </div>
 
-        <button class="btn-start" id="startBtn" onclick="startVerification()">
-            <span class="spinner" id="btnSpinner"></span>
-            <i class="fa-solid fa-fingerprint" id="btnIcon"></i>
-            <span id="btnText">Start NIN Verification</span>
-        </button>
+        <!-- Progress -->
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <p class="progress-label" id="progressLabel">Step 1 of 3</p>
+
+        <!-- Step 1: NIN input -->
+        <div id="stepNIN">
+            <div class="form-group">
+                <label>National Identification Number (NIN)</label>
+                <input type="tel" id="ninInput" maxlength="11" placeholder="e.g. 12345678901" inputmode="numeric"
+                    oninput="this.value=this.value.replace(/\D/g,'')">
+                <p class="hint">Your 11-digit NIN on your NIMC slip or National ID card</p>
+            </div>
+            <button class="btn btn-primary" id="btnNextNIN" onclick="proceedToSelfie()">
+                Continue <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- Step 2: Selfie capture -->
+        <div id="stepSelfie" style="display:none">
+            <p style="font-size:.88rem;color:#555;margin-bottom:14px">Position your face clearly in the frame, then click <strong>Capture</strong>.</p>
+
+            <div class="camera-wrap">
+                <div class="camera-box" id="cameraBox">
+                    <video id="videoEl" autoplay muted playsinline></video>
+                    <canvas id="canvasEl"></canvas>
+                    <div class="cam-overlay" id="camOverlay">
+                        <i class="fa-solid fa-camera"></i>
+                        <span>Click "Start Camera" to begin</span>
+                    </div>
+                </div>
+                <img id="previewImg" class="preview-img" alt="Selfie preview">
+
+                <div class="cam-actions">
+                    <button class="btn btn-outline" id="btnStartCam" onclick="startCamera()">
+                        <i class="fa-solid fa-camera"></i> Start Camera
+                    </button>
+                    <button class="btn btn-primary" id="btnCapture" onclick="capturePhoto()" style="display:none">
+                        <i class="fa-solid fa-circle"></i> Capture
+                    </button>
+                    <button class="btn btn-danger" id="btnRetake" onclick="retakePhoto()" style="display:none">
+                        <i class="fa-solid fa-rotate-left"></i> Retake
+                    </button>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" id="btnVerify" onclick="submitVerification()" style="display:none;margin-top:8px">
+                <span class="spinner" id="verifySpinner"></span>
+                <i class="fa-solid fa-fingerprint" id="verifyIcon"></i>
+                <span id="verifyText">Verify My Identity</span>
+            </button>
+            <button class="btn btn-outline" onclick="backToNIN()" style="margin-top:10px;width:100%">
+                <i class="fa-solid fa-arrow-left"></i> Back
+            </button>
+        </div>
 
         <div class="status-msg" id="statusMsg"></div>
 
-        <div class="info-note">
+        <div class="info-note" style="margin-top:16px">
             <i class="fa-solid fa-lock"></i>
-            Your data is encrypted and processed securely by <strong>Smile ID</strong>, a licensed identity verification provider. Easy Find does not store your raw biometric data.
+            Your NIN and biometric data are verified securely via <strong>Dojah</strong>, a licensed identity verification provider. Easy Find does not store your raw biometric data.
         </div>
     </div>
 
@@ -324,181 +214,213 @@
     <p>&copy; 2026 <a href="/">Easy Find</a>. All rights reserved. | <a href="/terms">Terms of Service</a></p>
 </footer>
 
-<!-- Smile ID Web Integration Widget (v11) -->
-<script src="https://cdn.smileidentity.com/inline/v11/js/script.min.js"></script>
-
 <script>
-    // ── Check current verification status on load ─────────────────────────────
-    async function checkVerificationStatus() {
-        try {
-            const res  = await fetch('/api/smile/result', { credentials: 'include' });
-            const data = await res.json();
-            if (data.verified) {
-                showVerified();
-            }
-        } catch (e) {
-            console.warn('Status check failed:', e.message);
+'use strict';
+
+let capturedBase64 = null;
+let videoStream    = null;
+
+// ── On load: check if already verified ────────────────────
+async function checkStatus() {
+    try {
+        const res  = await fetch('/api/dojah/status', { credentials: 'include' });
+        const data = await res.json();
+        if (data.verified) showVerified();
+    } catch (_) {}
+}
+
+function showVerified() {
+    document.getElementById('verifiedBanner').style.display = 'flex';
+    document.getElementById('verifyCard').style.display     = 'none';
+}
+
+function setStatus(msg, type) {
+    const el       = document.getElementById('statusMsg');
+    el.textContent = msg;
+    el.className   = 'status-msg ' + (type || '');
+}
+
+function setProgress(step) {
+    const pct = { 1: 0, 2: 50, 3: 90, done: 100 };
+    document.getElementById('progressFill').style.width = (pct[step] || 0) + '%';
+    document.getElementById('progressLabel').textContent =
+        step === 'done' ? 'Verification complete' : `Step ${step} of 3`;
+
+    // Highlight step numbers
+    [1,2,3].forEach(n => {
+        const el = document.getElementById('step' + n + 'num');
+        if (!el) return;
+        if (n < step) {
+            el.style.background = '#0d7068';
+            el.style.color      = '#fff';
+            el.style.borderColor= '#0d7068';
+            el.innerHTML        = '<i class="fa-solid fa-check" style="font-size:.7rem"></i>';
+        } else if (n === step) {
+            el.style.background  = '#e6f7f5';
+            el.style.color       = '#0d7068';
+            el.style.borderColor = '#0d7068';
         }
+    });
+}
+
+// ── Step 1 → 2 ─────────────────────────────────────────────
+function proceedToSelfie() {
+    const nin = document.getElementById('ninInput').value.trim();
+    if (!/^\d{11}$/.test(nin)) {
+        setStatus('Please enter a valid 11-digit NIN.', 'error');
+        document.getElementById('ninInput').focus();
+        return;
+    }
+    setStatus('', '');
+    document.getElementById('stepNIN').style.display    = 'none';
+    document.getElementById('stepSelfie').style.display = 'block';
+    setProgress(2);
+}
+
+function backToNIN() {
+    stopCamera();
+    document.getElementById('stepSelfie').style.display = 'none';
+    document.getElementById('stepNIN').style.display    = 'block';
+    document.getElementById('btnVerify').style.display  = 'none';
+    capturedBase64 = null;
+    resetPreview();
+    setProgress(1);
+    setStatus('', '');
+}
+
+// ── Camera ─────────────────────────────────────────────────
+async function startCamera() {
+    const overlay    = document.getElementById('camOverlay');
+    const btnStart   = document.getElementById('btnStartCam');
+    const btnCapture = document.getElementById('btnCapture');
+    const video      = document.getElementById('videoEl');
+
+    try {
+        videoStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+        });
+        video.srcObject = videoStream;
+        overlay.style.display  = 'none';
+        btnStart.style.display = 'none';
+        btnCapture.style.display = 'flex';
+        setStatus('Camera ready. Position your face and click Capture.', 'info');
+    } catch (err) {
+        setStatus('Camera access denied. Please allow camera permission and try again.', 'error');
+    }
+}
+
+function stopCamera() {
+    if (videoStream) {
+        videoStream.getTracks().forEach(t => t.stop());
+        videoStream = null;
+    }
+}
+
+function capturePhoto() {
+    const video  = document.getElementById('videoEl');
+    const canvas = document.getElementById('canvasEl');
+    const preview= document.getElementById('previewImg');
+
+    if (!videoStream) { setStatus('Please start the camera first.', 'error'); return; }
+
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+
+    capturedBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+    // Show preview
+    preview.src = capturedBase64;
+    preview.style.display = 'block';
+    video.style.display   = 'none';
+
+    stopCamera();
+
+    document.getElementById('btnCapture').style.display = 'none';
+    document.getElementById('btnRetake').style.display  = 'flex';
+    document.getElementById('btnVerify').style.display  = 'flex';
+    setStatus('Photo captured. Click "Verify My Identity" to continue.', 'info');
+    setProgress(3);
+}
+
+function retakePhoto() {
+    capturedBase64 = null;
+    resetPreview();
+    document.getElementById('btnRetake').style.display  = 'none';
+    document.getElementById('btnVerify').style.display  = 'none';
+    document.getElementById('btnCapture').style.display = 'none';
+    document.getElementById('btnStartCam').style.display= 'flex';
+    document.getElementById('camOverlay').style.display = 'flex';
+    document.getElementById('videoEl').style.display    = 'block';
+    setStatus('', '');
+    setProgress(2);
+}
+
+function resetPreview() {
+    const preview = document.getElementById('previewImg');
+    preview.src   = '';
+    preview.style.display = 'none';
+    document.getElementById('videoEl').style.display = 'block';
+}
+
+// ── Step 3: Submit to backend ──────────────────────────────
+async function submitVerification() {
+    const nin = document.getElementById('ninInput').value.trim();
+    if (!capturedBase64) {
+        setStatus('Please capture your selfie first.', 'error');
+        return;
     }
 
-    function showVerified() {
-        document.getElementById('verifiedBanner').style.display = 'flex';
-        document.getElementById('verifyCard').style.display     = 'none';
-    }
+    // Update UI to loading state
+    const btn     = document.getElementById('btnVerify');
+    const spinner = document.getElementById('verifySpinner');
+    const icon    = document.getElementById('verifyIcon');
+    const text    = document.getElementById('verifyText');
 
-    function setStatus(msg, type) {
-        const el = document.getElementById('statusMsg');
-        el.textContent  = msg;
-        el.className    = 'status-msg ' + (type || '');
-    }
+    btn.disabled           = true;
+    spinner.style.display  = 'block';
+    icon.style.display     = 'none';
+    text.textContent       = 'Verifying...';
+    setStatus('Contacting identity verification service...', 'info');
 
-    function setBtnLoading(loading) {
-        const btn     = document.getElementById('startBtn');
-        const spinner = document.getElementById('btnSpinner');
-        const icon    = document.getElementById('btnIcon');
-        const text    = document.getElementById('btnText');
-        btn.disabled  = loading;
-        spinner.style.display = loading ? 'block' : 'none';
-        icon.style.display    = loading ? 'none'  : 'inline';
-        if (loading) {
-            btn.classList.add('scanning');
-            text.textContent = 'Loading verification...';
+    try {
+        const res  = await fetch('/api/dojah/verify-nin', {
+            method:      'POST',
+            credentials: 'include',
+            headers:     { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                nin:          nin,
+                selfieBase64: capturedBase64
+            })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            setProgress('done');
+            const score = data.score ? ` (face match: ${Math.round(data.score)}%)` : '';
+            setStatus(`✅ Verified successfully${score}! You are now a Verified Agent.`, 'success');
+            setTimeout(() => showVerified(), 2000);
         } else {
-            btn.classList.remove('scanning');
-            text.textContent = 'Start NIN Verification';
+            setStatus(data.message || 'Verification failed. Please try again.', 'error');
+            btn.disabled          = false;
+            spinner.style.display = 'none';
+            icon.style.display    = 'inline';
+            text.textContent      = 'Verify My Identity';
+            setProgress(3);
         }
+    } catch (err) {
+        console.error('Verification error:', err);
+        setStatus('Network error. Please check your connection and try again.', 'error');
+        btn.disabled          = false;
+        spinner.style.display = 'none';
+        icon.style.display    = 'inline';
+        text.textContent      = 'Verify My Identity';
     }
+}
 
-    // ── Poll for result after widget closes ───────────────────────────────────
-    let pollInterval = null;
-
-    function startPolling() {
-        setStatus('Processing your verification... please wait.', '');
-        let attempts = 0;
-        pollInterval = setInterval(async () => {
-            attempts++;
-            try {
-                const res  = await fetch('/api/smile/result', { credentials: 'include' });
-                const data = await res.json();
-                if (data.verified) {
-                    clearInterval(pollInterval);
-                    setStatus('Verification successful! You are now a Verified Agent.', 'success');
-                    setTimeout(() => showVerified(), 1800);
-                } else if (attempts >= 20) {
-                    // Stop polling after ~40 seconds
-                    clearInterval(pollInterval);
-                    setStatus('Verification is still processing. Check back in a few minutes.', '');
-                    setBtnLoading(false);
-                }
-            } catch (e) {
-                clearInterval(pollInterval);
-                setBtnLoading(false);
-            }
-        }, 2000); // check every 2 seconds
-    }
-
-    // ── Main: Start verification ──────────────────────────────────────────────
-    async function startVerification() {
-        setBtnLoading(true);
-        setStatus('', '');
-
-        try {
-            // 1. Get a token from our backend
-            const tokenRes  = await fetch('/api/smile/token', {
-                method:      'POST',
-                credentials: 'include',
-                headers:     { 'Content-Type': 'application/json' }
-            });
-            const tokenData = await tokenRes.json();
-
-            if (!tokenData.success || !tokenData.token) {
-                const msg = tokenData.message || 'Could not start verification. Please try again.';
-                console.error('Token fetch failed:', tokenData);
-                setStatus(msg, 'error');
-                setBtnLoading(false);
-                return;
-            }
-
-            console.log('[Smile ID] Token received, opening widget...');
-            console.log('[Smile ID] sid_server:', tokenData.sid_server);
-
-            setBtnLoading(false);
-
-            // Guard: make sure the Smile ID widget script loaded
-            if (typeof SmileIdentity !== 'function') {
-                console.error('[Smile ID] SmileIdentity type:', typeof SmileIdentity);
-                setStatus('Verification widget failed to load. Check your internet connection and refresh.', 'error');
-                return;
-            }
-
-            // 2. Call SmileIdentity directly — it IS the function (not SmileIdentity.initialize)
-            SmileIdentity({
-                token:        tokenData.token,
-                product:      'biometric_kyc',
-                environment:  tokenData.sid_server === '1' ? 'production' : 'sandbox',
-                callback_url: window.location.origin + '/api/smile/callback',
-
-                id_selection: {
-                    NG: ['NIN']
-                },
-
-                partner_details: {
-                    partner_id:   tokenData.partner_id,
-                    name:         'Easy Find',
-                    logo_url:     window.location.origin + '/logo/logo.JPEG',
-                    policy_url:   window.location.origin + '/terms',
-                    theme_color:  '#050'
-                },
-
-                onSuccess: async function (data) {
-                    console.log('[Smile ID] Success:', data);
-                    setStatus('Verification complete! Updating your profile...', '');
-
-                    try {
-                        const res  = await fetch('/api/smile/verify-complete', {
-                            method:      'POST',
-                            credentials: 'include',
-                            headers:     { 'Content-Type': 'application/json' }
-                        });
-                        const result = await res.json();
-
-                        if (result.success) {
-                            setStatus('You are now a Verified Agent! 🎉', 'success');
-                            setTimeout(() => showVerified(), 1500);
-                        } else {
-                            setStatus(result.message || 'Verification recorded. Refreshing...', 'success');
-                            setTimeout(() => window.location.reload(), 2000);
-                        }
-                    } catch (err) {
-                        console.error('verify-complete error:', err);
-                        // Still show success — webhook will handle it
-                        setStatus('Verification submitted! Your badge will appear shortly.', 'success');
-                        setTimeout(() => showVerified(), 2000);
-                    }
-                },
-
-                onClose: function () {
-                    setStatus('Verification cancelled. Click the button to try again.', '');
-                    setBtnLoading(false);
-                },
-
-                onError: function (err) {
-                    console.error('[Smile ID] Widget error:', err);
-                    const msg = typeof err === 'string' ? err : (err?.message || 'Please try again.');
-                    setStatus('Verification error: ' + msg, 'error');
-                    setBtnLoading(false);
-                }
-            });
-
-        } catch (err) {
-            console.error('startVerification error:', err.message, err.stack);
-            setStatus('Something went wrong. Please refresh and try again.', 'error');
-            setBtnLoading(false);
-        }
-    }
-
-    // Run on page load
-    checkVerificationStatus();
+// ── Init ──────────────────────────────────────────────────
+setProgress(1);
+checkStatus();
 </script>
 
 </body>

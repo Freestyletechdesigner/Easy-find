@@ -135,6 +135,7 @@ const PROPERTY_REPORT = require('./routes/property-report.js');
 const NIN_VERIFICATION = require('./routes/agent-verification.js');
 const PROJECTS = require('./routes/projects.js');
 const COMMENT = require('./routes/comment.js');
+const TRANSACTIONS = require('./routes/transactions.js');
 
 // Database schema
 const PageViews = require('./model/PageViews.js');
@@ -433,7 +434,7 @@ app.get('/agent-verification', async (req, res, next) => {
 });
 
 // ── Clean admin routes (no .html) ─────────────────────
-const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'file-uploader', 'reports'];
+const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'transactions', 'reports'];
 adminPages.forEach(page => {
     const file = page === 'dashboard' ? 'index' : page;
     if (page === 'login') {
@@ -473,6 +474,7 @@ FEEDBACK(app);
 PROPERTY_REPORT(app);
 NIN_VERIFICATION(app);
 PROJECTS(app);
+TRANSACTIONS(app);
 
 // ── Admin: Send push notification to agents ───────────────
 const { sendPushToAgents, sendPushToAllAgents } = require('./utils/push.js');
