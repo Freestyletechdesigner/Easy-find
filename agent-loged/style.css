@@ -67,7 +67,7 @@ header {
     z-index: 90;
 }
 
-.brand{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:14px; text-decoration: none; color: #000;}
+.brand{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:14px; text-decoration: none; color: #000;}
 .brand-mark{display:grid;place-items:center;width:32px;height:32px;border-radius:10px;
     background:linear-gradient(135deg,var(--primary),var(--primary-dark));
     color:#fff;font-weight:700;box-shadow:0 6px 14px rgba(13,112,104,.3)}
