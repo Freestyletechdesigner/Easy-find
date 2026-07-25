@@ -1531,6 +1531,49 @@ window.confirmMapLocation = function () {
     }
 
     initializeDashboard();
+
+    // ── Profile Sharing Controls ──────────────────────────
+    window.copyProfileLink = function () {
+        if (!currentAgentId) {
+            alertBox.warning('Profile Loading', 'Profile details are still loading.');
+            return;
+        }
+
+        const url = `${window.location.origin}/agent?id=${currentAgentId}`;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url)
+                .then(() => showTooltipAndAlert(url))
+                .catch(() => fallbackCopyProfile(url));
+        } else {
+            fallbackCopyProfile(url);
+        }
+    };
+
+    function showTooltipAndAlert(url) {
+        const tooltip = document.getElementById('shareTooltip');
+        if (tooltip) {
+            tooltip.style.opacity = '1';
+            tooltip.style.visibility = 'visible';
+            setTimeout(() => {
+                tooltip.style.opacity = '0';
+                tooltip.style.visibility = 'hidden';
+            }, 2000);
+        }
+        alertBox.success('Link Copied', 'Profile link copied to clipboard');
+    }
+
+    function fallbackCopyProfile(url) {
+        const el = document.createElement('textarea');
+        el.value = url;
+        el.style.position = 'fixed';
+        el.style.opacity = '0';
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        showTooltipAndAlert(url);
+    }
 });
 
 // ── BRAND NEW: AI Gemini Real Estate Description Generator Executor ──
@@ -1819,46 +1862,3 @@ window.generateAIDescription = async function(mode) {
             triggerBellShake();
         }
     }, 5000);
-
-    // ── Profile Sharing Controls ──────────────────────────
-    window.copyProfileLink = function () {
-        if (!currentAgentId) {
-            alertBox.warning('Profile Loading', 'Profile details are still loading.');
-            return;
-        }
-
-        const url = `${window.location.origin}/agent?id=${currentAgentId}`;
-
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url)
-                .then(() => showTooltipAndAlert(url))
-                .catch(() => fallbackCopyProfile(url));
-        } else {
-            fallbackCopyProfile(url);
-        }
-    };
-
-    function showTooltipAndAlert(url) {
-        const tooltip = document.getElementById('shareTooltip');
-        if (tooltip) {
-            tooltip.style.opacity = '1';
-            tooltip.style.visibility = 'visible';
-            setTimeout(() => {
-                tooltip.style.opacity = '0';
-                tooltip.style.visibility = 'hidden';
-            }, 2000);
-        }
-        alertBox.success('Link Copied', 'Profile link copied to clipboard');
-    }
-
-    function fallbackCopyProfile(url) {
-        const el = document.createElement('textarea');
-        el.value = url;
-        el.style.position = 'fixed';
-        el.style.opacity = '0';
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand('copy');
-        document.body.removeChild(el);
-        showTooltipAndAlert(url);
-    }
