@@ -14,6 +14,7 @@
   "dependencies": {
     "@google/genai": "^2.7.0",
     "@huggingface/transformers": "^4.2.0",
+    "apify-client": "^2.23.4",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
     "chromadb": "^3.4.3",
@@ -30,7 +31,7 @@
     "helmet": "^8.0.0",
     "mongoose": "^8.7.3",
     "multer": "^2.1.1",
-    "node-cron": "^4.2.1",
+    "node-cron": "^4.6.0",
     "nodemailer": "^6.9.14",
     "sharp": "^0.34.5",
     "smile-identity-core": "^3.1.0",

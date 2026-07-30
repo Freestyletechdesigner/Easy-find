@@ -1,6 +1,7 @@
 ﻿const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const User = require('../model/User.js');
 const rateLimit = require('express-rate-limit');
 const ADMIN = require('../model/ADMIN.js');
@@ -55,43 +56,55 @@ module.exports = function(app) {
         return { valid: true };
     }
 
-    // Signup endpoint
+    // Signup endpoint - Modified to use Google authentication
     app.post('/api/signup', authLimiter, async (req, res) => {
         try {
-            const { name, email, number, password } = req.body;
+            const { googleToken, number } = req.body;
 
-            if (!name || !email || !number || !password) {
-                return res.status(400).json({ success: false, message: 'All fields are required' });
-            }
-
-            if (!/^[a-zA-Z\s\-']{2,50}$/.test(name.trim())) {
-                return res.status(400).json({ success: false, message: 'Name must contain only letters, spaces, hyphens, and apostrophes (2-50 characters)' });
-            }
-
-            if (!isValidEmail(email.trim())) {
-                return res.status(400).json({ success: false, message: 'Please provide a valid email address' });
+            if (!googleToken || !number) {
+                return res.status(400).json({ success: false, message: 'Google authentication token and phone number are required' });
             }
 
             if (!isValidPhoneNumber(number)) {
                 return res.status(400).json({ success: false, message: 'Please provide a valid phone number (10-15 digits)' });
             }
 
-            const passwordValidation = isValidPassword(password);
-            if (!passwordValidation.valid) {
-                return res.status(400).json({ success: false, message: passwordValidation.message });
+            let name = '';
+            let email = '';
+
+            // 1. VERIFY GOOGLE TOKEN AND EXTRACT NAME/EMAIL
+            try {
+                const ticket = await client.verifyIdToken({
+                    idToken: googleToken,
+                    audience: process.env.GOOGLE_CLIENT_ID,
+                });
+                const payload = ticket.getPayload();
+                
+                if (!payload || !payload.email || !payload.name) {
+                    return res.status(400).json({ success: false, message: 'Invalid Google token payload' });
+                }
+                
+                email = payload.email.trim().toLowerCase();
+                name = payload.name.trim();
+            } catch (googleError) {
+                console.error('Google token verification failed during signup:', googleError);
+                return res.status(401).json({ success: false, message: 'Google authentication failed' });
             }
 
             // Check if email already exists
-            const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
+            const existingUser = await User.findOne({ email });
             if (existingUser) {
                 return res.status(400).json({ success: false, message: 'Email address is already registered' });
             }
 
+            // Generate a secure random password to satisfy the database schema constraints
+            const randomPassword = crypto.randomBytes(16).toString('hex') + 'Aa1!';
+
             // Create and save new user (password hashed by pre-save hook)
             const newUser = new User({
-                name: name.trim(),
-                email: email.trim().toLowerCase(),
-                password,
+                name,
+                email,
+                password: randomPassword,
                 number: String(number).replace(/\D/g, ''),
                 status: 'active',
                 registrationDate: new Date(),
@@ -179,7 +192,7 @@ module.exports = function(app) {
                     return res.status(401).json({ success: false, message: 'Google authentication failed login manual' });
                 }
             } else {
-                // STANDARD PASSWORD PATHWAY
+                // STANDARD PASSWORD PATHWAY (Admins only)
                 if (!email || !password) {
                     return res.status(400).json({ success: false, message: 'Email and password are required' });
                 }
@@ -216,6 +229,14 @@ module.exports = function(app) {
             }
     
             // 3. CHECK IF ACCOUNT IS A STANDARD USER
+            // Standard users are only allowed to log in via Google
+            if (!googleToken) {
+                return res.status(401).json({ 
+                    success: false, 
+                    message: 'Standard users must log in using Google authentication' 
+                });
+            }
+
             const user = await User.findOne({ email: targetEmail });
             if (!user) {
                 return res.status(401).json({ success: false, message: 'Invalid email or password.' });
@@ -223,14 +244,6 @@ module.exports = function(app) {
     
             if (user.status !== 'active') {
                 return res.status(401).json({ success: false, message: 'Account is inactive. Please contact support.' });
-            }
-    
-            // If it's a standard password login, verify the password
-            if (!googleToken) {
-                const isPasswordValid = await user.comparePassword(password);
-                if (!isPasswordValid) {
-                    return res.status(401).json({ success: false, message: 'Invalid email or password' });
-                }
             }
     
             // Setup User Session and Update Analytics Data

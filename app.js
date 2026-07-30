@@ -17,6 +17,7 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
+const cron = require('node-cron');
 
 // Only trust proxy in production — on localhost this breaks req.ip and rate limiting
 if (process.env.NODE_ENV === 'production') {
@@ -136,7 +137,7 @@ const NIN_VERIFICATION = require('./routes/agent-verification.js');
 const PROJECTS = require('./routes/projects.js');
 const COMMENT = require('./routes/comment.js');
 const TRANSACTIONS = require('./routes/transactions.js');
-
+const { runPipeline } = require('./routes/runPipeline.js');
 // Database schema
 const PageViews = require('./model/PageViews.js');
 const VisitorLog = require('./model/VisitorLog.js');
@@ -510,6 +511,13 @@ app.use((err, req, res, next) => {
 
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));
+});
+console.log('Initial startup: triggering background scraper pipeline...');
+runPipeline();
+//  Schedule to run every hour (at the start of every hour)
+cron.schedule('0 * * * *', () => {
+  console.log('Running automated background scraper pipeline...');
+  runPipeline();
 });
 
 server.listen(process.env.PORT || 9000, '0.0.0.0', () => console.log(process.env.APP_URL || 'http://localhost:9000'))
