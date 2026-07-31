@@ -512,10 +512,14 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '404.html'));
 });
-//  Schedule to run every hour (at the start of every hour)
+// Schedule to run every hour (at the start of every hour)
 cron.schedule('0 * * * *', () => {
   console.log('Running automated background scraper pipeline...');
-  runPipeline();
+  
+  // Appending .catch() prevents unhandled promise rejections from crashing your app
+  runPipeline().catch(cronError => {
+    console.error('[CRON ERROR] Background scraper pipeline failed:', cronError);
+  });
 });
 
 server.listen(process.env.PORT || 9000, '0.0.0.0', () => console.log(process.env.APP_URL || 'http://localhost:9000'))
