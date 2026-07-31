@@ -22,7 +22,16 @@ async function runPipeline() {
 
     console.log('Starting Facebook Scraper Actor...');
     const run = await apify.actor('apify/facebook-groups-scraper').call({
-      startUrls: [{ url: 'https://www.facebook.com/groups/308348807661635/?ref=share&mibextid=NSMWBT' }],
+      startUrls: [
+        { url: 'https://www.facebook.com/groups/308348807661635/?ref=share&mibextid=NSMWBT' },
+        { url: 'https://www.facebook.com/groups/624269623010248/?ref=share&mibextid=NSMWBT' },
+        { url: 'https://www.facebook.com/groups/1163335040867633/?ref=share&mibextid=NSMWBT' },
+        { url: 'https://www.facebook.com/groups/134608730468927/?ref=share&mibextid=NSMWBT' },
+        { url: 'https://www.facebook.com/groups/1582691668689207/?ref=share&mibextid=NSMWBT' },
+        { url: 'https://www.facebook.com/groups/901000727283894/?ref=share&mibextid=NSMWBT' },
+        { url: 'https://www.facebook.com/groups/1199008991517758/?ref=share&mibextid=NSMWBT' },
+        { url: 'https://www.facebook.com/groups/308348807661635/?ref=share&mibextid=NSMWBT' }
+      ],
       maxPosts: 10
     });
 
