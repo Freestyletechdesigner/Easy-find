@@ -118,9 +118,20 @@ app.use((req, res, next) => {
   }
   next();
 });
-
+// Database
 const connectDB = require('./db.js');
-connectDB().catch(err => { console.error('Failed to connect to DB:', err); process.exit(1); });
+connectDB()
+  .then(() => {
+    // This tells the server to run the scraper as soon as Atlas connects
+    console.log('Database connected successfully. Triggering initial background scraper pipeline...');
+    runPipeline().catch(err => {
+      console.error('[STARTUP ERROR] Initial scraper pipeline failed:', err);
+    });
+  })
+  .catch(err => { 
+    console.error('Failed to connect to DB:', err); 
+    process.exit(1); 
+  });
 // API END POINT
 const signup = require('./routes/signup.js');
 const messageAPI = require('./routes/message.js');
