@@ -1533,14 +1533,31 @@ window.confirmMapLocation = function () {
     initializeDashboard();
 
     // ── Profile Sharing Controls ──────────────────────────
-    window.copyProfileLink = function () {
+    window.copyProfileLink = async function () {
+        // Ensure the agent ID was captured during checkAuth
         if (!currentAgentId) {
-            alertBox.warning('Profile Loading', 'Profile details are still loading.');
+            alertBox.warning('Profile Loading', 'Profile details are still loading. Please wait a moment.');
             return;
         }
 
-        const url = `${window.location.origin}/agent?id=${currentAgentId}`;
+        const url = `${window.location.origin}/agent-profile/?id=${currentAgentId}`;
 
+        // 1. Try Native System Share (WhatsApp, Instagram, etc.)
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Check out my property portfolio',
+                    text: 'View my verified listings on EasyFind.',
+                    url: url
+                });
+                return; // Exit if share was successful
+            } catch (err) {
+                // If user cancels share or error occurs, fall back to copy to clipboard
+                console.log('Native share failed or cancelled, falling back to copy.');
+            }
+        }
+
+        // 2. Clipboard Fallback (For Desktop or unsupported browsers)
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(url)
                 .then(() => showTooltipAndAlert(url))
@@ -1550,6 +1567,7 @@ window.confirmMapLocation = function () {
         }
     };
 
+    // Helper to show the visual "Link Copied" feedback
     function showTooltipAndAlert(url) {
         const tooltip = document.getElementById('shareTooltip');
         if (tooltip) {
@@ -1560,7 +1578,7 @@ window.confirmMapLocation = function () {
                 tooltip.style.visibility = 'hidden';
             }, 2000);
         }
-        alertBox.success('Link Copied', 'Profile link copied to clipboard');
+        alertBox.success('Link Copied', 'Your portfolio link has been copied to the clipboard.');
     }
 
     function fallbackCopyProfile(url) {
@@ -1570,9 +1588,13 @@ window.confirmMapLocation = function () {
         el.style.opacity = '0';
         document.body.appendChild(el);
         el.select();
-        document.execCommand('copy');
+        try {
+            document.execCommand('copy');
+            showTooltipAndAlert(url);
+        } catch (err) {
+            alertBox.error('Copy Failed', 'Please copy the URL manually: ' + url);
+        }
         document.body.removeChild(el);
-        showTooltipAndAlert(url);
     }
 });
 
