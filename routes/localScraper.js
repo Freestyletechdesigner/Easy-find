@@ -11,7 +11,7 @@
  *  5. Runs Gemini AI on each post, checks completeness, saves to ScrapedAgent
  *
  * Completeness rule: skip if missing price, phone number, or bedrooms
- * (land & commercial/shop listings are exempt from the bedroom requirement)
+ * (land & commercial/shop listings are exempt from the bedroom requirement).
  */
 
 const dns = require('node:dns');
