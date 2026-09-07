@@ -147,7 +147,6 @@ const PROPERTY_REPORT = require('./routes/property-report.js');
 const NIN_VERIFICATION = require('./routes/agent-verification.js');
 const PROJECTS = require('./routes/projects.js');
 const TRANSACTIONS = require('./routes/transactions.js');
-const { runPipeline } = require('./routes/runPipeline.js');
 const COMMENT = require('./routes/comment.js');
 // Database schema
 const PageViews = require('./model/PageViews.js');

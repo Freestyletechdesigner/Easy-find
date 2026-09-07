@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Find</title>
+
+    <link rel="stylesheet" href="style.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+
+<body>
+
+    <div class="chat-app">
+
+        <!-- =========================
+             LEFT SIDEBAR
+        ========================== -->
+        <aside class="sidebar">
+
+            <div class="logo">
+                <div class="logo-icon">
+                    <i>E</i>
+                </div>
+
+                <h1>asy Find </h1>
+            </div>
+
+
+            <nav class="sidebar-nav">
+
+                <button class="nav-item active">
+                    <i class="fa-regular fa-message"></i>
+                    <span>Chats</span>
+                </button>
+
+                <button class="nav-item">
+                    <i class="fa-solid fa-user-group"></i>
+                    <span>Groups</span>
+                </button>
+
+                <button class="nav-item">
+                    <i class="fa-regular fa-user"></i>
+                    <span>Friends</span>
+                </button>
+
+                <button class="nav-item">
+                    <i class="fa-regular fa-bookmark"></i>
+                    <span>Saved Messages</span>
+                </button>
+
+                <button class="nav-item">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </button>
+
+            </nav>
+
+
+            <!-- Current User -->
+            <div class="current-user">
+
+                <div class="user-avatar">
+                    <img src="https://i.pravatar.cc/100?img=12" alt="John Doe">
+                    <span class="online"></span>
+                </div>
+
+                <div class="user-info">
+                    <h3>John Doe</h3>
+                    <p>
+                        <span class="status-dot"></span>
+                        Online
+                    </p>
+                </div>
+
+                <button class="user-menu">
+                    <i class="fa-solid fa-chevron-down"></i>
+                </button>
+
+            </div>
+
+
+            <!-- Theme -->
+            <div class="theme-toggle">
+
+                <div>
+                    <i class="fa-regular fa-moon"></i>
+                    <span>Theme</span>
+                </div>
+
+                <label class="switch">
+                    <input type="checkbox">
+                    <span class="slider"></span>
+                </label>
+
+            </div>
+
+        </aside>
+
+
+        <!-- =========================
+             CONVERSATION LIST 
+        ========================== -->
+        <section class="conversation-panel">
+
+            <div class="conversation-header">
+
+                <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input
+                        type="text"
+                        placeholder="Search conversations..."
+                    >
+                    <button class="tablet-menu-button" aria-label="Open menu">
+                      <i class="fa-solid fa-bars"></i>
+                    </button>
+                </div>
+
+                <div class="recent-header">
+                    <h2>Recent</h2>
+
+                    <button class="new-chat">
+                        New Chat
+                    </button>
+                </div>
+
+            </div>
+
+
+            <div class="conversation-list">
+
+                <!-- Sarah -->
+                <div class="conversation active">
+
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=47" alt="Sarah Johnson">
+                        <span class="avatar-online"></span>
+                    </div>
+
+                    <div class="conversation-info">
+                        <div class="conversation-name">
+                            <h3>Sarah Johnson</h3>
+                            <span>10:30 AM</span>
+                        </div>
+
+                        <div class="conversation-message">
+                            <p>Hey! How are you doing?</p>
+                            <span class="unread-count">2</span>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <!-- Mike -->
+                <div class="conversation">
+
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=11" alt="Mike Smith">
+                    </div>
+
+                    <div class="conversation-info">
+
+                        <div class="conversation-name">
+                            <h3>Mike Smith</h3>
+                            <span>9:15 AM</span>
+                        </div>
+
+                        <div class="conversation-message">
+                            <p>Let's catch up later</p>
+                            <span class="unread-count">1</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- David -->
+                <div class="conversation">
+
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=13" alt="David Brown">
+                    </div>
+
+                    <div class="conversation-info">
+
+                        <div class="conversation-name">
+                            <h3>David Brown</h3>
+                            <span>Yesterday</span>
+                        </div>
+
+                        <div class="conversation-message">
+                            <p>That sounds great!</p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Emily -->
+                <div class="conversation">
+
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=44" alt="Emily Davis">
+                    </div>
+
+                    <div class="conversation-info">
+
+                        <div class="conversation-name">
+                            <h3>Emily Davis</h3>
+                            <span>Yesterday</span>
+                        </div>
+
+                        <div class="conversation-message">
+                            <p>See you tomorrow 😊</p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Design Team -->
+                <div class="conversation">
+
+                    <div class="avatar group-avatar">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+
+                    <div class="conversation-info">
+
+                        <div class="conversation-name">
+                            <h3>Design Team</h3>
+                            <span>Mon</span>
+                        </div>
+
+                        <div class="conversation-message">
+                            <p>Mike: New mockups are ready</p>
+                            <span class="unread-count">3</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Alex -->
+                <div class="conversation">
+
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=12" alt="Alex Wilson">
+                    </div>
+
+                    <div class="conversation-info">
+
+                        <div class="conversation-name">
+                            <h3>Alex Wilson</h3>
+                            <span>Mon</span>
+                        </div>
+
+                        <div class="conversation-message">
+                            <p>Thanks!</p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Jessica -->
+                <div class="conversation">
+
+                    <div class="avatar">
+                        <img src="https://i.pravatar.cc/100?img=49" alt="Jessica Lee">
+                        <span class="avatar-online"></span>
+                    </div>
+
+                    <div class="conversation-info">
+
+                        <div class="conversation-name">
+                            <h3>Jessica Lee</h3>
+                            <span>Sun</span>
+                        </div>
+
+                        <div class="conversation-message">
+                            <p>
+                                <i class="fa-regular fa-image"></i>
+                                Photo
+                            </p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Marketing Group -->
+                <div class="conversation">
+
+                    <div class="avatar group-avatar">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+
+                    <div class="conversation-info">
+
+                        <div class="conversation-name">
+                            <h3>Marketing Group</h3>
+                            <span>Sun</span>
+                        </div>
+
+                        <div class="conversation-message">
+                            <p>Emily: Great work team! 👏</p>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =========================
+             MAIN CHAT
+        ========================== -->
+        <main class="chat-area">
+
+            <!-- Chat Header -->
+            <header class="chat-header">
+
+                <button class="back-button">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+
+                <div class="chat-user">
+
+                    <div class="chat-avatar">
+                        <img src="https://i.pravatar.cc/100?img=47" alt="Sarah Johnson">
+                        <span class="avata"></span>
+                    </div>
+
+                    <div>
+                        <h2>Sarah Johnson</h2>
+
+                        <p>
+                            <span class="status-dot"></span>
+                            Online
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div class="chat-actions">
+
+                    <button>
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </button>
+
+                    <button>
+                        <i class="fa-solid fa-phone"></i>
+                    </button>
+
+                    <button>
+                        <i class="fa-solid fa-video"></i>
+                    </button>
+
+                    <button>
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                    </button>
+
+                </div>
+
+            </header>
+
+
+            <!-- Messages -->
+            <div class="messages">
+
+                <div class="date-divider">
+                    <span>Today</span>
+                </div>
+
+
+                <!-- Received -->
+                <div class="message received">
+
+                    <div class="message-bubble">
+
+                        <p>Hey! 👋</p>
+
+                        <span class="message-time">
+                            10:28 AM
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Received -->
+                <div class="message received">
+
+                    <div class="message-bubble">
+
+                        <p>How are you doing?</p>
+
+                        <span class="message-time">
+                            10:28 AM
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Sent -->
+                <div class="message sent">
+
+                    <div class="message-bubble">
+
+                        <p>I'm good, thanks! 😊</p>
+
+                        <span class="message-time">
+                            10:29 AM
+                            <i class="fa-solid fa-check-double"></i>
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Sent -->
+                <div class="message sent">
+
+                    <div class="message-bubble">
+
+                        <p>How about you?</p>
+
+                        <span class="message-time">
+                            10:29 AM
+                            <i class="fa-solid fa-check-double"></i>
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Received -->
+                <div class="message received">
+
+                    <div class="message-bubble">
+
+                        <p>I'm doing great!</p>
+
+                        <span class="message-time">
+                            10:29 AM
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Received -->
+                <div class="message received">
+
+                    <div class="message-bubble">
+
+                        <p>
+                            Just finished working on the new project.
+                            What are your plans for the weekend?
+                        </p>
+
+                        <span class="message-time">
+                            10:30 AM
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Sent -->
+                <div class="message sent">
+
+                    <div class="message-bubble">
+
+                        <p>
+                            Nice! I'm planning to go hiking
+                            with some friends 🥾
+                        </p>
+
+                        <span class="message-time">
+                            10:30 AM
+                            <i class="fa-solid fa-check-double"></i>
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Sent -->
+                <div class="message sent">
+
+                    <div class="message-bubble">
+
+                        <p>Want to join?</p>
+
+                        <span class="message-time">
+                            10:30 AM
+                            <i class="fa-solid fa-check-double"></i>
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Received -->
+                <div class="message received">
+
+                    <div class="message-bubble">
+
+                        <p>
+                            That sounds awesome! Count me in! 🙌
+                        </p>
+
+                        <span class="message-time">
+                            10:31 AM
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Message Input -->
+            <form class="message-input">
+
+                <button type="button" class="attachment-button">
+                    <i class="fa-solid fa-paperclip"></i>
+                </button>
+
+                <input
+                    type="text"
+                    placeholder="Type a message..."
+                    autocomplete="off"
+                >
+
+                <button type="button" class="emoji-button">
+                    <i class="fa-regular fa-face-smile"></i>
+                </button>
+
+                <button type="submit" class="send-button">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+
+            </form>
+
+        </main>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>
+```

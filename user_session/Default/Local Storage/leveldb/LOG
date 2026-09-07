@@ -1,0 +1,6 @@
+2026/08/30-17:06:06.898 2668 Reusing MANIFEST C:\Users\Dell PC\Desktop\web e\user_session\Default\Local Storage\leveldb/MANIFEST-000001
+2026/08/30-17:06:06.910 2668 Recovering log #49
+2026/08/30-17:06:06.913 2668 Reusing old log C:\Users\Dell PC\Desktop\web e\user_session\Default\Local Storage\leveldb/000049.log 
+2026/08/30-17:11:33.173 2668 Level-0 table #54: started
+2026/08/30-17:11:33.179 2668 Level-0 table #54: 22189 bytes OK
+2026/08/30-17:11:33.181 2668 Delete type=0 #49
