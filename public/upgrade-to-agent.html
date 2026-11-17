@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Become an Agent - Easy Find</title>
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(circle at 10% 20%, rgba(4,84,69,1) 0%, rgba(2,43,35,1) 90%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 12px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 24px;
+            box-shadow: 0 30px 70px rgba(0,0,0,0.45);
+            max-width: 860px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 55% 45%;
+            overflow: hidden;
+            animation: fadeIn .5s cubic-bezier(.16,1,.3,1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* LEFT */
+        .left {
+            padding: 50px 44px;
+            background: #f9fafb;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .left .icon {
+            width: 56px; height: 56px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #059669, #047857);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: #fff;
+            margin-bottom: 24px;
+        }
+
+        .left h1 { font-size: 26px; font-weight: 700; color: #111827; margin-bottom: 10px; }
+        .left p  { color: #6b7280; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }
+
+        .left ul { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+        .left ul li {
+            display: flex; align-items: flex-start; gap: 10px;
+            font-size: 14px; color: #374151;
+        }
+        .left ul li i { color: #059669; font-size: 14px; margin-top: 2px; flex-shrink: 0; }
+
+        /* RIGHT */
+        .right {
+            padding: 50px 44px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .right h2 { font-size: 22px; font-weight: 700; color: #111827; margin-bottom: 6px; }
+        .right .sub { font-size: 13px; color: #9ca3af; margin-bottom: 28px; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
+
+        .form-group input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1.5px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            color: #111827;
+            background: #f9fafb;
+            transition: border-color .2s;
+            outline: none;
+        }
+        .form-group input:focus { border-color: #059669; background: #fff; }
+
+        .submit-btn {
+            width: 100%;
+            padding: 13px;
+            background: linear-gradient(135deg, #059669, #047857);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity .2s, transform .1s;
+        }
+        .submit-btn:hover   { opacity: .9; }
+        .submit-btn:active  { transform: scale(.98); }
+        .submit-btn:disabled { opacity: .6; cursor: default; }
+
+        .msg {
+            margin-top: 14px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            display: none;
+        }
+        .msg.error   { background: #fef2f2; color: #dc2626; display: block; }
+        .msg.success { background: #f0fdf4; color: #16a34a; display: block; }
+
+        .already-agent {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .already-agent a { color: #059669; font-weight: 600; text-decoration: none; }
+
+        /* not-logged-in state */
+        .not-logged-in {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .not-logged-in i { font-size: 40px; color: #d1d5db; margin-bottom: 16px; display: block; }
+        .not-logged-in p { color: #6b7280; font-size: 14px; margin-bottom: 20px; }
+        .not-logged-in a {
+            display: inline-block;
+            padding: 11px 28px;
+            background: linear-gradient(135deg,#059669,#047857);
+            color: #fff;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        @media (max-width: 640px) {
+            .card { grid-template-columns: 1fr; }
+            .left { display: none; }
+            .right { padding: 40px 28px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <!-- LEFT -->
+    <div class="left">
+        <div class="icon"><i class="fas fa-user-tie"></i></div>
+        <h1>Become an EasyFind Agent</h1>
+        <p>Convert your existing EasyFind account to an agent account and start listing properties today — no new signup needed.</p>
+        <ul>
+            <li><i class="fas fa-check"></i> Post unlimited property listings</li>
+            <li><i class="fas fa-check"></i> Get discovered by renters and buyers in Enugu</li>
+            <li><i class="fas fa-check"></i> Boost your profile for more visibility</li>
+            <li><i class="fas fa-check"></i> Get verified for a trusted badge</li>
+            <li><i class="fas fa-check"></i> Use Fred AI with your agent identity</li>
+        </ul>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right" id="rightPanel">
+        <!-- content injected by JS -->
+    </div>
+</div>
+
+<script>
+const panel = document.getElementById('rightPanel');
+
+async function init() {
+    // Check if user is logged in
+    try {
+        // Check agent session first
+        const agentRes = await fetch('/api/fred/agent-session');
+        const agentData = await agentRes.json();
+
+        if (agentData.loggedIn && agentData.type === 'agent') {
+            panel.innerHTML = `
+                <div class="not-logged-in">
+                    <i class="fas fa-check-circle" style="color:#059669;"></i>
+                    <p>You already have an agent account as <strong>${agentData.name}</strong>.</p>
+                    <a href="/agent-loged">Go to Dashboard</a>
+                </div>`;
+            return;
+        }
+
+        const sessionRes = await fetch('/api/user/session');
+        const sessionData = await sessionRes.json();
+
+        if (!sessionData.loggedIn) {
+            panel.innerHTML = `
+                <div class="not-logged-in">
+                    <i class="fas fa-user-lock"></i>
+                    <p>You need to be signed in with a regular EasyFind account to upgrade to an agent.</p>
+                    <a href="/easyfind-ai">Sign in with Google</a>
+                </div>`;
+            return;
+        }
+
+        // Fetch user name
+        const profileRes = await fetch('/api/user/profile');
+        const profileData = await profileRes.json();
+        const name = profileData?.name || 'there';
+
+        showForm(name);
+    } catch (_) {
+        panel.innerHTML = `<p style="color:#dc2626;font-size:14px;">Could not load page. Please refresh.</p>`;
+    }
+}
+
+function showForm(name) {
+    panel.innerHTML = `
+        <h2>Hey ${name} 👋</h2>
+        <p class="sub">Enter your phone number to activate your agent account.</p>
+        <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" placeholder="08012345678" maxlength="11" inputmode="numeric">
+        </div>
+        <button class="submit-btn" id="submitBtn" onclick="upgrade()">
+            <i class="fas fa-arrow-right"></i> Upgrade to Agent
+        </button>
+        <div class="msg" id="msg"></div>
+        <div class="already-agent">
+            Want a fresh agent account instead? <a href="/signup-agent">Sign up here</a>
+        </div>`;
+}
+
+async function upgrade() {
+    const phone = document.getElementById('phone').value.trim();
+    const btn   = document.getElementById('submitBtn');
+    const msg   = document.getElementById('msg');
+
+    msg.className = 'msg';
+    msg.textContent = '';
+
+    if (!/^0\d{10}$/.test(phone)) {
+        msg.className = 'msg error';
+        msg.textContent = 'Please enter a valid 11-digit Nigerian phone number starting with 0.';
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Upgrading…';
+
+    try {
+        const res  = await fetch('/api/user/upgrade-to-agent', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ phone })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            msg.className = 'msg success';
+            msg.textContent = 'Account upgraded successfully! Redirecting to your dashboard…';
+            setTimeout(() => window.location.href = '/agent-loged', 1800);
+        } else {
+            msg.className = 'msg error';
+            msg.textContent = data.message || 'Something went wrong. Please try again.';
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-arrow-right"></i> Upgrade to Agent';
+        }
+    } catch (_) {
+        msg.className = 'msg error';
+        msg.textContent = 'Network error. Please check your connection and try again.';
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-arrow-right"></i> Upgrade to Agent';
+    }
+}
+
+// Allow Enter key to submit
+document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('phone')) upgrade();
+});
+
+init();
+</script>
+
+</body>
+</html>

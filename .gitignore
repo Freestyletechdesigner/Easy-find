@@ -1,0 +1,40 @@
+node_modules/
+.env
+*.log
+
+# ChromaDB — rebuilt on VPS via seed_chromadb.py
+
+# Python venv — created by deploy.sh on the VPS
+Fred/
+
+# OS / editor
+.vscode/
+.DS_Store
+Thumbs.db
+
+# PM2 logs (generated on server)
+.pm2/
+
+# SearXNG Docker volumes (generated on server)
+searxng/data/
+
+# WhatsApp session — contains auth credentials, never commit
+whatsapp-session/
+
+user_session/
+
+# Archive file (fixed: was incorrectly prefixed with a dot)
+easyfind.tar.gz
+
+# Face recognition model binaries — download via download-face-models.js on server
+face-models/
+
+# User-uploaded profile images — stored on server, not in repo
+user-profiles/
+
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Local-only folder
+PC/

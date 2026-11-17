@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fluid AI Search Agent</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #0f172a;
+            margin: 0;
+            perspective: 600px; /* Gives human-like tilts depth */
+        }
+
+        .search-agent {
+            position: relative;
+            width: 140px;
+            height: 160px;
+        }
+
+        /* Torso leaning slightly */
+        .body {
+            position: absolute;
+            bottom: 25px;
+            left: 40px;
+            width: 60px;
+            height: 55px;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-radius: 24px 24px 18px 18px;
+            box-shadow: 0 10px 25px rgba(29, 78, 216, 0.3);
+        }
+
+        /* Human-like Head (Smooth tilt & scan) */
+        .head {
+            position: absolute;
+            top: 22px;
+            left: 32px;
+            width: 76px;
+            height: 62px;
+            background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+            border-radius: 28px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            
+            /* Core human motion settings */
+            transform-origin: bottom center;
+            animation: humanHeadMove 5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+            
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 5;
+        }
+
+        /* Visor / Face Shield */
+        .visor {
+            width: 56px;
+            height: 32px;
+            background: #1e293b;
+            border-radius: 14px;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 8px;
+            box-sizing: border-box;
+            transition: transform 0.3s ease;
+        }
+
+        /* Glowing Intelligent Eyes */
+        .eye {
+            width: 10px;
+            height: 10px;
+            background-color: #38bdf8;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #38bdf8;
+            animation: naturalBlink 3.5s infinite;
+        }
+
+        /* Left Arm (Relaxed, micro-adjusting for balance) */
+        .arm-left {
+            position: absolute;
+            left: 22px;
+            top: 80px;
+            width: 16px;
+            height: 32px;
+            background: linear-gradient(to bottom, #e2e8f0, #cbd5e1);
+            border-radius: 8px;
+            transform-origin: top center;
+            animation: gentleBalance 2.5s ease-in-out infinite alternate;
+        }
+
+        /* Right Arm Assembly holding the Search Icon */
+        .arm-right-container {
+            position: absolute;
+            right: 18px;
+            top: 76px;
+            width: 45px;
+            height: 60px;
+            transform-origin: 10px 10px; /* Shoulder joint */
+            animation: humanArmScan 4s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        /* Physical Arm segment */
+        .arm-right {
+            width: 16px;
+            height: 30px;
+            background: linear-gradient(to bottom, #cbd5e1, #94a3b8);
+            border-radius: 8px;
+            transform: rotate(-25deg);
+        }
+
+        /* Hand wrapping tightly around the magnifying glass handle */
+        .hand-grip {
+            position: absolute;
+            left: 8px;
+            top: 22px;
+            width: 18px;
+            height: 18px;
+            background: #cbd5e1;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Search Magnifying Glass intersecting logically with the hand */
+        .magnifying-glass {
+            position: absolute;
+            bottom: 8px; /* Pulled up so hand holds the middle/bottom of handle */
+            left: -4px;
+            width: 26px;
+            height: 26px;
+            border: 4px solid #f59e0b;
+            border-radius: 50%;
+            background: rgba(245, 158, 11, 0.08);
+            box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+            transform: rotate(-15deg);
+        }
+
+        /* Handle extending downwards clean through the grip point */
+        .magnifying-glass::after {
+            content: '';
+            position: absolute;
+            top: 24px;
+            left: 11px;
+            width: 4px;
+            height: 22px;
+            background-color: #d97706;
+            border-radius: 2px;
+        }
+
+        /* Ground Soft Shadow mimicking breathing distance */
+        .shadow {
+            position: absolute;
+            bottom: 12px;
+            left: 45px;
+            width: 50px;
+            height: 6px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            animation: naturalShadow 5s ease-in-out infinite;
+        }
+
+        /* --- Sophisticated Human Animations --- */
+
+        /* Simulates looking down, looking side to side, and pausing to look up */
+        @keyframes humanHeadMove {
+            0%, 100% {
+                transform: translateY(0) rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+            }
+            20% {
+                transform: translateY(2px) rotateX(8deg) rotateY(-10deg) rotateZ(-2deg); /* Looking down & left */
+            }
+            40% {
+                transform: translateY(-1px) rotateX(-4deg) rotateY(12deg) rotateZ(3deg); /* Tilting up & right */
+            }
+            65% {
+                transform: translateY(1px) rotateX(6deg) rotateY(8deg) rotateZ(1deg); /* Nodding along */
+            }
+            85% {
+                transform: translateY(-2px) rotateX(-6deg) rotateY(-6deg) rotateZ(-3deg); /* Curious lean back */
+            }
+        }
+
+        /* Smooth peering arm motion (pivots dynamically at the shoulder) */
+        @keyframes humanArmScan {
+            0%, 100% {
+                transform: rotate(0deg) translateY(0);
+            }
+            30% {
+                transform: rotate(-18deg) translateX(-3px) translateY(-2px); /* Bringing tool closer to eyes */
+            }
+            70% {
+                transform: rotate(12deg) translateX(2px) translateY(4px); /* Pushing tool lower down */
+            }
+        }
+
+        /* Subtle organic counter-balance movement for left side */
+        @keyframes gentleBalance {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(8deg) translateY(-1px); }
+        }
+
+        /* Human eye blink timeline */
+        @keyframes naturalBlink {
+            0%, 88%, 94%, 100% {
+                transform: scaleY(1);
+            }
+            91%, 97% {
+                transform: scaleY(0.1);
+            }
+        }
+
+        /* Matches the head breathing cycles */
+        @keyframes naturalShadow {
+            0%, 100% { transform: scaleX(1); opacity: 0.7; }
+            40% { transform: scaleX(1.1); opacity: 0.5; }
+            85% { transform: scaleX(0.9); opacity: 0.8; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="search-agent">
+        <div class="shadow"></div>
+        <div class="body"></div>
+        <div class="head">
+            <div class="visor">
+                <div class="eye"></div>
+                <div class="eye"></div>
+            </div>
+        </div>
+        <div class="arm-left"></div>
+        <div class="arm-right-container">
+            <div class="arm-right"></div>
+            <div class="hand-grip">
+                <div class="magnifying-glass"></div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

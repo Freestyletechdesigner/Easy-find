@@ -1,0 +1,101 @@
+# SearXNG settings for Fred (EasyFind Nigeria)
+# Docs: https://docs.searxng.org/admin/settings/settings.html
+
+use_default_settings: true
+
+general:
+  instance_title: "EasyFind SearXNG"
+  privacypolicy_url: false
+  contact_url: false
+  enable_metrics: false
+
+server:
+  port: 8080
+  bind_address: "0.0.0.0"
+  secret_key: "CHANGE_THIS_TO_A_RANDOM_SECRET"   # ← auto-replaced by deploy.sh
+  base_url: "http://localhost:8080/"
+  limiter: false          # Fred is the only client — no rate limiting needed
+  image_proxy: false
+
+ui:
+  static_use_hash: true
+  default_locale: "en"
+  theme_args:
+    simple_style: "auto"
+
+search:
+  safe_search: 0
+  autocomplete: ""
+  default_lang: "en"
+  # How long to wait for each engine (seconds)
+  timeout_limit: 6.0
+  formats:
+    - html
+    - json                # Fred calls /search?format=json
+
+# ── Engines ───────────────────────────────────────────────────────────────────
+# Keep only fast, reliable engines.
+# For property searches Fred appends Nigerian property site names to the query
+# so general search engines return targeted results without needing custom engines.
+engines:
+  - name: google
+    engine: google
+    shortcut: g
+    disabled: false
+    timeout: 5.0
+
+  - name: bing
+    engine: bing
+    shortcut: b
+    disabled: false
+    timeout: 5.0
+
+  - name: duckduckgo
+    engine: duckduckgo
+    shortcut: d
+    disabled: false
+    timeout: 5.0
+
+  - name: brave
+    engine: brave
+    shortcut: br
+    disabled: false
+    timeout: 5.0
+
+  # These add noise for property searches — disable them
+  - name: wikidata
+    engine: wikidata
+    disabled: true
+  - name: wikipedia
+    engine: wikipedia
+    disabled: true
+  - name: currency
+    engine: currency
+    disabled: true
+  - name: qwant
+    engine: qwant
+    disabled: true
+  - name: startpage
+    engine: startpage
+    disabled: true
+  - name: yahoo
+    engine: yahoo
+    disabled: true
+  - name: reddit
+    engine: reddit
+    disabled: true
+  - name: stackoverflow
+    engine: stackoverflow
+    disabled: true
+  - name: github
+    engine: github
+    disabled: true
+  - name: dockerhub
+    engine: dockerhub
+    disabled: true
+  - name: pypi
+    engine: pypi
+    disabled: true
+  - name: npm
+    engine: npm
+    disabled: true

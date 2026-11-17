@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fred Monitor - Admin</title>
+    <script>
+        if (localStorage.getItem('daynight-theme') === 'carbon') {
+            document.documentElement.classList.add('carbon');
+        }
+    </script>
+    <link rel="stylesheet" href="templatemo-daynight-style.css">
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <style>
+        /* ── Fred Monitor layout ── */
+        .monitor-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 1.5rem;
+            height: calc(100vh - 140px);
+            min-height: 500px;
+        }
+
+        /* ── Chat panel ── */
+        .chat-panel {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-panel-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .chat-panel-header h2 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .fred-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+
+        .status-dot.online  { background: var(--success); box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+        .status-dot.offline { background: var(--danger);  box-shadow: 0 0 0 3px rgba(239,68,68,.2); }
+        .status-dot.thinking{ background: var(--warning); animation: pulse-dot 1s infinite; }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.4; }
+        }
+
+        /* ── Message thread ── */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .msg {
+            display: flex;
+            gap: 0.75rem;
+            max-width: 85%;
+        }
+
+        .msg.user  { align-self: flex-end; flex-direction: row-reverse; }
+        .msg.fred  { align-self: flex-start; }
+        .msg.system{ align-self: center; max-width: 100%; }
+
+        .msg-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            flex-shrink: 0;
+            color: white;
+        }
+
+        .msg.user  .msg-avatar { background: var(--accent); }
+        .msg.fred  .msg-avatar { background: #7C3AED; }
+
+        .msg-bubble {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .msg.user .msg-bubble {
+            background: var(--accent);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .msg.fred .msg-bubble {
+            background: var(--bg-surface);
+            color: var(--text-primary);
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .msg.system .msg-bubble {
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 0.8125rem;
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            padding: 0.5rem 1rem;
+            width: 100%;
+        }
+
+        .msg-time {
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            padding: 0 0.25rem;
+        }
+
+        .msg.user  .msg-time { text-align: right; }
+        .msg.fred  .msg-time { text-align: left; }
+
+        /* Typing indicator */
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0;
+        }
+
+        .typing-indicator.visible { display: flex; }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: bounce 1.2s infinite;
+        }
+
+        .typing-dots span:nth-child(2) { animation-delay: .2s; }
+        .typing-dots span:nth-child(3) { animation-delay: .4s; }
+
+        @keyframes bounce {
+            0%, 60%, 100% { transform: translateY(0); }
+            30%            { transform: translateY(-6px); }
+        }
+
+        /* ── Input bar ── */
+        .chat-input-bar {
+            padding: 1rem 1.25rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.75rem;
+            align-items: flex-end;
+            flex-shrink: 0;
+        }
+
+        .chat-input {
+            flex: 1;
+            resize: none;
+            padding: 0.75rem 1rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+            font-family: inherit;
+            min-height: 44px;
+            max-height: 120px;
+            outline: none;
+            transition: border-color 0.2s;
+            line-height: 1.5;
+        }
+
+        .chat-input:focus { border-color: var(--accent); }
+
+        .chat-input::placeholder { color: var(--text-secondary); }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .send-btn:hover   { background: var(--accent-hover); }
+        .send-btn:active  { transform: scale(0.95); }
+        .send-btn:disabled{ background: var(--bg-surface); color: var(--text-secondary); cursor: not-allowed; }
+
+        .send-btn svg { width: 18px; height: 18px; }
+
+        /* clear history button */
+        .clear-btn {
+            padding: 0.375rem 0.875rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-btn:hover { color: var(--danger); border-color: var(--danger); background: rgba(239,68,68,.05); }
+
+        /* ── Side panel: stats + log ── */
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow: hidden;
+        }
+
+        /* Status card */
+        .fred-info-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .fred-info-card h3 {
+            font-size: 0.9375rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.8125rem;
+        }
+
+        .info-row:last-child { border-bottom: none; }
+
+        .info-row .label { color: var(--text-secondary); }
+        .info-row .value { font-weight: 600; color: var(--text-primary); }
+
+        .value.green  { color: var(--success); }
+        .value.red    { color: var(--danger);  }
+        .value.yellow { color: var(--warning); }
+
+        /* Behaviour log */
+        .log-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .log-card-header {
+            padding: 0.875rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .log-card-header h3 { font-size: 0.9375rem; font-weight: 600; }
+
+        .log-badge {
+            font-size: 0.6875rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            background: var(--accent-light);
+            color: var(--accent);
+        }
+
+        .log-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.75rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 0.625rem;
+            align-items: flex-start;
+            padding: 0.5rem 0.625rem;
+            border-radius: 8px;
+            font-size: 0.8125rem;
+            line-height: 1.4;
+            transition: background 0.15s;
+        }
+
+        .log-entry:hover { background: var(--bg-surface); }
+
+        .log-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+
+        .log-entry.router  .log-icon { background: rgba(56,189,248,.15); color: var(--accent); }
+        .log-entry.pass    .log-icon { background: rgba(34,197,94,.15);  color: var(--success); }
+        .log-entry.warn    .log-icon { background: rgba(245,158,11,.15); color: var(--warning); }
+        .log-entry.block   .log-icon { background: rgba(239,68,68,.15);  color: var(--danger); }
+        .log-entry.info    .log-icon { background: var(--bg-surface);    color: var(--text-secondary); }
+        .log-entry.error   .log-icon { background: rgba(239,68,68,.15);  color: var(--danger); }
+
+        .log-icon svg { width: 11px; height: 11px; }
+
+        .log-body { flex: 1; }
+        .log-body .log-title { font-weight: 600; color: var(--text-primary); }
+        .log-body .log-detail { color: var(--text-secondary); margin-top: 1px; }
+
+        .log-time {
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        /* Quick prompts */
+        .quick-prompts {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0 1.25rem 0.75rem;
+        }
+
+        .quick-btn {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8125rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            background: var(--accent-light);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* ── Metric chips row ── */
+        .metric-row {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-chip {
+            flex: 1;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.875rem;
+            text-align: center;
+        }
+
+        .metric-chip .m-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .metric-chip .m-label {
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+
+        /* ── Usage stats panel ── */
+        .usage-panel {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .usage-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .usage-panel-header h3 { font-size: 0.9375rem; font-weight: 600; }
+
+        .usage-chips {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .usage-chip {
+            flex: 1;
+            min-width: 120px;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.875rem 1rem;
+            text-align: center;
+        }
+
+        .usage-chip .uc-value {
+            font-size: 1.375rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .usage-chip .uc-label {
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+
+        .usage-chip.web-chip   .uc-value { color: var(--accent); }
+        .usage-chip.wa-chip    .uc-value { color: #25D366; }
+        .usage-chip.total-chip .uc-value { color: var(--text-primary); }
+        .usage-chip.anon-chip  .uc-value { color: var(--warning); }
+
+        .usage-tables {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        @media (max-width: 900px) { .usage-tables { grid-template-columns: 1fr; } }
+
+        .usage-table-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .usage-table-card h4 {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            padding: 0.625rem 0.875rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .usage-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+        }
+
+        .usage-table th {
+            text-align: left;
+            padding: 0.5rem 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .usage-table td {
+            padding: 0.5rem 0.875rem;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+            vertical-align: middle;
+        }
+
+        .usage-table tr:last-child td { border-bottom: none; }
+        .usage-table tr:hover td { background: rgba(0,0,0,0.03); }
+
+        .anon-badge {
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0.15rem 0.4rem;
+            border-radius: 10px;
+            background: rgba(245,158,11,.15);
+            color: var(--warning);
+            margin-left: 0.35rem;
+        }
+
+        .wa-badge {
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0.15rem 0.4rem;
+            border-radius: 10px;
+            background: rgba(37,211,102,.15);
+            color: #25D366;
+            margin-left: 0.35rem;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 1100px) {
+            .monitor-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+
+            .side-panel { display: contents; }
+
+            .log-card {
+                height: 340px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .metric-row { flex-wrap: wrap; }
+            .quick-prompts { padding: 0 1rem 0.75rem; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay"></div>
+
+    <!-- Mobile Menu Drawer -->
+    <div class="mobile-menu">
+        <div class="mobile-menu-header">
+            <a href="/admin/dashboard" class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </div>
+                Admin
+            </a>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <nav class="mobile-menu-nav">
+            <a href="/admin/dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+                Dashboard
+            </a>
+            <a href="/admin/projects">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                Projects
+            </a>
+            <a href="/admin/inbox">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                    <polyline points="22,6 12,13 2,6"/>
+                </svg>
+                Inbox
+            </a>
+            <a href="/admin/analytics">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"/>
+                    <line x1="12" y1="20" x2="12" y2="4"/>
+                    <line x1="6" y1="20" x2="6" y2="14"/>
+                </svg>
+                Analytics
+            </a>
+            <a href="/admin/agents">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                Agents
+            </a>
+            <a href="/admin/feedback">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                Feedback
+            </a>
+            <a href="/admin/reports">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                    <line x1="4" y1="22" x2="4" y2="15"/>
+                </svg>
+                Reports
+            </a>
+            <a href="/admin/transactions">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                Transactions
+            </a>
+            <a href="/admin/fred-monitor" class="active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+                </svg>
+                Fred Monitor
+            </a>
+        </nav>
+        <div class="mobile-menu-footer">
+            <a href="/admin/login" class="mobile-logout-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Logout
+            </a>
+            <div class="theme-toggle">
+                <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="5"/>
+                        <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                        <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                    </svg>
+                </button>
+                <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Top Navigation -->
+        <nav class="top-nav">
+            <div class="nav-container">
+                <div class="nav-left">
+                    <a href="/admin/dashboard" class="logo">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                        </div>
+                        Admin
+                    </a>
+                    <div class="nav-menu" style="display:none"></div>
+                </div>
+                <div class="nav-right">
+                    <div class="theme-toggle">
+                        <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                            </svg>
+                        </button>
+                        <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="user-menu">
+                        <div class="user-avatar">E</div>
+                        <span class="user-name">Admin</span>
+                    </button>
+                    <div class="btn-logout" title="Logout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                            <polyline points="16 17 21 12 16 7"/>
+                            <line x1="21" y1="12" x2="9" y2="12"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- Page header -->
+            <div class="page-header" style="margin-bottom:1rem;">
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
+                    <div>
+                        <h1 style="font-size:1.375rem;font-weight:700;margin-bottom:0.2rem;">Fred Monitor</h1>
+                        <p style="color:var(--text-secondary);font-size:0.875rem;">Watch how Fred thinks, routes, and responds in real-time.</p>
+                    </div>
+                    <button id="pingFredBtn" class="btn btn-secondary" onclick="pingFred()" style="font-size:0.8125rem;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.03-5.08"/>
+                        </svg>
+                        Ping Fred
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fred Usage Stats panel -->
+            <div class="usage-panel">
+                <div class="usage-panel-header">
+                    <h3>Fred Usage — Since Last Restart</h3>
+                    <button class="clear-btn" onclick="loadUsageStats()" style="font-size:0.75rem;">↺ Refresh</button>
+                </div>
+                <div class="usage-chips">
+                    <div class="usage-chip total-chip">
+                        <div class="uc-value" id="uTotal">—</div>
+                        <div class="uc-label">Total Unique Users</div>
+                    </div>
+                    <div class="usage-chip web-chip">
+                        <div class="uc-value" id="uWeb">—</div>
+                        <div class="uc-label">Website Users</div>
+                    </div>
+                    <div class="usage-chip wa-chip">
+                        <div class="uc-value" id="uWa">—</div>
+                        <div class="uc-label">WhatsApp Users</div>
+                    </div>
+                    <div class="usage-chip anon-chip">
+                        <div class="uc-value" id="uAnon">—</div>
+                        <div class="uc-label">Anonymous (not signed in)</div>
+                    </div>
+                    <div class="usage-chip">
+                        <div class="uc-value" id="uMsgs" style="color:var(--success)">—</div>
+                        <div class="uc-label">Total Messages</div>
+                    </div>
+                </div>
+                <div class="usage-tables">
+                    <div class="usage-table-card">
+                        <h4>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                            Recent Website Users
+                        </h4>
+                        <div style="overflow-x:auto;max-height:220px;overflow-y:auto;">
+                            <table class="usage-table">
+                                <thead>
+                                    <tr>
+                                        <th>User</th>
+                                        <th>Msgs</th>
+                                        <th>Last Seen</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="webUsersTable">
+                                    <tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:1rem;">Loading…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="usage-table-card">
+                        <h4>
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.18 2 2 0 0 1 3.59 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.96a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                            Recent WhatsApp Users
+                        </h4>
+                        <div style="overflow-x:auto;max-height:220px;overflow-y:auto;">
+                            <table class="usage-table">
+                                <thead>
+                                    <tr>
+                                        <th>Number</th>
+                                        <th>Msgs</th>
+                                        <th>Last Seen</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="waUsersTable">
+                                    <tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:1rem;">Loading…</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Metric chips -->
+            <div class="metric-row">
+                <div class="metric-chip">
+                    <div class="m-value" id="mTotal">0</div>
+                    <div class="m-label">Messages Sent</div>
+                </div>
+                <div class="metric-chip">
+                    <div class="m-value" id="mBlocked" style="color:var(--danger)">0</div>
+                    <div class="m-label">Blocked by Supervisor</div>
+                </div>
+                <div class="metric-chip">
+                    <div class="m-value" id="mAvgTime">—</div>
+                    <div class="m-label">Avg Response Time</div>
+                </div>
+                <div class="metric-chip">
+                    <div class="m-value" id="mIntent">—</div>
+                    <div class="m-label">Last Intent Routed</div>
+                </div>
+            </div>
+
+            <!-- Main grid -->
+            <div class="monitor-grid">
+
+                <!-- Chat panel -->
+                <div class="chat-panel">
+                    <div class="chat-panel-header">
+                        <div>
+                            <h2>Test Chat</h2>
+                            <p style="font-size:0.75rem;color:var(--text-secondary);margin-top:2px;">Messages go through the real Fred pipeline</p>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:0.75rem;">
+                            <div class="fred-status">
+                                <div class="status-dot" id="statusDot"></div>
+                                <span id="statusText">Checking…</span>
+                            </div>
+                            <button class="clear-btn" onclick="clearHistory()">Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- Quick test prompts -->
+                    <div class="quick-prompts">
+                        <button class="quick-btn" onclick="quickSend('Hi Fred, what can you do?')">👋 Hello</button>
+                        <button class="quick-btn" onclick="quickSend('Find me a 2 bedroom flat in New Haven')">🏠 Property search</button>
+                        <button class="quick-btn" onclick="quickSend('How do I register as an agent on EasyFind?')">ℹ️ Knowledge query</button>
+                        <button class="quick-btn" onclick="quickSend('What is the weather like today?')">🌤 General chat</button>
+                        <button class="quick-btn" onclick="quickSend('I need a shop to rent in Independence Layout')">🏪 Shop search</button>
+                    </div>
+
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="msg system">
+                            <div class="msg-bubble">Chat session started — messages are proxied live through the Fred AI engine.</div>
+                        </div>
+                    </div>
+
+                    <!-- Typing indicator (outside scroll) -->
+                    <div class="typing-indicator" id="typingIndicator" style="padding:0 1.25rem 0.5rem;">
+                        <div class="msg-avatar" style="background:#7C3AED;width:28px;height:28px;font-size:0.6875rem;">F</div>
+                        <div class="typing-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <span style="font-size:0.8125rem;color:var(--text-secondary);">Fred is thinking…</span>
+                    </div>
+
+                    <div class="chat-input-bar">
+                        <textarea
+                            id="chatInput"
+                            class="chat-input"
+                            placeholder="Ask Fred anything…"
+                            rows="1"
+                            onkeydown="handleKey(event)"
+                            oninput="autoResize(this)"
+                        ></textarea>
+                        <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send (Enter)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"/>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Side panel -->
+                <div class="side-panel">
+
+                    <!-- Fred engine info -->
+                    <div class="fred-info-card">
+                        <h3>Engine Status</h3>
+                        <div class="info-row">
+                            <span class="label">Status</span>
+                            <span class="value" id="engineStatus">—</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Model</span>
+                            <span class="value" id="engineModel">—</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Listings indexed</span>
+                            <span class="value" id="engineListings">—</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Knowledge chunks</span>
+                            <span class="value" id="engineKnowledge">—</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Last pinged</span>
+                            <span class="value" id="enginePinged">—</span>
+                        </div>
+                    </div>
+
+                    <!-- Behaviour log -->
+                    <div class="log-card">
+                        <div class="log-card-header">
+                            <h3>Behaviour Log</h3>
+                            <span class="log-badge" id="logBadge">0 events</span>
+                        </div>
+                        <div class="log-list" id="logList">
+                            <div style="text-align:center;padding:2rem 1rem;color:var(--text-secondary);font-size:0.8125rem;">
+                                No events yet — send a message to see Fred's internal routing.
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2026 <a href="/" style="color:#050;text-decoration:none;">Easy find</a>. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script src="templatemo-daynight-script.js"></script>
+    <script>
+    /* =========================================================
+       Fred Monitor — client logic
+       ========================================================= */
+
+    // ── State ─────────────────────────────────────────────────
+    const state = {
+        history:     [],   // [{role, content}]
+        logEntries:  [],
+        metrics: {
+            total:    0,
+            blocked:  0,
+            times:    [],
+        }
+    };
+
+    // ── Helpers ───────────────────────────────────────────────
+    function now() {
+        return new Date().toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    }
+
+    function formatMs(ms) {
+        return ms >= 1000 ? (ms/1000).toFixed(1) + 's' : ms + 'ms';
+    }
+
+    function autoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function scrollToBottom() {
+        const el = document.getElementById('chatMessages');
+        el.scrollTop = el.scrollHeight;
+    }
+
+    function setFredStatus(state) {
+        const dot  = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        const eng  = document.getElementById('engineStatus');
+        dot.className = 'status-dot ' + state;
+        if (state === 'online')  { text.textContent = 'Online';   if(eng) { eng.textContent = 'Online';  eng.className = 'value green'; } }
+        if (state === 'offline') { text.textContent = 'Offline';  if(eng) { eng.textContent = 'Offline'; eng.className = 'value red';   } }
+        if (state === 'thinking'){ text.textContent = 'Thinking…'; }
+    }
+
+    // ── Behaviour log ─────────────────────────────────────────
+    const LOG_ICONS = {
+        router: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+        pass:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`,
+        warn:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+        block:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>`,
+        info:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+        error:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+    };
+
+    function addLog(type, title, detail) {
+        state.logEntries.unshift({ type, title, detail, time: now() });
+        renderLog();
+    }
+
+    function renderLog() {
+        const list  = document.getElementById('logList');
+        const badge = document.getElementById('logBadge');
+        badge.textContent = state.logEntries.length + ' events';
+
+        if (state.logEntries.length === 0) {
+            list.innerHTML = `<div style="text-align:center;padding:2rem 1rem;color:var(--text-secondary);font-size:0.8125rem;">No events yet — send a message to see Fred's internal routing.</div>`;
+            return;
+        }
+
+        list.innerHTML = state.logEntries.slice(0, 80).map(e => `
+            <div class="log-entry ${e.type}">
+                <div class="log-icon">${LOG_ICONS[e.type] || LOG_ICONS.info}</div>
+                <div class="log-body">
+                    <div class="log-title">${e.title}</div>
+                    ${e.detail ? `<div class="log-detail">${e.detail}</div>` : ''}
+                </div>
+                <div class="log-time">${e.time}</div>
+            </div>
+        `).join('');
+    }
+
+    // ── Metric update ─────────────────────────────────────────
+    function updateMetrics() {
+        document.getElementById('mTotal').textContent   = state.metrics.total;
+        document.getElementById('mBlocked').textContent = state.metrics.blocked;
+        const times = state.metrics.times;
+        document.getElementById('mAvgTime').textContent = times.length
+            ? formatMs(Math.round(times.reduce((a,b)=>a+b,0)/times.length))
+            : '—';
+    }
+
+    // ── Append chat bubble ─────────────────────────────────────
+    function appendBubble(role, text, id) {
+        const container = document.getElementById('chatMessages');
+        const wrap = document.createElement('div');
+        wrap.className = `msg ${role}`;
+        if (id) wrap.id = id;
+
+        const avatarText = role === 'user' ? 'You' : 'F';
+        const timeStr = now();
+
+        wrap.innerHTML = `
+            <div class="msg-avatar">${avatarText}</div>
+            <div>
+                <div class="msg-bubble"></div>
+                <div class="msg-time">${timeStr}</div>
+            </div>
+        `;
+
+        wrap.querySelector('.msg-bubble').textContent = text;
+        container.appendChild(wrap);
+        scrollToBottom();
+        return wrap.querySelector('.msg-bubble');
+    }
+
+    // ── Parse Fred's SSE log lines ────────────────────────────
+    // Fred emits [Fred] prefixed console logs via the server; we scrape
+    // intent / supervisor hints from the streamed token text itself
+    // since the proxy pipes raw SSE through.
+    function parseStreamChunk(chunk) {
+        // SSE format: "data: <token>\n\n" or "data: [DONE]\n\n"
+        const lines = chunk.split('\n');
+        let text = '';
+        for (const line of lines) {
+            if (!line.startsWith('data:')) continue;
+            const payload = line.slice(5).trim();
+            if (payload === '[DONE]') return { done: true, text };
+            try {
+                const obj = JSON.parse(payload);
+                // Ollama streaming format
+                const token = obj?.message?.content ?? obj?.response ?? '';
+                text += token;
+                // Detect supervisor verdicts embedded as SSE events
+                if (obj?.event === 'supervisor') {
+                    const v = obj.verdict?.toUpperCase();
+                    if (v === 'BLOCK') {
+                        state.metrics.blocked++;
+                        addLog('block', 'Supervisor BLOCK', obj.reason || '');
+                    } else if (v === 'WARN') {
+                        addLog('warn', 'Supervisor WARN', obj.reason || '');
+                    } else if (v === 'PASS') {
+                        addLog('pass', 'Supervisor PASS', obj.reason || '');
+                    }
+                }
+                // Detect intent routing events
+                if (obj?.event === 'intent') {
+                    const intent = obj.intent || '';
+                    document.getElementById('mIntent').textContent = intent.replace(/_/g,' ');
+                    addLog('router', 'Intent routed → ' + intent.replace(/_/g,' '), obj.method || '');
+                }
+            } catch {
+                // Raw text token (non-JSON SSE)
+                text += payload;
+            }
+        }
+        return { done: false, text };
+    }
+
+    // ── Send message ──────────────────────────────────────────
+    let isSending = false;
+
+    async function sendMessage() {
+        const input = document.getElementById('chatInput');
+        const msg   = input.value.trim();
+        if (!msg || isSending) return;
+
+        isSending = true;
+        input.value = '';
+        input.style.height = 'auto';
+        document.getElementById('sendBtn').disabled = true;
+
+        // Add user bubble
+        appendBubble('user', msg);
+
+        // Track
+        state.metrics.total++;
+        state.history.push({ role: 'user', content: msg });
+        addLog('info', 'User message sent', msg.length > 60 ? msg.slice(0, 60) + '…' : msg);
+        updateMetrics();
+
+        // Show typing
+        setFredStatus('thinking');
+        document.getElementById('typingIndicator').classList.add('visible');
+        scrollToBottom();
+
+        const startTime = Date.now();
+
+        try {
+            const res = await fetch('/api/fred/chat', {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    user_message: msg,
+                    chat_history: state.history.slice(-12)
+                })
+            });
+
+            document.getElementById('typingIndicator').classList.remove('visible');
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ message: 'Unknown error' }));
+                appendBubble('system', '⚠️ ' + (err.message || 'Fred returned an error.'));
+                addLog('error', 'API error ' + res.status, err.message || '');
+                setFredStatus('offline');
+                isSending = false;
+                document.getElementById('sendBtn').disabled = false;
+                return;
+            }
+
+            // Stream response
+            const fredBubble = appendBubble('fred', '');
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let fullText = '';
+            let buffer   = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                // Process complete SSE events (delimited by \n\n)
+                const parts = buffer.split('\n\n');
+                buffer = parts.pop(); // keep incomplete last chunk
+
+                for (const part of parts) {
+                    const { done: eventDone, text } = parseStreamChunk(part + '\n\n');
+                    fullText += text;
+                    fredBubble.textContent = fullText;
+                    scrollToBottom();
+                    if (eventDone) break;
+                }
+            }
+
+            // Flush buffer remainder
+            if (buffer) {
+                const { text } = parseStreamChunk(buffer);
+                fullText += text;
+                fredBubble.textContent = fullText || fredBubble.textContent;
+            }
+
+            const elapsed = Date.now() - startTime;
+            state.metrics.times.push(elapsed);
+            if (state.metrics.times.length > 50) state.metrics.times.shift();
+
+            state.history.push({ role: 'assistant', content: fullText });
+            addLog('pass', 'Response streamed', formatMs(elapsed) + ' · ' + fullText.length + ' chars');
+            setFredStatus('online');
+            updateMetrics();
+
+        } catch (err) {
+            document.getElementById('typingIndicator').classList.remove('visible');
+            appendBubble('system', '⚠️ Could not reach Fred: ' + err.message);
+            addLog('error', 'Network error', err.message);
+            setFredStatus('offline');
+        }
+
+        isSending = false;
+        document.getElementById('sendBtn').disabled = false;
+        input.focus();
+    }
+
+    function handleKey(e) {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    }
+
+    function quickSend(text) {
+        document.getElementById('chatInput').value = text;
+        sendMessage();
+    }
+
+    function clearHistory() {
+        state.history = [];
+        const container = document.getElementById('chatMessages');
+        container.innerHTML = `<div class="msg system"><div class="msg-bubble">Chat history cleared.</div></div>`;
+        addLog('info', 'Chat history cleared', '');
+    }
+
+    // ── Ping Fred ─────────────────────────────────────────────
+    async function pingFred() {
+        addLog('info', 'Pinging Fred engine…', '');
+        const btn = document.getElementById('pingFredBtn');
+        btn.disabled = true;
+        btn.textContent = 'Pinging…';
+
+        try {
+            const res  = await fetch('/api/fred/health', { credentials: 'include' });
+            const data = await res.json();
+            const pingedAt = now();
+
+            document.getElementById('enginePinged').textContent = pingedAt;
+
+            if (data.status === 'ok' || data.online) {
+                setFredStatus('online');
+                const model    = data.ollama_model   || data.model    || '—';
+                const listings = data.listings_docs  != null ? data.listings_docs  : (data.listings  ?? '—');
+                const know     = data.knowledge_docs != null ? data.knowledge_docs : (data.knowledge ?? '—');
+                document.getElementById('engineModel').textContent     = model;
+                document.getElementById('engineListings').textContent  = typeof listings === 'number' ? listings.toLocaleString() : listings;
+                document.getElementById('engineKnowledge').textContent = typeof know    === 'number' ? know.toLocaleString()     : know;
+                addLog('pass', 'Fred online', `model: ${model}, listings: ${listings}, knowledge: ${know}`);
+            } else {
+                setFredStatus('offline');
+                addLog('error', 'Fred offline', data.message || '');
+            }
+        } catch (err) {
+            setFredStatus('offline');
+            document.getElementById('enginePinged').textContent = now();
+            addLog('error', 'Ping failed', err.message);
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.03-5.08"/></svg> Ping Fred`;
+    }
+
+    // ── Usage stats ───────────────────────────────────────────
+    function _fmtTime(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function _maskJid(jid) {
+        // Show first 4 and last 4 digits of the number, mask the middle
+        const num = jid.replace('@s.whatsapp.net', '').replace('@c.us', '');
+        if (num.length <= 8) return num;
+        return num.slice(0, 4) + '****' + num.slice(-4);
+    }
+
+    async function loadUsageStats() {
+        try {
+            const res  = await fetch('/api/fred/usage-stats', { credentials: 'include' });
+            if (!res.ok) return;
+            const data = await res.json();
+
+            // Summary chips
+            document.getElementById('uTotal').textContent = data.totals?.uniqueUsers  ?? 0;
+            document.getElementById('uWeb').textContent   = data.web?.uniqueUsers     ?? 0;
+            document.getElementById('uWa').textContent    = data.whatsapp?.uniqueUsers ?? 0;
+            document.getElementById('uAnon').textContent  = data.web?.anonymous       ?? 0;
+            document.getElementById('uMsgs').textContent  = data.totals?.totalMessages ?? 0;
+
+            // Web users table
+            const webTbody = document.getElementById('webUsersTable');
+            const webUsers = data.web?.recentUsers || [];
+            if (webUsers.length === 0) {
+                webTbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:1rem;">No web users yet</td></tr>`;
+            } else {
+                webTbody.innerHTML = webUsers.map(u => `
+                    <tr>
+                        <td>${u.isAnon
+                            ? `Anonymous<span class="anon-badge">anon</span>`
+                            : `${u.name || 'User'}`
+                        }</td>
+                        <td>${u.messages}</td>
+                        <td>${_fmtTime(u.lastSeen)}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // WhatsApp users table
+            const waTbody  = document.getElementById('waUsersTable');
+            const waUsers  = data.whatsapp?.recentUsers || [];
+            if (waUsers.length === 0) {
+                waTbody.innerHTML = `<tr><td colspan="3" style="text-align:center;color:var(--text-secondary);padding:1rem;">No WhatsApp users yet</td></tr>`;
+            } else {
+                waTbody.innerHTML = waUsers.map(u => `
+                    <tr>
+                        <td>${_maskJid(u.jid)}<span class="wa-badge">WA</span></td>
+                        <td>${u.messages}</td>
+                        <td>${_fmtTime(u.lastSeen)}</td>
+                    </tr>
+                `).join('');
+            }
+        } catch (err) {
+            console.error('[Fred Monitor] Usage stats error:', err.message);
+        }
+    }
+
+    // ── Auto-ping on load ─────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', () => {
+        pingFred();
+        loadUsageStats();
+        // Refresh usage stats every 30 seconds
+        setInterval(loadUsageStats, 30000);
+        document.getElementById('chatInput').focus();
+    });
+    </script>
+</body>
+</html>

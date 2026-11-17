@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Partner Dashboard – Easy Find</title>
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <link rel="stylesheet" href="style/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        /* ── Partner-specific styles layered on top of style.css ── */
+        body { background: #F8FAFC; }
+
+        main {
+            width: 90%;
+            max-width: 1100px;
+            margin: 28px auto 80px;
+        }
+
+        /* Page title */
+        .partner-page-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 28px;
+        }
+        .partner-page-header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .partner-page-header p { color: #6B7280; font-size: 0.875rem; margin-top: 4px; }
+
+        .badge-partner {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(135deg, #b8860b, #f7c948);
+            color: #1a1200;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.3px;
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 22px 22px 18px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+            border: 1px solid #E5E7EB;
+        }
+        .stat-card .s-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: #6B7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .stat-card .s-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1;
+        }
+        .stat-card .s-sub {
+            font-size: 0.75rem;
+            color: #9CA3AF;
+            margin-top: 6px;
+        }
+        .stat-card.teal  .s-value { color: #0d7068; }
+        .stat-card.gold  .s-value { color: #b8860b; }
+
+        /* Section card */
+        .p-card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+            border: 1px solid #E5E7EB;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+        .p-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 22px;
+            border-bottom: 1px solid #F3F4F6;
+        }
+        .p-card-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #111827;
+        }
+        .p-card-header p {
+            font-size: 0.8rem;
+            color: #6B7280;
+            margin-top: 2px;
+        }
+
+        /* Referral link box */
+        .ref-box { padding: 20px 22px; }
+        .ref-input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        .ref-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 2px solid #E5E7EB;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            color: #374151;
+            background: #F9FAFB;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .ref-input:focus { border-color: #66eae3; }
+
+        .ref-hint {
+            font-size: 0.78rem;
+            color: #9CA3AF;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Buttons */
+        .p-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.25s;
+        }
+        .p-btn:hover { transform: translateY(-2px); }
+        .p-btn-teal {
+            background: linear-gradient(135deg, #66eae3 0%, #0d7068 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(13,112,104,0.25);
+        }
+        .p-btn-teal:hover { box-shadow: 0 6px 18px rgba(13,112,104,0.35); }
+        .p-btn-gold {
+            background: linear-gradient(135deg, #f7c948, #b8860b);
+            color: #1a1200;
+            box-shadow: 0 4px 12px rgba(184,134,11,0.25);
+        }
+        .p-btn-outline {
+            background: #fff;
+            border: 2px solid #E5E7EB;
+            color: #6B7280;
+        }
+        .p-btn-outline:hover { border-color: #66eae3; color: #0d7068; background: #f5fdfd; }
+        .p-btn-sm { padding: 6px 14px; font-size: 0.8rem; }
+        .p-btn-green { background: linear-gradient(135deg,#34d399,#059669); color:#fff; box-shadow:0 4px 10px rgba(5,150,105,.2); }
+        .p-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none !important; }
+
+        /* Withdraw row */
+        .withdraw-row {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 24px;
+        }
+
+        /* Table */
+        .p-table-wrap { overflow-x: auto; }
+        .p-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.855rem;
+        }
+        .p-table thead th {
+            background: #F9FAFB;
+            color: #6B7280;
+            font-weight: 600;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 11px 18px;
+            text-align: left;
+            white-space: nowrap;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        .p-table tbody td {
+            padding: 13px 18px;
+            border-bottom: 1px solid #F3F4F6;
+            color: #374151;
+            vertical-align: middle;
+        }
+        .p-table tbody tr:hover { background: #f5fdfd; }
+        .p-table tbody tr:last-child td { border-bottom: none; }
+
+        /* Badges */
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .tag-green  { background: #ecfdf5; color: #065f46; }
+        .tag-grey   { background: #F3F4F6; color: #6B7280; }
+        .tag-yellow { background: #fefce8; color: #854d0e; }
+        .tag-teal   { background: #e6f7f5; color: #0d7068; }
+        .tag-red    { background: #fef2f2; color: #991b1b; }
+
+        .dot {
+            display: inline-block;
+            width: 7px; height: 7px;
+            border-radius: 50%;
+        }
+        .dot-green  { background: #10b981; }
+        .dot-grey   { background: #9CA3AF; }
+        .dot-yellow { background: #f59e0b; }
+        .dot-red    { background: #ef4444; }
+        .dot-teal   { background: #0d7068; }
+
+        /* Avatar */
+        .av {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #66eae3;
+        }
+        .av-placeholder {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #66eae3, #0d7068);
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.78rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Pagination */
+        .pager {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 18px;
+            border-top: 1px solid #F3F4F6;
+        }
+        .pager button {
+            padding: 5px 14px;
+            border: 2px solid #E5E7EB;
+            border-radius: 8px;
+            background: #fff;
+            color: #374151;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .pager button:hover:not(:disabled) { border-color: #66eae3; color: #0d7068; }
+        .pager button:disabled { opacity: 0.4; cursor: default; }
+        .pager span { color: #9CA3AF; font-size: 0.8rem; }
+
+        /* Alert strip */
+        .p-alert {
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 0.855rem;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .p-alert.show { display: block; }
+        .p-alert.ok  { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }
+        .p-alert.err { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+
+        /* Empty state */
+        .empty-box {
+            text-align: center;
+            padding: 48px 24px;
+            color: #9CA3AF;
+        }
+        .empty-box i { font-size: 2.5rem; color: #66eae3; display: block; margin-bottom: 12px; }
+        .empty-box p { font-size: 0.875rem; }
+
+        /* Loading */
+        .loading-box {
+            text-align: center;
+            padding: 36px;
+            color: #9CA3AF;
+            font-size: 0.875rem;
+        }
+
+        /* Modal */
+        .p-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(5,85,85,0.55);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        .p-modal-overlay.active { display: flex; }
+        .p-modal {
+            background: #fff;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            animation: modalSlide 0.35s ease;
+            overflow: hidden;
+        }
+        @keyframes modalSlide {
+            from { transform: translateY(-24px); opacity: 0; }
+            to   { transform: translateY(0);     opacity: 1; }
+        }
+        .p-modal-header {
+            background: linear-gradient(135deg, #66eae3 0%, #0d7068 100%);
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .p-modal-header h3 { color: #fff; font-size: 1.1rem; font-weight: 700; }
+        .p-modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: #fff;
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .p-modal-close:hover { background: rgba(255,255,255,0.35); }
+        .p-modal-body { padding: 24px; }
+        .p-modal-footer {
+            background: #F9FAFB;
+            padding: 16px 24px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .p-form-group { margin-bottom: 16px; }
+        .p-form-group label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+        .p-form-group input {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid #E5E7EB;
+            border-radius: 10px;
+            font-size: max(16px, 0.875rem);
+            background: #F9FAFB;
+            color: #111827;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .p-form-group input:focus {
+            border-color: #66eae3;
+            box-shadow: 0 0 0 4px rgba(102,234,227,0.15);
+            background: #fff;
+        }
+
+        .balance-hint {
+            font-size: 0.8rem;
+            color: #6B7280;
+            margin-top: 4px;
+        }
+        .balance-hint strong { color: #b8860b; font-weight: 700; }
+
+        /* Modal alert */
+        .m-alert {
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 0.83rem;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .m-alert.show { display: block; }
+        .m-alert.ok  { background: #ecfdf5; border: 1px solid #6ee7b7; color: #065f46; }
+        .m-alert.err { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+
+        /* Not-partner screen */
+        #not-partner {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 100px 24px;
+            gap: 14px;
+        }
+        #not-partner .lock-icon {
+            font-size: 3.5rem;
+            color: #66eae3;
+            background: #e6f7f5;
+            width: 80px; height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+        }
+        #not-partner h2 { font-size: 1.5rem; font-weight: 700; color: #111827; }
+        #not-partner p { color: #6B7280; max-width: 360px; line-height: 1.6; }
+
+        @media (max-width: 600px) {
+            .ref-input-row { flex-direction: column; }
+            .ref-input { width: 100%; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 380px) {
+            .stats-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── Header (matches index.html exactly) ── -->
+<header>
+    <a href="/" class="brand"><span class="brand-mark">E</span>asy Find</a>
+
+    <nav class="links">
+        <a href="/">Back to Home</a>
+        <a href="/agent-loged">Dashboard</a>
+        <a href="/agent-loged/setting">Setting</a>
+        <a href="/boost-account"><i class="fas fa-rocket"></i> Boost</a>
+    </nav>
+
+    <div class="nav2" id="nav2">
+        <div class="top-nav">
+            <a href="#top" class="brand"><span class="brand-mark">E</span>asy Find</a>
+        </div>
+        <a href="/"><i class="fa-solid fa-house"></i> Back to Home</a>
+        <a href="/agent-loged"><i class="fa-solid fa-gauge"></i> Dashboard</a>
+        <a href="/agent-loged/setting"><i class="fa-solid fa-gear"></i> Setting</a>
+        <a href="/boost-account"><i class="fas fa-rocket"></i> Boost</a>
+    </div>
+
+    <div class="hamburger" id="hamburger">
+        <div id="hand" class="hand"></div>
+        <div id="hand" class="hand"></div>
+        <div id="hand" class="hand"></div>
+    </div>
+</header>
+
+<main>
+
+    <!-- Alert strip -->
+    <div class="p-alert" id="page-alert"></div>
+
+    <!-- Not a partner state -->
+    <div id="not-partner">
+        <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+        <h2>Partnership Badge Required</h2>
+        <p>Your account doesn't have a Partnership Badge yet. Contact admin to get one and unlock referral earnings.</p>
+        <a href="/agent-loged" class="p-btn p-btn-outline" style="margin-top:8px;text-decoration:none;">
+            <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+
+    <!-- Partner content (hidden until confirmed) -->
+    <div id="partner-content" style="display:none;">
+
+        <!-- Page header -->
+        <div class="partner-page-header">
+            <div>
+                <h1>
+                    Partner Dashboard
+                    <span class="badge-partner"><i class="fa-solid fa-star" style="font-size:0.65rem;"></i> Partner</span>
+                </h1>
+                <p>Track your referrals, earnings and withdrawals</p>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="s-label"><i class="fa-solid fa-users" style="margin-right:5px;color:#66eae3;"></i>Total Referred</div>
+                <div class="s-value" id="stat-referred">—</div>
+                <div class="s-sub">agents via your link</div>
+            </div>
+            <div class="stat-card">
+                <div class="s-label"><i class="fa-solid fa-circle-check" style="margin-right:5px;color:#66eae3;"></i>Verified Referrals</div>
+                <div class="s-value" id="stat-verified">—</div>
+                <div class="s-sub">agents you verified</div>
+            </div>
+            <div class="stat-card teal">
+                <div class="s-label"><i class="fa-solid fa-coins" style="margin-right:5px;color:#0d7068;"></i>Total Earned</div>
+                <div class="s-value" id="stat-earned">—</div>
+                <div class="s-sub">30% from boost payments</div>
+            </div>
+            <div class="stat-card gold">
+                <div class="s-label"><i class="fa-solid fa-wallet" style="margin-right:5px;color:#b8860b;"></i>Available Balance</div>
+                <div class="s-value" id="stat-available">—</div>
+                <div class="s-sub" id="stat-withdrawn-sub">₦0 withdrawn</div>
+            </div>
+        </div>
+
+        <!-- Referral link -->
+        <div class="p-card">
+            <div class="p-card-header">
+                <div>
+                    <h3><i class="fa-solid fa-link" style="color:#0d7068;margin-right:7px;"></i>Your Referral Link</h3>
+                    <p>Share this link — anyone who signs up gets linked to you</p>
+                </div>
+            </div>
+            <div class="ref-box">
+                <div class="ref-input-row">
+                    <input type="text" class="ref-input" id="ref-link-input" readonly>
+                    <button class="p-btn p-btn-teal" onclick="copyRef()"><i class="fa-solid fa-copy"></i> Copy</button>
+                    <button class="p-btn p-btn-outline" onclick="shareRef()"><i class="fa-solid fa-share-nodes"></i> Share</button>
+                </div>
+                <p class="ref-hint">
+                    <i class="fa-solid fa-circle-info" style="color:#66eae3;"></i>
+                    When a referred agent makes any boost payment, you automatically earn 30% of it.
+                </p>
+            </div>
+        </div>
+
+        <!-- Withdraw button -->
+        <div class="withdraw-row">
+            <button class="p-btn p-btn-gold" id="withdraw-btn" onclick="openWithdraw()">
+                <i class="fa-solid fa-money-bill-transfer"></i> Withdraw to Opay
+            </button>
+        </div>
+
+        <!-- Referred agents -->
+        <div class="p-card">
+            <div class="p-card-header">
+                <div>
+                    <h3><i class="fa-solid fa-user-group" style="color:#0d7068;margin-right:7px;"></i>Referred Agents</h3>
+                    <p>Agents who signed up through your link</p>
+                </div>
+            </div>
+            <div class="p-table-wrap" id="referrals-wrap">
+                <div class="loading-box"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:6px;color:#66eae3;"></i>Loading...</div>
+            </div>
+            <div class="pager" id="referrals-pager" style="display:none;"></div>
+        </div>
+
+        <!-- Earnings history -->
+        <div class="p-card">
+            <div class="p-card-header">
+                <div>
+                    <h3><i class="fa-solid fa-receipt" style="color:#0d7068;margin-right:7px;"></i>Earnings & Withdrawal History</h3>
+                    <p>All your commissions and payout requests</p>
+                </div>
+            </div>
+            <div class="p-table-wrap" id="earnings-wrap">
+                <div class="loading-box"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:6px;color:#66eae3;"></i>Loading...</div>
+            </div>
+            <div class="pager" id="earnings-pager" style="display:none;"></div>
+        </div>
+
+    </div>
+</main>
+
+<!-- ── Withdraw Modal ── -->
+<div class="p-modal-overlay" id="withdraw-modal">
+    <div class="p-modal">
+        <div class="p-modal-header">
+            <h3><i class="fa-solid fa-money-bill-transfer" style="margin-right:8px;"></i>Withdraw to Opay</h3>
+            <button class="p-modal-close" onclick="closeWithdraw()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="p-modal-body">
+            <div class="m-alert" id="m-alert"></div>
+            <div class="p-form-group">
+                <label>Opay Account Number</label>
+                <input type="tel" id="w-account-number" placeholder="10 or 11 digits" maxlength="11">
+            </div>
+            <div class="p-form-group">
+                <label>Account Name</label>
+                <input type="text" id="w-account-name" placeholder="Full name on the account">
+            </div>
+            <div class="p-form-group">
+                <label>Amount (₦) — minimum ₦500</label>
+                <input type="number" id="w-amount" placeholder="e.g. 1000" min="500" step="100">
+                <p class="balance-hint">Available: <strong id="w-balance">₦0</strong></p>
+            </div>
+        </div>
+        <div class="p-modal-footer">
+            <button class="p-btn p-btn-outline" onclick="closeWithdraw()">Cancel</button>
+            <button class="p-btn p-btn-gold" id="w-submit-btn" onclick="submitWithdraw()">
+                <i class="fa-solid fa-paper-plane"></i> Submit Request
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- hamburger script (same as index.html) -->
+<script>
+    const hamburger = document.getElementById('hamburger');
+    const nav2 = document.getElementById('nav2');
+    hamburger.addEventListener('click', () => {
+        hamburger.classList.toggle('active');
+        nav2.classList.toggle('active');
+    });
+</script>
+
+<script>
+    const PER_PAGE = 8;
+    let dashData  = {};
+    let refPage   = 1;
+    let earnPage  = 1;
+
+    /* ── Bootstrap ── */
+    (async () => {
+        await loadDashboard();
+        await Promise.all([loadReferrals(1), loadEarnings(1)]);
+    })();
+
+    /* ── Dashboard summary ── */
+    async function loadDashboard() {
+        try {
+            const res  = await fetch('/api/partner/dashboard', { credentials: 'include' });
+            const data = await res.json();
+
+            if (!data.success) {
+                document.getElementById('not-partner').style.display = 'flex';
+                return;
+            }
+
+            dashData = data.dashboard;
+            document.getElementById('partner-content').style.display = 'block';
+
+            document.getElementById('stat-referred').textContent   = dashData.totalReferred   || 0;
+            document.getElementById('stat-verified').textContent   = dashData.verifiedReferred || 0;
+            document.getElementById('stat-earned').textContent     = '₦' + (dashData.totalEarnings    || 0).toLocaleString('en-NG');
+            document.getElementById('stat-available').textContent  = '₦' + (dashData.availableBalance || 0).toLocaleString('en-NG');
+            document.getElementById('stat-withdrawn-sub').textContent = '₦' + (dashData.totalWithdrawn || 0).toLocaleString('en-NG') + ' withdrawn';
+            document.getElementById('ref-link-input').value        = dashData.referralLink || '';
+            document.getElementById('w-balance').textContent       = '₦' + (dashData.availableBalance || 0).toLocaleString('en-NG');
+
+            if (dashData.hasPendingPayout) {
+                const btn = document.getElementById('withdraw-btn');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-clock"></i> Withdrawal Pending';
+            }
+        } catch (err) {
+            document.getElementById('not-partner').style.display = 'flex';
+        }
+    }
+
+    /* ── Referred agents ── */
+    async function loadReferrals(page) {
+        const wrap = document.getElementById('referrals-wrap');
+        wrap.innerHTML = '<div class="loading-box"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:6px;color:#66eae3;"></i>Loading...</div>';
+
+        const res  = await fetch(`/api/partner/referrals?page=${page}&limit=${PER_PAGE}`, { credentials: 'include' });
+        const data = await res.json();
+
+        if (!data.success || !data.agents.length) {
+            wrap.innerHTML = `<div class="empty-box"><i class="fa-solid fa-users-slash"></i><p>No referred agents yet.<br>Share your link to get started.</p></div>`;
+            document.getElementById('referrals-pager').style.display = 'none';
+            return;
+        }
+
+        const rows = data.agents.map(a => `
+            <tr>
+                <td>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        ${a.profilePicture
+                            ? `<img src="${a.profilePicture}" class="av">`
+                            : `<span class="av-placeholder">${(a.name||'?')[0].toUpperCase()}</span>`
+                        }
+                        <span style="font-weight:600;">${esc(a.name||'—')}</span>
+                    </div>
+                </td>
+                <td style="color:#6B7280;">${esc(a.email||'—')}</td>
+                <td>
+                    ${a.stand === 'Verified Agent'
+                        ? `<span class="tag tag-green"><span class="dot dot-green"></span>Verified</span>`
+                        : `<span class="tag tag-grey"><span class="dot dot-grey"></span>Not verified</span>`
+                    }
+                </td>
+                <td style="color:#9CA3AF;font-size:0.8rem;">${new Date(a.registrationDate).toLocaleDateString('en-GB')}</td>
+                <td>
+                    ${a.stand !== 'Verified Agent'
+                        ? `<button class="p-btn p-btn-teal p-btn-sm" onclick="verifyAgent('${a._id}','${esc(a.name||'')}')"><i class="fa-solid fa-circle-check"></i> Verify</button>`
+                        : `<span style="color:#9CA3AF;font-size:0.8rem;">—</span>`
+                    }
+                </td>
+            </tr>
+        `).join('');
+
+        wrap.innerHTML = `
+            <table class="p-table">
+                <thead>
+                    <tr>
+                        <th>Agent</th><th>Email</th><th>Status</th><th>Joined</th><th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+
+        renderPager('referrals-pager', page, data.total, PER_PAGE, p => { refPage = p; loadReferrals(p); });
+    }
+
+    /* ── Earnings history ── */
+    async function loadEarnings(page) {
+        const wrap = document.getElementById('earnings-wrap');
+        wrap.innerHTML = '<div class="loading-box"><i class="fa-solid fa-circle-notch fa-spin" style="margin-right:6px;color:#66eae3;"></i>Loading...</div>';
+
+        const res  = await fetch(`/api/partner/earnings?page=${page}&limit=${PER_PAGE}`, { credentials: 'include' });
+        const data = await res.json();
+
+        if (!data.success || !data.transactions.length) {
+            wrap.innerHTML = `<div class="empty-box"><i class="fa-solid fa-receipt"></i><p>No transactions yet.<br>Earnings appear here when referred agents make boost payments.</p></div>`;
+            document.getElementById('earnings-pager').style.display = 'none';
+            return;
+        }
+
+        const rows = data.transactions.map(t => {
+            const isEarn  = t.type === 'partner_earning';
+            const isWd    = t.type === 'partner_withdrawal';
+            const wdMap   = { pending:'tag-yellow', processing:'tag-teal', paid:'tag-green', failed:'tag-red' };
+            const statusTag = isWd
+                ? `<span class="tag ${wdMap[t.withdrawalStatus]||'tag-grey'}">${t.withdrawalStatus||'—'}</span>`
+                : `<span class="tag tag-green"><span class="dot dot-green"></span>success</span>`;
+
+            return `
+                <tr>
+                    <td style="color:#9CA3AF;font-size:0.8rem;">${new Date(t.createdAt).toLocaleDateString('en-GB')}</td>
+                    <td>
+                        <span style="font-weight:600;color:${isEarn?'#0d7068':isWd?'#b8860b':'#374151'};">
+                            ${isEarn ? '+ Referral Earning' : isWd ? '↑ Withdrawal' : t.type}
+                        </span>
+                    </td>
+                    <td style="color:#6B7280;font-size:0.82rem;">
+                        ${isEarn ? esc(t.referredAgentName||'—') : isWd ? `${esc(t.opayAccountName||'')} · ${esc(t.opayAccountNumber||'')}` : '—'}
+                    </td>
+                    <td style="font-weight:700;color:${isWd?'#ef4444':'#0d7068'};">
+                        ${isWd?'−':'+'}₦${(t.amount||0).toLocaleString('en-NG')}
+                    </td>
+                    <td>${statusTag}</td>
+                </tr>`;
+        }).join('');
+
+        wrap.innerHTML = `
+            <table class="p-table">
+                <thead>
+                    <tr><th>Date</th><th>Type</th><th>Details</th><th>Amount</th><th>Status</th></tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>`;
+
+        renderPager('earnings-pager', page, data.total, PER_PAGE, p => { earnPage = p; loadEarnings(p); });
+    }
+
+    /* ── Pager helper ── */
+    function renderPager(id, cur, total, limit, cb) {
+        const el    = document.getElementById(id);
+        const pages = Math.ceil(total / limit);
+        if (pages <= 1) { el.style.display = 'none'; return; }
+        el.style.display = 'flex';
+        el.innerHTML = `
+            <button onclick="(${cb.toString()})(${cur-1})" ${cur<=1?'disabled':''}>← Prev</button>
+            <span>Page ${cur} / ${pages}</span>
+            <button onclick="(${cb.toString()})(${cur+1})" ${cur>=pages?'disabled':''}>Next →</button>`;
+    }
+
+    /* ── Verify referred agent ── */
+    async function verifyAgent(id, name) {
+        if (!confirm(`Verify ${name} as a Verified Agent?`)) return;
+        try {
+            const res  = await fetch(`/api/partner/verify-referred/${id}`, { method:'POST', credentials:'include' });
+            const data = await res.json();
+            showPageAlert(data.message, data.success ? 'ok' : 'err');
+            if (data.success) { loadReferrals(refPage); loadDashboard(); }
+        } catch { showPageAlert('Failed to verify agent. Please try again.', 'err'); }
+    }
+
+    /* ── Copy / Share referral link ── */
+    function copyRef() {
+        const val = document.getElementById('ref-link-input').value;
+        if (!val) return;
+        navigator.clipboard.writeText(val).then(() => showPageAlert('Referral link copied!', 'ok'));
+    }
+
+    function shareRef() {
+        const val = document.getElementById('ref-link-input').value;
+        if (!val) return;
+        if (navigator.share) {
+            navigator.share({ title:'Join Easy Find', text:'Register as an agent on Easy Find using my partner link:', url: val });
+        } else { copyRef(); }
+    }
+
+    /* ── Withdraw modal ── */
+    function openWithdraw()  { document.getElementById('withdraw-modal').classList.add('active'); }
+    function closeWithdraw() {
+        document.getElementById('withdraw-modal').classList.remove('active');
+        const a = document.getElementById('m-alert');
+        a.className = 'm-alert'; a.textContent = '';
+    }
+
+    async function submitWithdraw() {
+        const acct   = document.getElementById('w-account-number').value.trim();
+        const name   = document.getElementById('w-account-name').value.trim();
+        const amount = parseFloat(document.getElementById('w-amount').value);
+        const btn    = document.getElementById('w-submit-btn');
+
+        if (!acct || !/^\d{10,11}$/.test(acct))   return showModalAlert('Enter a valid 10 or 11-digit Opay account number.', 'err');
+        if (!name || name.length < 3)              return showModalAlert('Enter the account name.', 'err');
+        if (!amount || amount < 500)               return showModalAlert('Minimum withdrawal is ₦500.', 'err');
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Submitting...';
+
+        try {
+            const res  = await fetch('/api/partner/withdraw', {
+                method: 'POST', credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accountNumber: acct, accountName: name, amount })
+            });
+            const data = await res.json();
+            if (data.success) {
+                closeWithdraw();
+                showPageAlert('Withdrawal request submitted! Admin will process it within 24 hours.', 'ok');
+                loadDashboard(); loadEarnings(1);
+            } else {
+                showModalAlert(data.message || 'Failed to submit.', 'err');
+            }
+        } catch { showModalAlert('Network error. Please try again.', 'err'); }
+        finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> Submit Request';
+        }
+    }
+
+    /* ── Helpers ── */
+    function showPageAlert(msg, type) {
+        const el = document.getElementById('page-alert');
+        el.textContent = msg;
+        el.className = `p-alert ${type} show`;
+        setTimeout(() => { el.className = 'p-alert'; }, 4500);
+    }
+    function showModalAlert(msg, type) {
+        const el = document.getElementById('m-alert');
+        el.textContent = msg;
+        el.className = `m-alert ${type} show`;
+    }
+    function esc(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+</script>
+
+</body>
+</html>

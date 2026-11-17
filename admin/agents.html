@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agents Management - DayNight Admin</title>
+    <script>
+        if (localStorage.getItem("daynight-theme") === "carbon") {
+            document.documentElement.classList.add("carbon");
+        }
+    </script>
+    <link rel="stylesheet" href="templatemo-daynight-style.css">
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <style>
+        @keyframes agentShimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #agents-sentinel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 60px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        #agents-end {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-menu-overlay"></div>
+
+    <div class="mobile-menu">
+        <div class="mobile-menu-header">
+            <a href="/admin/dashboard" class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                </div>
+                Admin
+            </a>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <nav class="mobile-menu-nav">
+            <a href="/admin/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+            <a href="/admin/projects"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Projects</a>
+            <a href="/admin/inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Inbox</a>
+            <a href="/admin/analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+            <a href="/admin/agents" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Agents</a>
+            <a href="/admin/feedback"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>FeedBack</a>
+            <a href="/admin/reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Reports</a>
+            <a href="/admin/transactions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Transactions</a>
+        </nav>
+        <div class="mobile-menu-footer">
+            <a href="/admin/login" class="mobile-logout-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Logout
+            </a>
+            <div class="theme-toggle">
+                <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+                <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <nav class="top-nav">
+            <div class="nav-container">
+                <div class="nav-left">
+                    <a href="/admin/dashboard" class="logo">
+                        <div class="logo-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></div>
+                        Admin
+                    </a>
+                    <div class="nav-menu">
+                        <div class="nav-item"><a href="/admin/dashboard" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a></div>
+                        <div class="nav-item"><a href="/admin/projects" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>Projects</a></div>
+                        <div class="nav-item"><a href="/admin/inbox" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Inbox</a></div>
+                        <div class="nav-item"><a href="/admin/analytics" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a></div>
+                        <div class="nav-item"><a href="/admin/agents" class="nav-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Agents</a></div>
+                        <div class="nav-item"><a href="/admin/feedback" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>FeedBack</a></div>
+                        <div class="nav-item"><a href="/admin/reports" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>Reports</a></div>
+                        <div class="nav-item"><a href="/admin/transactions" class="nav-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Transactions</a></div>
+                    </div>
+                </div>
+                <div class="nav-right">
+                    <div class="theme-toggle">
+                        <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                        </button>
+                        <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        </button>
+                    </div>
+                    <button class="user-menu">
+                        <div class="user-avatar">E</div>
+                        <span class="user-name">Admin</span>
+                    </button>
+                    <a href="/admin/login" class="btn-logout" title="Logout">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    </a>
+                    <button class="mobile-menu-btn" onclick="toggleMobileMenu()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+                <div>
+                    <h1 class="greeting">Agents Management</h1>
+                    <p class="greeting-sub">Manage agent accounts and permissions</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-agents">0</div>
+                        <div class="stat-label">Total Agents</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="active-agents">0</div>
+                        <div class="stat-label">Active Agents</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-properties">0</div>
+                        <div class="stat-label">Total Properties</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon" style="background:linear-gradient(135deg,#f7971e 0%,#ffd200 100%);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="total-partners">0</div>
+                        <div class="stat-label">Partner Agents</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>All Agents</h2>
+                    <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+                        <input type="text" id="search-agents" placeholder="Search agents..." style="padding:.5rem 1rem;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
+                        <button onclick="exportAgentsCSV()" class="btn btn-secondary" style="display:inline-flex;align-items:center;gap:.4rem;white-space:nowrap;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:15px;height:15px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Export CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Stand</th>
+                                <th>Partner</th>
+                                <th>Status</th>
+                                <th>Properties</th>
+                                <th>Registration Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="agents-tbody"></tbody>
+                    </table>
+                    <div id="agents-sentinel" style="display:none;height:60px;align-items:center;justify-content:center;color:var(--text-secondary);font-size:13px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin .8s linear infinite;margin-right:6px"><path d="M21 12a9 9 0 1 1-6.22-8.56"/></svg>
+                        Loading more...
+                    </div>
+                    <div id="agents-end" style="display:none;text-align:center;padding:1rem;color:var(--text-secondary);font-size:13px;">✓ All agents loaded</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center;">
+        <div style="background:var(--bg-primary);border-radius:12px;padding:2rem;max-width:500px;width:90%;">
+            <h3 style="margin:0 0 1.5rem 0;color:var(--text-primary);">Edit Agent</h3>
+            <form id="edit-form">
+                <input type="hidden" id="edit-agent-id">
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;margin-bottom:.5rem;color:var(--text-secondary);font-size:.875rem;">Stand</label>
+                    <select id="edit-stand" style="width:100%;padding:.75rem;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
+                        <option value="Not verified">Not verified</option>
+                        <option value="Verified Agent">Verified Agent</option>
+                    </select>
+                </div>
+                <div style="margin-bottom:1.5rem;">
+                    <label style="display:block;margin-bottom:.5rem;color:var(--text-secondary);font-size:.875rem;">Status</label>
+                    <select id="edit-status" style="width:100%;padding:.75rem;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:.75rem;justify-content:flex-end;">
+                    <button type="button" onclick="closeEditModal()" class="btn btn-secondary">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="templatemo-daynight-script.js"></script>
+    <script>
+    'use strict';
+
+    var BATCH   = 8;
+    var MAX_DOM = 16;  // prune oldest rows when tbody exceeds this
+
+    var allAgents    = [];
+    var filteredList = [];
+    var cursor       = 0;
+    var isRendering  = false;
+
+    var tbody    = document.getElementById('agents-tbody');
+    var sentinel = document.getElementById('agents-sentinel');
+    var endMsg   = document.getElementById('agents-end');
+
+    // ── Skeleton row ─────────────────────────────────────
+    function skelRow() {
+        return '<tr>' +
+            '<td><div style="height:14px;border-radius:4px;background:linear-gradient(90deg,var(--bg-secondary) 25%,var(--border) 50%,var(--bg-secondary) 75%);background-size:200% 100%;animation:agentShimmer 1.4s infinite;width:120px;"></div></td>' +
+            '<td><div style="height:14px;border-radius:4px;background:linear-gradient(90deg,var(--bg-secondary) 25%,var(--border) 50%,var(--bg-secondary) 75%);background-size:200% 100%;animation:agentShimmer 1.4s infinite;width:150px;"></div></td>' +
+            '<td colspan="7"></td>' +
+            '</tr>';
+    }
+
+    // ── Table row HTML ───────────────────────────────────
+    function rowHTML(agent) {
+        var safeName = (agent.name || '?').replace(/'/g, '&#39;');
+        var avatar = agent.profilePicture
+            ? '<img src="' + agent.profilePicture + '" alt="' + safeName + '" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">'
+            : '<div style="width:32px;height:32px;border-radius:50%;background:var(--accent,#667eea);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;">' + (agent.name||'?')[0] + '</div>';
+
+        var partnerCell = agent.partnerBadge
+            ? '<span style="display:inline-flex;align-items:center;gap:4px;background:#fff8e1;color:#b8860b;border:1px solid #f7c948;border-radius:20px;padding:3px 10px;font-size:.78rem;font-weight:600;"><svg width="12" height="12" viewBox="0 0 24 24" fill="#f7c948"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>Partner</span>'
+            : '<span style="color:var(--text-secondary);font-size:.8rem;">—</span>';
+
+        var badgeBtn = agent.partnerBadge
+            ? '<button onclick="revokePartner(\'' + agent._id + '\',\'' + safeName + '\')" class="btn btn-sm" style="padding:.375rem .75rem;font-size:.8rem;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;">Revoke Badge</button>'
+            : '<button onclick="grantPartner(\'' + agent._id + '\',\'' + safeName + '\')" class="btn btn-sm" style="padding:.375rem .75rem;font-size:.8rem;background:#fff8e1;color:#b8860b;border:1px solid #f7c948;border-radius:6px;cursor:pointer;">Grant Badge</button>';
+
+        return '<tr>' +
+            '<td><div style="display:flex;align-items:center;gap:.75rem;">' + avatar + '<span>' + (agent.name||'—') + '</span></div></td>' +
+            '<td>' + (agent.email||'—') + '</td>' +
+            '<td>' + (agent.number||'—') + '</td>' +
+            '<td>' + (agent.stand||'—') + '</td>' +
+            '<td>' + partnerCell + '</td>' +
+            '<td><span class="status-badge status-' + (agent.status||'active') + '">' + (agent.status||'active') + '</span></td>' +
+            '<td>' + (agent.propertyCount||0) + '</td>' +
+            '<td>' + (agent.registrationDate ? new Date(agent.registrationDate).toLocaleDateString() : '—') + '</td>' +
+            '<td style="display:flex;gap:6px;flex-wrap:wrap;">' +
+                '<button onclick="editAgent(\'' + agent._id + '\')" class="btn btn-sm btn-secondary" style="padding:.375rem .75rem;font-size:.875rem;">Edit</button>' +
+                badgeBtn +
+            '</td>' +
+            '</tr>';
+    }
+
+    // ── Render next BATCH ────────────────────────────────
+    function renderBatch() {
+        if (isRendering || cursor >= filteredList.length) return;
+        isRendering = true;
+
+        // Insert skeleton rows
+        var count = Math.min(BATCH, filteredList.length - cursor);
+        var skelFrag = document.createDocumentFragment();
+        var skelRows = [];
+        for (var i = 0; i < count; i++) {
+            var tmp = document.createElement('tbody');
+            tmp.innerHTML = skelRow();
+            var r = tmp.firstElementChild;
+            r.dataset.skel = '1';
+            skelFrag.appendChild(r);
+            skelRows.push(r);
+        }
+        tbody.appendChild(skelFrag);
+
+        setTimeout(function () {
+            requestAnimationFrame(function () {
+                var scrollY = window.scrollY;
+
+                // Remove skeletons
+                skelRows.forEach(function (r) { if (r.parentNode) r.parentNode.removeChild(r); });
+
+                // Add real rows
+                var frag = document.createDocumentFragment();
+                var end  = Math.min(cursor + BATCH, filteredList.length);
+                for (var j = cursor; j < end; j++) {
+                    var tmp2 = document.createElement('tbody');
+                    tmp2.innerHTML = rowHTML(filteredList[j]);
+                    if (tmp2.firstElementChild) frag.appendChild(tmp2.firstElementChild);
+                }
+                tbody.appendChild(frag);
+                cursor = end;
+
+                // Prune oldest rows if over MAX_DOM
+                var rows = tbody.querySelectorAll('tr:not([data-skel])');
+                if (rows.length > MAX_DOM) {
+                    var excess = rows.length - MAX_DOM;
+                    var removedH = 0;
+                    for (var k = 0; k < excess; k++) {
+                        removedH += rows[k].offsetHeight;
+                        rows[k].parentNode.removeChild(rows[k]);
+                    }
+                    window.scrollTo({ top: scrollY - removedH, behavior: 'instant' });
+                }
+
+                isRendering = false;
+                updateSentinel();
+            });
+        }, 200);
+    }
+
+    function updateSentinel() {
+        if (cursor < filteredList.length) {
+            sentinel.style.display = 'flex';
+            endMsg.style.display   = 'none';
+        } else {
+            sentinel.style.display = 'none';
+            endMsg.style.display   = filteredList.length > 0 ? 'block' : 'none';
+        }
+    }
+
+    // ── IntersectionObserver ─────────────────────────────
+    var observer = new IntersectionObserver(function (entries) {
+        if (entries[0].isIntersecting && !isRendering) {
+            renderBatch();
+        }
+    }, { rootMargin: '0px 0px 300px 0px', threshold: 0 });
+    observer.observe(sentinel);
+
+    // ── Reset list ───────────────────────────────────────
+    function resetList(list) {
+        filteredList = list;
+        cursor       = 0;
+        isRendering  = false;
+        tbody.innerHTML  = '';
+        endMsg.style.display = 'none';
+
+        if (filteredList.length === 0) {
+            sentinel.style.display = 'none';
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-secondary);">No agents found</td></tr>';
+            return;
+        }
+        sentinel.style.display = 'flex';
+        renderBatch();
+    }
+
+    // ── Load all agents once ─────────────────────────────
+    async function loadAgents() {
+        tbody.innerHTML = skelRow() + skelRow() + skelRow() + skelRow();
+        sentinel.style.display = 'none';
+        endMsg.style.display   = 'none';
+
+        try {
+            var res  = await fetch('/api/admin/agents', { credentials: 'include' });
+            var data = await res.json();
+            tbody.innerHTML = '';
+
+            if (data.success) {
+                allAgents = data.agents;
+                updateStats(data.agents, data.totalProperties);
+                resetList(allAgents);
+            } else {
+                tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-secondary);">Failed to load agents</td></tr>';
+            }
+        } catch (err) {
+            console.error('Error loading agents:', err);
+            tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--text-secondary);">Error loading agents</td></tr>';
+        }
+    }
+
+    function updateStats(agents, totalProperties) {
+        document.getElementById('total-agents').textContent     = agents.length;
+        document.getElementById('active-agents').textContent    = agents.filter(function(a){ return a.status === 'active'; }).length;
+        document.getElementById('total-properties').textContent = totalProperties || 0;
+        document.getElementById('total-partners').textContent   = agents.filter(function(a){ return a.partnerBadge; }).length;
+    }
+
+    // ── Search ───────────────────────────────────────────
+    document.getElementById('search-agents').addEventListener('input', function (e) {
+        var q = e.target.value.toLowerCase().trim();
+        if (!q) { resetList(allAgents); return; }
+        resetList(allAgents.filter(function (a) {
+            return (a.name  || '').toLowerCase().includes(q) ||
+                   (a.email || '').toLowerCase().includes(q) ||
+                   (a.number|| '').includes(q) ||
+                   (a.stand || '').toLowerCase().includes(q);
+        }));
+    });
+
+    // ── Edit modal ───────────────────────────────────────
+    function editAgent(id) {
+        var agent = allAgents.find(function(a){ return a._id === id; });
+        if (!agent) return;
+        document.getElementById('edit-agent-id').value = agent._id;
+        document.getElementById('edit-stand').value    = agent.stand  || '';
+        document.getElementById('edit-status').value   = agent.status || 'active';
+        document.getElementById('edit-modal').style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('edit-modal').style.display = 'none';
+    }
+
+    document.getElementById('edit-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        var id     = document.getElementById('edit-agent-id').value;
+        var stand  = document.getElementById('edit-stand').value;
+        var status = document.getElementById('edit-status').value;
+        try {
+            var res  = await fetch('/api/admin/agents/' + id, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ stand: stand, status: status })
+            });
+            var data = await res.json();
+            if (data.success) { alert('Agent updated!'); closeEditModal(); loadAgents(); }
+            else alert(data.message || 'Failed to update agent');
+        } catch (err) { alert('Failed to update agent'); }
+    });
+
+    // ── Partner badge ────────────────────────────────────
+    async function grantPartner(id, name) {
+        var note = prompt('Grant Partnership Badge to ' + name + '?\n\nOptional note:');
+        if (note === null) return;
+        try {
+            var res  = await fetch('/api/admin/partner/grant/' + id, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ note: note })
+            });
+            var data = await res.json();
+            if (data.success) { alert('Badge granted! Code: ' + data.referralCode); loadAgents(); }
+            else alert(data.message || 'Failed to grant badge');
+        } catch (err) { alert('Error granting badge'); }
+    }
+
+    async function revokePartner(id, name) {
+        if (!confirm('Revoke Partnership Badge from ' + name + '?')) return;
+        try {
+            var res  = await fetch('/api/admin/partner/revoke/' + id, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include'
+            });
+            var data = await res.json();
+            if (data.success) { alert('Badge revoked.'); loadAgents(); }
+            else alert(data.message || 'Failed to revoke badge');
+        } catch (err) { alert('Error revoking badge'); }
+    }
+
+    loadAgents();
+
+    function exportAgentsCSV() {
+        if (!allAgents.length) { alert('No agents to export.'); return; }
+        var headers = ['Name','Email','Phone','Stand','Partner','Status','Properties','Registered'];
+        var rows = allAgents.map(function(a) {
+            return [
+                a.name || '',
+                a.email || '',
+                a.number || '',
+                a.stand || '',
+                a.partnerBadge ? 'Yes' : 'No',
+                a.status || '',
+                a.propertyCount || 0,
+                a.registrationDate ? new Date(a.registrationDate).toLocaleDateString() : ''
+            ].map(function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; }).join(',');
+        });
+        var csv  = [headers.join(',')].concat(rows).join('\n');
+        var blob = new Blob([csv], { type: 'text/csv' });
+        var url  = URL.createObjectURL(blob);
+        var a    = document.createElement('a');
+        a.href = url;
+        a.download = 'agents_' + new Date().toISOString().slice(0,10) + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+    }
+    </script>
+</body>
+</html>

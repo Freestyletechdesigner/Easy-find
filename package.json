@@ -1,0 +1,51 @@
+{
+  "name": "easyfind",
+  "version": "1.0.0",
+  "description": "Easy Find - Real Estate Platform",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@google/genai": "^2.7.0",
+    "@hapi/boom": "10.0.1",
+    "@huggingface/transformers": "^4.2.0",
+    "@napi-rs/canvas": "^1.0.9",
+    "@tensorflow/tfjs": "^4.22.0",
+    "@vladmandic/face-api": "^1.7.15",
+    "@whiskeysockets/baileys": "7.0.0-rc14",
+    "apify-client": "^2.23.4",
+    "axios": "^1.7.7",
+    "bcryptjs": "^2.4.3",
+    "chromadb": "^3.4.3",
+    "compression": "^1.8.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "express-rate-limit": "^7.4.1",
+    "express-session": "^1.18.1",
+    "express-validator": "^7.2.1",
+    "google-auth-library": "^10.6.2",
+    "groq-sdk": "^1.2.1",
+    "helmet": "^8.0.0",
+    "mongoose": "^8.7.3",
+    "multer": "^2.1.1",
+    "node-cron": "^4.6.0",
+    "nodemailer": "^6.9.14",
+    "pino": "10.4.0",
+    "puppeteer": "^25.12.0",
+    "qrcode-terminal": "0.12.0",
+    "sharp": "^0.34.5",
+    "smile-identity-core": "^3.1.0",
+    "ws": "^8.20.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
+}
