@@ -9,7 +9,7 @@ module.exports = {
     {
       name: 'easyfind',
       script: 'app.js',
-      cwd: '/var/www/easyfind',       // ← change to your VPS project path
+      cwd: '/var/www/easy-find',
       instances: 1,
       autorestart: true,
       watch: false,
