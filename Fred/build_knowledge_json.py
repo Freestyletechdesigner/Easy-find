@@ -1,0 +1,464 @@
+import json
+
+easyfind_knowledge = {
+    "company": {
+        "name": "Easyfind Nigeria",
+        "description": "Easyfind Nigeria is a real estate platform that helps people find properties and connects them with property agents.",
+        "country": "Nigeria"
+    },
+
+    "fred_ai": {
+        "name": "Fred",
+        "role": "Easyfind Nigeria real estate AI assistant",
+        "description": "Fred helps users search for properties, understand listings, and interact with Easyfind Nigeria services.",
+        "personality": [
+            "Friendly",
+            "Helpful",
+            "Professional",
+            "Natural",
+            "Concise"
+        ]
+    },
+
+    "property_search": {
+        "description": "Fred can help users find properties based on their requirements.",
+        "search_criteria": [
+            "Property type",
+            "Location",
+            "Price",
+            "Number of bedrooms",
+            "Number of bathrooms",
+            "Property category",
+            "Other property features"
+        ]
+    },
+
+    "property_types": [
+        "House",
+        "Apartment",
+        "Flat",
+        "Duplex",
+        "Land",
+        "Plot",
+        "Shop",
+        "Office",
+        "Warehouse",
+        "Hotel",
+        "Event Center",
+        "Self Contain"
+    ],
+
+    "agent_information": {
+        "description": "Easyfind Nigeria works with property agents who provide property listings.",
+        "agent_role": "Agents provide property information and communicate with potential customers.",
+        "important_rule": "Fred must only use verified agent information from the database when providing agent contact details."
+    },
+
+    "rules": {
+        "property_information": "Fred must use the verified property information retrieved from the property database.",
+        "agent_contact": "Fred must not invent or guess agent phone numbers.",
+        "price": "Fred must not invent or change property prices.",
+        "availability": "Fred should only claim a property is available when the available property data supports that claim.",
+        "location": "Fred should use the location stored in the property listing.",
+        "unknown_information": "If information is not available, Fred should clearly say that it is not available."
+    },
+
+    "website": {
+        "name": "Easyfind Nigeria",
+        "url": "https://easyfind.com.ng"
+    },
+
+    "faq": [
+        {
+            "question": "What is Easyfind Nigeria?",
+            "answer": "Easyfind Nigeria is a real estate platform that helps users find properties and connect with property agents."
+        },
+        {
+            "question": "What can Fred help me with?",
+            "answer": "Fred can help you search for properties based on location, property type, price, bedrooms, and other requirements."
+        },
+        {
+            "question": "Can Fred provide an agent's phone number?",
+            "answer": "Yes, when a verified phone number is available in the property listing."
+        },
+        {
+            "question": "Can Fred invent a property?",
+            "answer": "No. Fred should only provide properties retrieved from the verified property database."
+        },
+        {
+            "question": "How do I post a property on EasyFind?",
+            "answer": "Sign in to your agent account at easyfind.com.ng/login-agent, then click 'Upload Property' on your dashboard. Fill in details, upload photos, verify location, and submit."
+        },
+        {
+            "question": "How do I become an agent on EasyFind?",
+            "answer": "If you have a user account, go to easyfind.com.ng/upgrade-to-agent and enter your phone number to convert instantly. Or create a new agent account at easyfind.com.ng/signup-agent."
+        },
+        {
+            "question": "Can Fred show me agents on EasyFind?",
+            "answer": "Yes! Just ask Fred to show top agents or search for an agent by name and Fred will display active EasyFind agents with their contact details."
+        }
+    ],
+
+    "agent_portal": {
+        "description": "A guide for real estate agents on accessing the Easyfind partner portal, including step-by-step instructions for publishing new rental and sales listings.",
+        "portal_url": "https://easyfind.com.ng/agent-loged",
+        "signup_url": "https://easyfind.com.ng/signup-agent",
+        "login_url": "https://easyfind.com.ng/login-agent",
+        "upgrade_url": "https://easyfind.com.ng/upgrade-to-agent",
+        "how_to_post_property": [
+            "Sign in to the Easyfind agent portal at easyfind.com.ng/login-agent (or sign up at easyfind.com.ng/signup-agent if you don't have an account yet).",
+            "Once logged in, go to your dashboard at easyfind.com.ng/agent-loged.",
+            "Click 'Upload Property' or 'Add New Property' on your dashboard.",
+            "Fill in the property details: type (house, flat, land, shop etc.), location, price, bedrooms, bathrooms, and description.",
+            "Upload clear photos of the property.",
+            "Verify the location on the map.",
+            "Click 'Submit' to publish the listing. It will appear on the platform immediately."
+        ],
+        "how_to_become_agent": [
+            "If you already have a regular user account on EasyFind, go to easyfind.com.ng/upgrade-to-agent.",
+            "Enter your phone number to complete the upgrade.",
+            "Your account will be converted to an agent account instantly.",
+            "You can then log in and start posting properties.",
+            "Alternatively, create a fresh agent account directly at easyfind.com.ng/signup-agent."
+        ],
+        "verification": "Agents can get verified by paying the verification fee and completing the biometrics check. Verified agents get a badge on their profile and higher visibility on the platform.",
+        "boost": "Agents can boost their account for higher visibility in search results. Go to easyfind.com.ng/boost-account to see available plans."
+    },
+    "terms-of-service": {
+        "title": "Terms of Service",
+        "company": "Easy Find",
+        "last_updated": "Oct 19, 2026",
+        "legal_notice": "By visiting or using the Easy Find platform, you are agreeing to these Terms of Service. These terms are here to protect both you and our team, limit our legal liabilities, and set guidelines for safe interaction on our platform.",
+        "sections": [
+          {
+            "id": 1,
+            "title": "1. Easy Find is an Intermediary Platform",
+            "simply_put": "We are a listing directory matching property seekers with independent agents. We don't own, rent, or manage any of the listed properties ourselves.",
+            "content": "Easy Find (operated by Freedom and the Squad Energy tech team) is an online marketplace connecting independent property agents with prospective renters, buyers, and guests. Easy Find is not a real estate agency, broker, developer, or owner of any listings.",
+            "accent_notice": "We do not participate in, control, or take responsibility for any transactions, viewings, negotiations, lease agreements, or financial interactions between users and agents. Any dealings are strictly at your own risk."
+          },
+          {
+            "id": 2,
+            "title": "2. Listing \"As-Is\" Disclaimer",
+            "simply_put": "Agents write their own descriptions and post their own photos. Because we can't physically visit every single listed property, always inspect places in person before making financial choices.",
+            "content": "All property listings, descriptions, pictures, prices, location coordinates, amenities, and available dates are supplied entirely by independent third-party agents. Easy Find makes no warranties or representations regarding:",
+            "list_items": [
+              "The accuracy, completeness, or legitimacy of any listings on the platform.",
+              "The structural condition, security, legality, or suitability of any listed properties.",
+              "The ownership rights or authorization of agents to sell or lease listed properties."
+            ]
+          },
+          {
+            "id": 3,
+            "title": "3. Agent Identity Verification Disclaimer",
+            "simply_put": "Our selfie and biometrics verification checks that agents are real people, which helps reduce fraud. However, this doesn't guarantee their professional behavior or business honesty. Please do your own due diligence!",
+            "content": "Easy Find provides a secure verification portal for agents (selfie and biometrics ). However, this security verification is solely to verify the identity of the individual agent to mitigate baseline fraud. It does not constitute:",
+            "list_items": [
+              "An endorsement, backing, or guarantee of the agent's professional status, moral character, or legal authority.",
+              "A check of their credit score, licensing status, or history of commercial integrity."
+            ],
+            "additional_text": "Users must perform their own commercial due diligence, verify agent credentials, and inspect properties in person before making any payments."
+          },
+          {
+            "id": 4,
+            "title": "4. Disclaimer of All Warranties",
+            "simply_put": "We work hard to provide a great system, but the platform is offered \"as is\" without any legal guarantees of being online, error-free, or perfect at all times.",
+            "content": "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE EASY FIND PLATFORM IS PROVIDED ON AN \"AS IS\" AND \"AS AVAILABLE\" BASIS, WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED. FREEDOM EXPLICITLY DISCLAIMS ANY AND ALL WARRANTIES, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT, OR THAT THE PLATFORM WILL OPERATE UNINTERRUPTED, SECURE, OR ERROR-FREE. ANY RELIANCE ON CONTENT, LISTINGS, OR INTERACTIONS WITH AGENTS IS STRICTLY AT YOUR OWN RISK."
+          },
+          {
+            "id": 5,
+            "title": "5. Absolute Limitation of Liability",
+            "simply_put": "We are not responsible for any financial loss, rental fraud, bad deals, offline accidents, or injuries that occur while visiting properties listed by independent agents.",
+            "content": "TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL FREESTYLETECHDESIGNER, EASY FIND, ITS FOUNDERS, DIRECTORS, AFFILIATES, AGENTS, OR EMPLOYEES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, PUNITIVE, OR CONSEQUENTIAL DAMAGES WHATSOEVER. THIS INCLUDES, WITHOUT LIMITATION, DAMAGES OR LOSSES RESULTING FROM:",
+            "list_items": [
+              "ANY FINANCIAL SCAMS, RENTAL FRAUD, DEPOSIT THEFT, OR MISREPRESENTATIONS COMMITTED BY THIRD-PARTY AGENTS OR USERS.",
+              "THE LOSS OF ANY RENTS, DEPOSITS, BOOKING FEES, OR ACCOUNT BOOSTING PAYMENTS.",
+              "ANY PHYSICAL INJURY, BODILY HARM, PROPERTY DAMAGE, OR CRIMINAL ACTIONS ARISING DURING LISTING VIEWINGS, INSPECTIONS, OR TENANCIES.",
+              "TEMPORARY PLATFORM INTERRUPTIONS, DOWNTIME, OR DATA TRANSMISSION ERRORS."
+            ]
+          },
+          {
+            "id": 6,
+            "title": "6. User Indemnification",
+            "simply_put": "If your listings or misuse of the platform gets us sued or causes us legal costs, you agree to cover those legal fees and damages.",
+            "content": "You agree to fully defend, indemnify, and hold harmless Easy Find, Freedom, and its directors, employees, and licensing partners from and against any and all claims, damages, liabilities, losses, costs, or debt, including legal fees, arising from your use of the platform, any properties you lease/buy/sell, any listings you post, or your violation of these Terms of Service."
+          },
+          {
+            "id": 7,
+            "title": "7. Payment Gateways",
+            "simply_put": "All online payments are processed through secure channels(Paystack). Refund claims for cancellations must be resolved directly with the agent.",
+            "content": "All payment transactions (such as boosting accounts or verification payment) are routed securely through licensed third-party processors (Paystack). Easy Find is not liable for gateway failures, chargebacks, or unauthorized cards. No refunds."
+          },
+          {
+            "id": 8,
+            "title": "8. Governing Law",
+            "simply_put": "These terms follow the laws of the Federal Republic of Nigeria.",
+            "content": "These terms and any disputes arising directly from your use of the Easy Find platform shall be governed by and construed in accordance with the laws of the Federal Republic of Nigeria, without regard to its conflict of law principles."
+          },
+          {
+            "id": 9,
+            "title": "9. Dispute Resolution & Binding Arbitration",
+            "simply_put": "If any serious issue ever comes up, we agree to settle it peacefully through private, professional arbitration in Enugu, instead of going to court.",
+            "content": "Any dispute, controversy, or claim arising out of or relating to these Terms, including its formation, validity, breach, or termination, shall be referred to and finally resolved by binding arbitration in accordance with the Arbitration Laws of the Federal Republic of Nigeria. The arbitration shall be conducted by a single arbitrator, and the venue of arbitration shall be Enugu, Nigeria. The proceedings shall be confidential and conducted in English."
+          },
+          {
+            "id": 10,
+            "title": "10. Class Action Waiver",
+            "simply_put": "Any disputes must be handled on an individual basis. You agree not to file or join group or class actions against us.",
+            "content": "YOU AGREE THAT ANY CLAIMS OR ARBITRATION SHALL BE CONDUCTED SOLELY ON AN INDIVIDUAL BASIS. YOU EXPLICITLY WAIVE ANY RIGHT TO PARTICIPATE IN A CLASS ACTION LAWSUIT, CLASS-WIDE ARBITRATION, OR REPRESENTATIVE PROCEEDING AGAINST FREEDOM OR EASY FIND."
+          },
+          {
+            "id": 11,
+            "title": "11. Severability",
+            "simply_put": "If an official arbitrator rules that one small sentence of this contract is invalid, all other parts of the terms still remain completely active and valid.",
+            "content": "If any provision of these Terms of Service is found by a court or arbitrator of competent jurisdiction to be invalid, illegal, or unenforceable, the remaining provisions of these Terms shall remain in full force and effect."
+          }
+        ],
+        "footer": {
+          "copyright_year": "2026",
+          "rights_text": "Easy Find. All rights reserved."
+        }
+    },
+      
+    "private-policy": {
+        "title": "Privacy Policy",
+        "company": "Easy Find",
+        "scope": "Enugu State, Nigeria",
+        "last_updated": "June 2026",
+        "platform_summary": "This privacy policy applies to Easy Find — a real estate platform for Enugu State, Nigeria. By using our platform, you agree to the practices described here.",
+        "table_of_contents": [
+          "Information We Collect",
+          "How We Use Your Information",
+          "Information Sharing",
+          "Data Security",
+          "Cookies & Tracking",
+          "Push Notifications",
+          "Your Rights",
+          "Third-Party Services",
+          "Children's Privacy",
+          "Changes to This Policy",
+          "Contact Us"
+        ],
+        "sections": [
+          {
+            "id": 1,
+            "title": "1. Information We Collect",
+            "content": "We collect information you provide directly and information generated as you use the platform:",
+            "collected_items": [
+              {
+                "category": "Account information",
+                "details": "Name, email address, phone number, and password when you register as an agent or user."
+              },
+              {
+                "category": "Profile information",
+                "details": "Profile photo, bio, and business details agents add to their profiles."
+              },
+              {
+                "category": "Property listings",
+                "details": "Photos, descriptions, prices, locations, and details of properties agents post."
+              },
+              {
+                "category": "Identity verification data",
+                "details": "NIN (National Identification Number) and biometric data (selfie) submitted during agent verification — processed by Smile ID, not stored raw on our servers."
+              },
+              {
+                "category": "Payment information",
+                "details": "Transaction references and payment status via Paystack. We do not store card numbers."
+              },
+              {
+                "category": "Usage data",
+                "details": "Pages visited, search queries, property views, and interactions on the platform."
+              },
+              {
+                "category": "Device information",
+                "details": "Browser type, IP address, and device identifiers for security and analytics."
+              },
+              {
+                "category": "Communications",
+                "details": "Messages and comments you submit through the platform."
+              }
+            ]
+          },
+          {
+            "id": 2,
+            "title": "2. How We Use Your Information",
+            "content": "We use collected information to:",
+            "uses": [
+              "Provide, operate, and improve the Easy Find platform",
+              "Verify agent identities and maintain platform integrity",
+              "Process payments for boost and verification services",
+              "Send transactional emails (OTP codes, listing confirmations, boost notifications)",
+              "Send push notifications about new listings and platform updates (with your consent)",
+              "Analyse usage patterns to improve search and discovery",
+              "Detect and prevent fraud, spam, or abuse",
+              "Comply with legal obligations",
+              "Respond to your support requests and inquiries"
+            ]
+          },
+          {
+            "id": 3,
+            "title": "3. Information Sharing",
+            "data_sale_policy": "We do not sell your personal data.",
+            "sharing_circumstances": [
+              {
+                "type": "Public profile information",
+                "details": "Agent names, profile photos, stands, and property listings are publicly visible to help buyers find agents."
+              },
+              {
+                "type": "Service providers",
+                "details": "Paystack (payments), Smile ID (identity verification), Google (OAuth login, Analytics), OneSignal (push notifications), EmailJS (contact forms)."
+              },
+              {
+                "type": "Legal requirements",
+                "details": "When required by Nigerian law or to protect the rights and safety of our users."
+              },
+              {
+                "type": "Business transfers",
+                "details": "In the event of a merger or acquisition, your data may be transferred as part of the business assets."
+              }
+            ]
+          },
+          {
+            "id": 4,
+            "title": "4. Data Security",
+            "content": "We implement industry-standard security measures to protect your data:",
+            "security_measures": [
+              "Passwords are hashed using bcrypt — we never store plain-text passwords",
+              "All data transmission is encrypted via HTTPS/TLS",
+              "Session cookies use httpOnly, secure, and sameSite flags",
+              "Payment processing is handled entirely by Paystack — we do not handle card data",
+              "Biometric verification is processed by Smile ID under their security protocols",
+              "API rate limiting protects against brute-force attacks"
+            ],
+            "disclaimer": "No system is 100% secure. While we do our best to protect your data, we cannot guarantee absolute security. Report any security concerns to info@easyfind.com.ng."
+          },
+          {
+            "id": 5,
+            "title": "5. Cookies & Tracking",
+            "cookie_purposes": [
+              {
+                "purpose": "Session management",
+                "description": "To keep you logged in across pages"
+              },
+              {
+                "purpose": "Preferences",
+                "description": "To remember your cookie consent and settings"
+              },
+              {
+                "purpose": "Analytics",
+                "description": "Google Analytics (anonymised) to understand how people use the platform"
+              }
+            ],
+            "user_control": "You can control cookies through your browser settings. Disabling cookies may affect some platform features like staying logged in."
+          },
+          {
+            "id": 6,
+            "title": "6. Push Notifications",
+            "provider": "OneSignal",
+            "details": [
+              "Push notifications are opt-in — you must click 'Allow' in your browser to receive them",
+              "You can unsubscribe at any time through your browser notification settings",
+              "We may use push notifications to alert you about new listings, boost activations, and account updates",
+              "Anonymous visitors who subscribe receive general property alerts; logged-in agents receive targeted account notifications"
+            ]
+          },
+          {
+            "id": 7,
+            "title": "7. Your Rights",
+            "rights_list": [
+              {
+                "right": "Access",
+                "description": "Request a copy of the personal data we hold about you"
+              },
+              {
+                "right": "Correction",
+                "description": "Update incorrect or incomplete information via your account settings"
+              },
+              {
+                "right": "Deletion",
+                "description": "Request deletion of your account and associated data"
+              },
+              {
+                "right": "Data portability",
+                "description": "Request your data in a machine-readable format"
+              },
+              {
+                "right": "Opt-out",
+                "description": "Unsubscribe from push notifications or marketing emails at any time"
+              }
+            ],
+            "response_time_days": 30,
+            "contact_email": "info@easyfind.com.ng"
+          },
+          {
+            "id": 8,
+            "title": "8. Third-Party Services",
+            "integrations": [
+              {
+                "name": "Paystack",
+                "function": "payment processing",
+                "privacy_url": "https://paystack.com/privacy"
+              },
+              {
+                "name": "Smile ID",
+                "function": "identity verification",
+                "privacy_url": "https://usesmileid.com/privacy-policy"
+              },
+              {
+                "name": "Google Analytics & OAuth",
+                "function": "analytics and login",
+                "privacy_url": "https://policies.google.com/privacy"
+              },
+              {
+                "name": "OneSignal",
+                "function": "push notifications",
+                "privacy_url": "https://onesignal.com/privacy_policy"
+              },
+              {
+                "name": "EmailJS",
+                "function": "contact form delivery",
+                "privacy_url": "https://www.emailjs.com/legal/privacy-policy/"
+              }
+            ]
+          },
+          {
+            "id": 9,
+            "title": "9. Children's Privacy",
+            "policy": "Easy Find is not directed at children under the age of 18. We do not knowingly collect personal data from minors. If you believe a child has provided us with personal information, please contact us and we will delete it promptly."
+          },
+          {
+            "id": 10,
+            "title": "10. Changes to This Policy",
+            "actions_on_change": [
+              "Update the 'Last updated' date at the top of this page",
+              "Notify registered agents by email or push notification"
+            ],
+            "acceptance_terms": "Continued use of the platform after changes constitutes acceptance of the updated policy."
+          },
+          {
+            "id": 11,
+            "title": "11. Contact Us",
+            "team_name": "Easy Find Privacy Team",
+            "sla_response": "We take your privacy seriously and will respond to all requests within 30 days.",
+            "contact_methods": {
+              "email": "info@easyfind.com.ng",
+              "whatsapp": "https://wa.me/2347035932876"
+            }
+          }
+        ],
+        "footer": {
+          "copyright_year": "2026",
+          "rights_text": "Easy Find — Verified property listings in Enugu State."
+        }
+    }
+}
+
+# Save JSON file — path is relative to this script's location (Fred/)
+import os as _os
+json_path = _os.path.join(_os.path.dirname(__file__), "easyfind_knowledge.json")
+
+with open(json_path, "w", encoding="utf-8") as f:
+    json.dump(easyfind_knowledge, f, indent=2, ensure_ascii=False)
+
+print("✅ Easyfind knowledge JSON created!")
+print(f" Location: {json_path}")

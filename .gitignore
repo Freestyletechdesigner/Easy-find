@@ -4,8 +4,10 @@ node_modules/
 
 # ChromaDB — rebuilt on VPS via seed_chromadb.py
 
-# Python venv — created by deploy.sh on the VPS
-Fred/
+# Fred — block only large/generated files, allow scripts
+Fred/fred.gguf
+Fred/fred_chromadb/
+Fred/__pycache__/
 
 # OS / editor
 .vscode/
