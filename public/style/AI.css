@@ -443,7 +443,7 @@ body {
   padding: 8px 12px 8px 18px;
   margin-top: -70px;
   display: flex; align-items: flex-end; gap: 10px;
-  margin: 0 auto; box-shadow: 0 8px 25px rgb(255, 0, 0);
+  margin: 0 auto; box-shadow: 0 8px 25px rgba(0,0,0,.2);
   transition: opacity .2s;
 }
 .input-box.disabled {
