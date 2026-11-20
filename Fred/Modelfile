@@ -1,13 +1,7 @@
 # Ollama Modelfile for Fred — EasyFind Nigeria AI Assistant
-# Using llama3.2:1b (already pulled, no gguf file needed)
-#
-# NOTE: llama3.2:1b is a standard Ollama model — no ollama create needed.
-# It was pulled with: ollama pull llama3.2:1b
-# Just set OLLAMA_MODEL=llama3.2:1b in .env and start Fred.
-#
-# This file is kept for reference only.
+# Uses the custom fred.gguf model file
 
-FROM llama3.2:1b
+FROM ./fred.gguf
 
 PARAMETER temperature 0.6
 PARAMETER top_p 0.9
