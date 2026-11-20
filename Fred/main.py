@@ -85,10 +85,8 @@ if os.path.exists(_torch_dll):
 
 FRED_DIR      = Path(__file__).parent.resolve()
 OLLAMA_URL    = os.environ.get("OLLAMA_URL",    "http://localhost:11434")
-OLLAMA_MODEL  = os.environ.get("OLLAMA_MODEL",  "llama3.2:1b")
+OLLAMA_MODEL  = os.environ.get("OLLAMA_MODEL",  "fred")
 SEARXNG_URL   = os.environ.get("SEARXNG_URL",   "http://localhost:8080")
-GEMINI_MODEL  = os.environ.get("GEMINI_MODEL",  "gemini-2.5-flash")
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 # ── FastAPI ───────────────────────────────────────────────────────────────────
 app = FastAPI(title="Fred AI Engine")
@@ -922,230 +920,36 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
 # is active.  classify_intent() (the only place that bypassed _llm_call)
 # is updated below to go through the same manager.
 
-GEMINI_QUOTA_RESET_SECS = 3600   # retry exhausted key after 1 hour
-
-
-class _GeminiKey:
-    """Tracks one Gemini API key and whether it is currently quota-exhausted."""
-    def __init__(self, key: str, label: str):
-        self.key            = key
-        self.label          = label          # e.g. "KEY1"
-        self.exhausted_at:  Optional[float] = None   # epoch when it was marked exhausted
-
-    @property
-    def available(self) -> bool:
-        if not self.key:
-            return False
-        if self.exhausted_at is None:
-            return True
-        # Auto-recover after the quota window
-        if time.time() - self.exhausted_at >= GEMINI_QUOTA_RESET_SECS:
-            print(f"[LLM] Gemini {self.label} quota window expired — re-enabling key")
-            self.exhausted_at = None
-            return True
-        return False
-
-    def mark_exhausted(self):
-        self.exhausted_at = time.time()
-        mins = GEMINI_QUOTA_RESET_SECS // 60
-        print(f"[LLM] Gemini {self.label} quota exhausted — will retry in ~{mins} min")
-
-
 class LLMBackendManager:
     """
-    Single point of truth for which LLM backend Fred is using right now.
+    Ollama-only LLM backend.
     Exposes:
-      - call(messages, max_tokens)          → non-streaming str
-      - stream(messages, max_tokens)        → async generator of str chunks
-      - status()                            → dict for /llm/status endpoint
+      - call(messages, max_tokens)   → non-streaming str
+      - stream(messages, max_tokens) → async generator of str chunks
+      - status()                     → dict for /llm/status endpoint
     """
 
     def __init__(self):
-        k1 = os.environ.get("GEMINI_API_KEY",  "")
-        k2 = os.environ.get("GEMINI_API_KEY2", "")
-        self._keys: list[_GeminiKey] = []
-        if k1: self._keys.append(_GeminiKey(k1, "KEY1"))
-        if k2: self._keys.append(_GeminiKey(k2, "KEY2"))
-        if self._keys:
-            print(f"[LLM] Gemini backend ready — {len(self._keys)} key(s) loaded")
-        else:
-            print("[LLM] No Gemini keys found — using Ollama only")
+        print(f"[LLM] Ollama-only backend ready — model: {OLLAMA_MODEL}")
 
-    # ── internal: find the next usable Gemini key ─────────────────────────────
-    def _next_key(self) -> Optional[_GeminiKey]:
-        for k in self._keys:
-            if k.available:
-                return k
-        return None
-
-    @property
-    def using_gemini(self) -> bool:
-        return self._next_key() is not None
-
-    # ── Gemini REST helpers ───────────────────────────────────────────────────
-
-    @staticmethod
-    def _to_gemini_messages(messages: list) -> tuple[Optional[str], list]:
-        """
-        Convert OpenAI-style messages to Gemini format.
-        Returns (system_instruction_str | None, contents_list).
-        """
-        system_parts = []
-        contents     = []
-        for m in messages:
-            role    = m.get("role", "user")
-            content = m.get("content", "")
-            if role == "system":
-                system_parts.append(content)
-            elif role == "assistant":
-                contents.append({"role": "model", "parts": [{"text": content}]})
-            else:
-                contents.append({"role": "user",  "parts": [{"text": content}]})
-
-        # Gemini requires alternating user/model turns — merge consecutive same-role
-        merged = []
-        for turn in contents:
-            if merged and merged[-1]["role"] == turn["role"]:
-                merged[-1]["parts"][0]["text"] += "\n" + turn["parts"][0]["text"]
-            else:
-                merged.append(turn)
-
-        # Ensure the last turn is user (Gemini rejects if model speaks last)
-        if merged and merged[-1]["role"] == "model":
-            merged.append({"role": "user", "parts": [{"text": "(continue)"}]})
-
-        system_str = "\n\n".join(system_parts) if system_parts else None
-        return system_str, merged
-
-    def _gemini_body(self, messages: list, max_tokens: int, stream: bool = False) -> tuple[str, dict]:
-        """Build the URL path and request body for a Gemini generateContent call."""
-        system_str, contents = self._to_gemini_messages(messages)
-        body: dict = {
-            "contents":           contents,
-            "generationConfig":   {
-                "maxOutputTokens":  max_tokens,
-                "temperature":      0.3,
-            },
-        }
-        if system_str:
-            body["systemInstruction"] = {"parts": [{"text": system_str}]}
-        endpoint = "streamGenerateContent" if stream else "generateContent"
-        return endpoint, body
-
-    # ── Non-streaming call ────────────────────────────────────────────────────
-
-    async def _gemini_call(self, key: _GeminiKey, messages: list, max_tokens: int) -> str:
-        endpoint, body = self._gemini_body(messages, max_tokens, stream=False)
-        url = f"{GEMINI_API_URL}/{GEMINI_MODEL}:{endpoint}?key={key.key}"
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(url, json=body)
-
-        if resp.status_code == 429:
-            key.mark_exhausted()
-            raise RuntimeError(f"Gemini {key.label} quota exhausted (429)")
-
-        resp.raise_for_status()
-        data = resp.json()
-        # Extract text from candidates[0].content.parts[0].text
-        try:
-            candidate = data["candidates"][0]
-            # Handle MAX_TOKENS with empty content — the model was cut off before
-            # producing any output.  Treat this as a retryable failure so the
-            # caller can try the next key / fall back to Ollama.
-            finish = candidate.get("finishReason", "")
-            content = candidate.get("content", {})
-            parts   = content.get("parts", [])
-            if not parts:
-                raise RuntimeError(
-                    f"Gemini response parse error: 'parts' | finishReason={finish!r} | raw: {str(data)[:200]}"
-                )
-            return parts[0]["text"].strip()
-        except RuntimeError:
-            raise
-        except (KeyError, IndexError) as e:
-            raise RuntimeError(f"Gemini response parse error: {e} | raw: {str(data)[:200]}")
-
-    async def _ollama_call(self, messages: list, max_tokens: int) -> str:
-        async with httpx.AsyncClient(timeout=60.0) as client:
+    async def call(self, messages: list, max_tokens: int = 300) -> str:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
                 f"{OLLAMA_URL}/api/chat",
                 json={
-                    "model":   OLLAMA_MODEL,
+                    "model":    OLLAMA_MODEL,
                     "messages": messages,
                     "stream":   False,
-                    "options": {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": 512},
+                    "options":  {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": 2048},
                 },
             )
             resp.raise_for_status()
-            return resp.json().get("message", {}).get("content", "").strip()
+            result = resp.json().get("message", {}).get("content", "").strip()
+            print(f"[LLM] ✓ Ollama response ({len(result)} chars)")
+            return result
 
-    async def call(self, messages: list, max_tokens: int = 300) -> str:
-        """
-        Non-streaming LLM call.
-        Tries each Gemini key in order, falls back to Ollama if all are exhausted.
-        """
-        # Try Gemini keys in order
-        for key in self._keys:
-            if not key.available:
-                continue
-            try:
-                result = await self._gemini_call(key, messages, max_tokens)
-                print(f"[LLM] ✓ Gemini {key.label}")
-                return result
-            except RuntimeError as e:
-                if "quota exhausted" in str(e):
-                    continue    # try the next key
-                print(f"[LLM] Gemini {key.label} error: {e} — trying next")
-                continue
-            except Exception as e:
-                print(f"[LLM] Gemini {key.label} unexpected error: {e} — trying next")
-                continue
-
-        # All Gemini keys unavailable — use Ollama
-        print("[LLM] All Gemini keys exhausted/unavailable — using Ollama")
-        return await self._ollama_call(messages, max_tokens)
-
-    # ── Streaming call (main reply path) ─────────────────────────────────────
-
-    async def _gemini_stream(self, key: _GeminiKey, messages: list, max_tokens: int):
-        """
-        Async generator that yields text chunks from Gemini's streamGenerateContent.
-        Raises RuntimeError("quota exhausted") on 429.
-        """
-        endpoint, body = self._gemini_body(messages, max_tokens, stream=True)
-        url = f"{GEMINI_API_URL}/{GEMINI_MODEL}:{endpoint}?key={key.key}&alt=sse"
-
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            async with client.stream("POST", url, json=body) as resp:
-                if resp.status_code == 429:
-                    key.mark_exhausted()
-                    raise RuntimeError(f"Gemini {key.label} quota exhausted (429)")
-                resp.raise_for_status()
-
-                buffer = ""
-                async for raw_line in resp.aiter_lines():
-                    line = raw_line.strip()
-                    if not line:
-                        continue
-                    if line.startswith("data:"):
-                        line = line[5:].strip()
-                    if line in ("[DONE]", ""):
-                        continue
-                    try:
-                        chunk = json.loads(line)
-                        text  = (
-                            chunk.get("candidates", [{}])[0]
-                                 .get("content", {})
-                                 .get("parts", [{}])[0]
-                                 .get("text", "")
-                        )
-                        if text:
-                            yield text
-                    except (json.JSONDecodeError, IndexError, KeyError):
-                        continue
-
-    async def _ollama_stream(self, messages: list, max_tokens: int):
-        """Async generator that yields text chunks from Ollama's streaming API."""
+    async def stream(self, messages: list, max_tokens: int = 400):
+        print(f"[LLM] Streaming via Ollama…")
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream(
                 "POST",
@@ -1163,7 +967,7 @@ class LLMBackendManager:
                     if not line:
                         continue
                     try:
-                        data = json.loads(line)
+                        data  = json.loads(line)
                         token = data.get("message", {}).get("content", "")
                         if token:
                             yield token
@@ -1172,55 +976,11 @@ class LLMBackendManager:
                     except json.JSONDecodeError:
                         continue
 
-    async def stream(self, messages: list, max_tokens: int = 400):
-        """
-        Streaming LLM call — async generator of text chunk strings.
-        Tries Gemini keys in order, falls back to Ollama if all exhausted.
-        If a Gemini stream starts but then fails mid-way, we fall back to
-        Ollama and regenerate from scratch (simpler than splicing streams).
-        """
-        for key in self._keys:
-            if not key.available:
-                continue
-            try:
-                print(f"[LLM] Streaming via Gemini {key.label}…")
-                collected = ""
-                async for chunk in self._gemini_stream(key, messages, max_tokens):
-                    collected += chunk
-                    yield chunk
-                print(f"[LLM] ✓ Gemini {key.label} stream complete ({len(collected)} chars)")
-                return   # success — done
-            except RuntimeError as e:
-                if "quota exhausted" in str(e):
-                    continue   # try the next key
-                print(f"[LLM] Gemini {key.label} stream error: {e}")
-                continue
-            except Exception as e:
-                print(f"[LLM] Gemini {key.label} stream unexpected error: {e}")
-                continue
-
-        # All Gemini keys exhausted — stream from Ollama
-        print("[LLM] Streaming via Ollama (fallback)…")
-        async for chunk in self._ollama_stream(messages, max_tokens):
-            yield chunk
-
     def status(self) -> dict:
-        """Return a status dict for the /llm/status endpoint."""
-        keys_info = []
-        for k in self._keys:
-            if k.exhausted_at:
-                secs_left = max(0, GEMINI_QUOTA_RESET_SECS - (time.time() - k.exhausted_at))
-                state     = f"exhausted — resets in {int(secs_left // 60)}m {int(secs_left % 60)}s"
-            else:
-                state = "active" if k.key else "not configured"
-            keys_info.append({"label": k.label, "state": state})
-
-        active = self._next_key()
         return {
-            "active_backend":  f"gemini ({active.label})" if active else "ollama (fallback)",
-            "gemini_model":    GEMINI_MODEL,
-            "ollama_model":    OLLAMA_MODEL,
-            "gemini_keys":     keys_info,
+            "active_backend": "ollama",
+            "ollama_model":   OLLAMA_MODEL,
+            "ollama_url":     OLLAMA_URL,
         }
 
 
