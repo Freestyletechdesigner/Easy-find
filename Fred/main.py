@@ -946,7 +946,7 @@ class LLMBackendManager:
                     "model":    OLLAMA_MODEL,
                     "messages": messages,
                     "stream":   False,
-                    "options":  {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": 2048},
+                    "options":  {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": 512},
                 },
             )
             resp.raise_for_status()

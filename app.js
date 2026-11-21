@@ -652,6 +652,8 @@ app.post('/api/fred/chat', async (req, res) => {
         res.setHeader('Content-Type',  'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('X-Accel-Buffering', 'no');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.flushHeaders();
 
         // Node.js fetch returns a Web Streams ReadableStream — pipe it
         const reader = fredRes.body.getReader();
