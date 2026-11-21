@@ -497,7 +497,7 @@ app.get('/properties', (req, res) => res.sendFile(path.join(__dirname, 'public',
 app.get('/private-policy', (req, res) => res.sendFile(path.join(__dirname, 'public', 'private-policy.html')));
 app.get('/upgrade-to-agent', (req, res) => res.sendFile(path.join(__dirname, 'public', 'upgrade-to-agent.html')));
 
-app.get('/easyfind-ai', (req, res) => {
+app.get('/fred-ai', (req, res) => {
     const html = require('fs').readFileSync(path.join(__dirname, 'public', 'AI.html'), 'utf8')
         .replace('YOUR_GOOGLE_CLIENT_ID', process.env.GOOGLE_CLIENT_ID || '');
     res.setHeader('Content-Type', 'text/html');
