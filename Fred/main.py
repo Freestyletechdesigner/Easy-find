@@ -552,8 +552,14 @@ def _property_card(meta: dict, idx: int) -> str:
     title    = meta.get("title", "Property")
     location = meta.get("location", "Enugu")
     price    = meta.get("price", -1)
-    beds     = meta.get("beds", -1)
-    baths    = meta.get("baths", -1)
+    try:
+        beds = float(meta.get("beds", -1) or -1)
+    except (TypeError, ValueError):
+        beds = -1
+    try:
+        baths = float(meta.get("baths", -1) or -1)
+    except (TypeError, ValueError):
+        baths = -1
     agent    = meta.get("agentName", "")
     number   = meta.get("agentNumber", "")
     url      = meta.get("postUrl", "")
