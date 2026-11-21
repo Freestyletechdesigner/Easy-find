@@ -1634,11 +1634,13 @@ async def generate_response(payload: ChatPayload):
             return  # skip normal LLM pipeline for post_property
 
         else:  # general_chat
-            yield _status("searching_web_gen")
-            web = web_search(working_msg, search_type="general")
-            if web:
-                context      = web
-                context_type = "web_search"
+            # Only search the web if SearXNG is reachable — skip silently if not
+            if _searxng_available():
+                yield _status("searching_web_gen")
+                web = web_search(working_msg, search_type="general")
+                if web:
+                    context      = web
+                    context_type = "web_search"
 
         print(f"[Fred] Context type: {context_type} | Context length: {len(context)} chars")
 
@@ -1680,8 +1682,10 @@ async def generate_response(payload: ChatPayload):
             #    then stream the verified final reply ──────────────────────
             try:
                 draft = ""
+                # Stream tokens to user immediately while collecting
                 async for chunk in llm.stream(messages, max_tokens=400):
                     draft += chunk
+                    yield _sse({"token": chunk})
             except Exception as e:
                 print(f"[Fred] ✗ Draft generation failed: {e}")
                 yield _sse({"error": str(e)})
