@@ -658,21 +658,68 @@ app.post('/api/fred/chat', async (req, res) => {
         // Node.js fetch returns a Web Streams ReadableStream — pipe it
         const reader = fredRes.body.getReader();
         const decoder = new TextDecoder();
+        let fullReply = '';
+        let buffer = '';
 
         const pump = async () => {
             try {
                 while (true) {
                     const { done, value } = await reader.read();
-                    if (done) { res.end(); return; }
-                    res.write(decoder.decode(value, { stream: true }));
+                    if (done) {
+                        // Store full reply for polling after disconnect/refresh
+                        if (session_id && fullReply) {
+                            _pendingReplies.set(session_id, { reply: fullReply, ts: Date.now() });
+                        }
+                        res.end();
+                        return;
+                    }
+                    const chunk = decoder.decode(value, { stream: true });
+                    // Collect tokens from SSE for pending store
+                    buffer += chunk;
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (!trimmed.startsWith('data:')) continue;
+                        try {
+                            const parsed = JSON.parse(trimmed.slice(5).trim());
+                            if (parsed.token) fullReply += parsed.token;
+                            if (parsed.reply) fullReply = parsed.reply;
+                        } catch (_) {}
+                    }
+                    // Write and immediately flush so browser sees each chunk
+                    const flushed = res.write(chunk);
+                    if (!flushed) await new Promise(resolve => res.once('drain', resolve));
                 }
             } catch (pumpErr) {
-                // Client disconnected or Fred went away
+                // Client disconnected — keep processing and store reply
+                try {
+                    while (true) {
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        const chunk = decoder.decode(value, { stream: true });
+                        buffer += chunk;
+                        const lines = buffer.split('\n');
+                        buffer = lines.pop();
+                        for (const line of lines) {
+                            const trimmed = line.trim();
+                            if (!trimmed.startsWith('data:')) continue;
+                            try {
+                                const parsed = JSON.parse(trimmed.slice(5).trim());
+                                if (parsed.token) fullReply += parsed.token;
+                                if (parsed.reply) fullReply = parsed.reply;
+                            } catch (_) {}
+                        }
+                    }
+                } catch (_) {}
+                if (session_id && fullReply) {
+                    _pendingReplies.set(session_id, { reply: fullReply, ts: Date.now() });
+                }
                 res.end();
             }
         };
 
-        req.on('close', () => { reader.cancel(); });
+        req.on('close', () => { /* pump handles disconnect */ });
         pump();
 
     } catch (err) {
@@ -776,6 +823,29 @@ app.get('/api/fred/llm/status', requireAdmin, async (req, res) => {
 });
 
 // Global error handler (must be before 404 handler)
+// ── Fred pending reply store ───────────────────────────────────────────────
+// When Fred is processing slowly, we store the reply here keyed by session_id
+// so the frontend can poll for it after a refresh or disconnect.
+const _pendingReplies = new Map(); // session_id → { reply, ts }
+
+// Clean up replies older than 10 minutes
+setInterval(() => {
+    const cutoff = Date.now() - 10 * 60 * 1000;
+    for (const [k, v] of _pendingReplies) {
+        if (v.ts < cutoff) _pendingReplies.delete(k);
+    }
+}, 60 * 1000);
+
+// Poll endpoint — frontend calls this after refresh to get pending reply
+app.get('/api/fred/pending', (req, res) => {
+    const sid = req.query.session_id;
+    if (!sid) return res.json({ found: false });
+    const entry = _pendingReplies.get(sid);
+    if (!entry) return res.json({ found: false });
+    _pendingReplies.delete(sid); // consume it
+    res.json({ found: true, reply: entry.reply });
+});
+
 app.use((err, req, res, next) => {
     console.error('Unhandled error:', err);
     res.status(500).json({ success: false, message: 'Internal server error' });

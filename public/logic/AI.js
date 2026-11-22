@@ -468,12 +468,28 @@ window.onload = () => {
         const id = Number(savedSessionId);
         const session = chatHistory.find(s => s.id === id);
         if (session) {
-            // Small delay so the DOM is fully ready before rendering messages
             setTimeout(() => loadSession(id), 100);
         } else {
-            // Session was deleted — clean up the stale reference
             localStorage.removeItem('easyfind_active_session');
         }
+    }
+
+    // ── Check for a pending Fred reply after refresh/disconnect ──────────
+    const pendingSid = localStorage.getItem('easyfind_pending_sid');
+    if (pendingSid) {
+        localStorage.removeItem('easyfind_pending_sid');
+        fetch(`/api/fred/pending?session_id=${encodeURIComponent(pendingSid)}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.found && data.reply) {
+                    // Ensure chat is visible
+                    if (heroContainer) heroContainer.style.display = 'none';
+                    if (chatContainer) chatContainer.style.display = 'flex';
+                    appendMessageUI('bot', data.reply);
+                    saveToLocalStorage('bot', data.reply);
+                }
+            })
+            .catch(() => {});
     }
 };
 
@@ -970,6 +986,11 @@ async function showThinkingAndReply(prompt) {
     // Pill stays "Thinking…" until fetch() resolves, then live SSE statuses take over.
     let _fredConnected = false;
 
+    // Save session id so we can poll for reply if user refreshes mid-stream
+    if (currentFredSid) {
+        localStorage.setItem('easyfind_pending_sid', currentFredSid);
+    }
+
     try {
         const res = await fetch('/api/fred/chat', {
             method: 'POST',
@@ -1075,6 +1096,7 @@ async function showThinkingAndReply(prompt) {
 
         // ── Add action buttons after streaming completes ──────────────────────
         if (fullReply && !stopped) {
+            localStorage.removeItem('easyfind_pending_sid'); // reply received — no need to poll
             const actions = document.createElement('div');
             actions.className = 'message-actions';
             actions.innerHTML = `
