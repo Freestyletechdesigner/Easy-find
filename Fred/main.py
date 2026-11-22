@@ -874,9 +874,9 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
                 f"site:nigeriapropertycentre.com OR site:jiji.ng Enugu Nigeria"
             )
         elif search_type == "knowledge":
-            full_query = f"{query} EasyFind Nigeria real estate"
+            full_query = f"{query} EasyFind Nigeria real estate Enugu"
         else:
-            full_query = query
+            full_query = f"{query} Enugu Nigeria"
 
         params = urllib.parse.urlencode({
             "q":          full_query,
@@ -894,12 +894,27 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
         if not results:
             return ""
 
-        lines = [f"Web search results ({search_type}):"]
-        for i, r in enumerate(results, 1):
-            title   = r.get("title", "")
-            content = r.get("content", "")[:300]
-            url     = r.get("url", "")
-            lines.append(f"{i}. {title}\n   {content}\n   Source: {url}")
+        if search_type == "property":
+            # Format as property cards with direct links
+            lines = [f"Property listings found on the web ({search_type}):"]
+            for i, r in enumerate(results, 1):
+                title   = r.get("title", "Property")
+                content = r.get("content", "")[:200]
+                url     = r.get("url", "")
+                domain  = r.get("parsed_url", {}).get("netloc", "") or url.split("/")[2] if url else ""
+                lines.append(
+                    f"\nOption {i}: {title}\n"
+                    f"   Details: {content}\n"
+                    f"   Source: {domain}\n"
+                    f"   Link: {url}"
+                )
+        else:
+            lines = [f"Web search results ({search_type}):"]
+            for i, r in enumerate(results, 1):
+                title   = r.get("title", "")
+                content = r.get("content", "")[:300]
+                url     = r.get("url", "")
+                lines.append(f"{i}. {title}\n   {content}\n   Source: {url}")
 
         result_str = "\n\n".join(lines)
         print(f"[Fred] SearXNG returned {len(results)} results for {search_type!r} search")
@@ -1635,9 +1650,10 @@ async def generate_response(payload: ChatPayload):
                 if web:
                     context = (
                         "NOTE: No matching properties were found in the EasyFind database. "
-                        "The following results are from external Nigerian property websites. "
-                        "Tell the user these are from the web, not EasyFind listings, "
-                        "and encourage them to also check easyfind.com.ng for verified local agents.\n\n"
+                        "The following property listings were found on external Nigerian property websites. "
+                        "Present each one as a property option with its title, details, and a clickable link. "
+                        "Tell the user these are from external sites and encourage them to also post or find "
+                        "verified agents on easyfind.com.ng.\n\n"
                         + web
                     )
                     context_type = "web_property"

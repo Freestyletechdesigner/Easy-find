@@ -1055,6 +1055,7 @@ async function showThinkingAndReply(prompt) {
                             pill.style.display    = 'none';
                             bubble.style.display  = '';
                             hasTokens = true;
+                            localStorage.removeItem('easyfind_pending_sid'); // stream working — no need to poll
                         }
                         fullReply += chunk.token;
                         bubble.innerHTML = _formatBotReply(fullReply);
