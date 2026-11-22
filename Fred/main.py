@@ -87,6 +87,8 @@ FRED_DIR      = Path(__file__).parent.resolve()
 OLLAMA_URL    = os.environ.get("OLLAMA_URL",    "http://localhost:11434")
 OLLAMA_MODEL  = os.environ.get("OLLAMA_MODEL",  "fred")
 SEARXNG_URL   = os.environ.get("SEARXNG_URL",   "http://localhost:8080")
+GEMINI_MODEL  = os.environ.get("GEMINI_MODEL",  "gemini-2.5-flash")
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 # ── FastAPI ───────────────────────────────────────────────────────────────────
 app = FastAPI(title="Fred AI Engine")
@@ -926,19 +928,125 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
 # is active.  classify_intent() (the only place that bypassed _llm_call)
 # is updated below to go through the same manager.
 
+GEMINI_QUOTA_RESET_SECS = 60   # retry exhausted key after 60 seconds
+
+
+class _GeminiKey:
+    def __init__(self, key: str, label: str):
+        self.key           = key
+        self.label         = label
+        self.exhausted_at: Optional[float] = None
+
+    @property
+    def available(self) -> bool:
+        if not self.key:
+            return False
+        if self.exhausted_at is None:
+            return True
+        if time.time() - self.exhausted_at >= GEMINI_QUOTA_RESET_SECS:
+            print(f"[LLM] Gemini {self.label} quota reset — re-enabling")
+            self.exhausted_at = None
+            return True
+        return False
+
+    def mark_exhausted(self):
+        self.exhausted_at = time.time()
+        print(f"[LLM] Gemini {self.label} quota exhausted — rotating to next key")
+
+
 class LLMBackendManager:
     """
-    Ollama-only LLM backend.
-    Exposes:
-      - call(messages, max_tokens)   → non-streaming str
-      - stream(messages, max_tokens) → async generator of str chunks
-      - status()                     → dict for /llm/status endpoint
+    Gemini-primary LLM backend with round-robin rotation across up to 5 keys.
+    When a key hits quota (429), rotates to the next key automatically.
+    After the last key is exhausted, wraps back to KEY1.
+    Falls back to Ollama only if ALL Gemini keys are exhausted simultaneously.
     """
 
     def __init__(self):
-        print(f"[LLM] Ollama-only backend ready — model: {OLLAMA_MODEL}")
+        key_names = ["GEMINI_API_KEY", "GEMINI_API_KEY2", "GEMINI_API_KEY3",
+                     "GEMINI_API_KEY4", "GEMINI_API_KEY5"]
+        self._keys: list[_GeminiKey] = []
+        for i, name in enumerate(key_names):
+            val = os.environ.get(name, "").strip()
+            if val:
+                self._keys.append(_GeminiKey(val, f"KEY{i+1}"))
 
-    async def call(self, messages: list, max_tokens: int = 300) -> str:
+        self._current_idx = 0
+
+        if self._keys:
+            print(f"[LLM] Gemini backend ready — {len(self._keys)} key(s) loaded")
+        else:
+            print("[LLM] No Gemini keys found — using Ollama only")
+
+    def _next_key(self) -> Optional[_GeminiKey]:
+        if not self._keys:
+            return None
+        total = len(self._keys)
+        for _ in range(total):
+            key = self._keys[self._current_idx % total]
+            if key.available:
+                return key
+            self._current_idx = (self._current_idx + 1) % total
+        return None
+
+    def _rotate(self):
+        if self._keys:
+            self._current_idx = (self._current_idx + 1) % len(self._keys)
+
+    @staticmethod
+    def _to_gemini_messages(messages: list) -> tuple[Optional[str], list]:
+        system_parts = []
+        contents     = []
+        for m in messages:
+            role    = m.get("role", "user")
+            content = m.get("content", "")
+            if role == "system":
+                system_parts.append(content)
+            elif role == "assistant":
+                contents.append({"role": "model", "parts": [{"text": content}]})
+            else:
+                contents.append({"role": "user",  "parts": [{"text": content}]})
+        merged = []
+        for turn in contents:
+            if merged and merged[-1]["role"] == turn["role"]:
+                merged[-1]["parts"][0]["text"] += "\n" + turn["parts"][0]["text"]
+            else:
+                merged.append(turn)
+        if merged and merged[-1]["role"] == "model":
+            merged.append({"role": "user", "parts": [{"text": "(continue)"}]})
+        system_str = "\n\n".join(system_parts) if system_parts else None
+        return system_str, merged
+
+    def _gemini_body(self, messages: list, max_tokens: int, stream: bool = False) -> tuple[str, dict]:
+        system_str, contents = self._to_gemini_messages(messages)
+        body: dict = {
+            "contents":         contents,
+            "generationConfig": {"maxOutputTokens": max_tokens, "temperature": 0.3},
+        }
+        if system_str:
+            body["systemInstruction"] = {"parts": [{"text": system_str}]}
+        endpoint = "streamGenerateContent" if stream else "generateContent"
+        return endpoint, body
+
+    async def _gemini_call(self, key: _GeminiKey, messages: list, max_tokens: int) -> str:
+        endpoint, body = self._gemini_body(messages, max_tokens, stream=False)
+        url = f"{GEMINI_API_URL}/{GEMINI_MODEL}:{endpoint}?key={key.key}"
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(url, json=body)
+        if resp.status_code == 429:
+            key.mark_exhausted()
+            raise RuntimeError("quota_exhausted")
+        resp.raise_for_status()
+        data = resp.json()
+        try:
+            parts = data["candidates"][0]["content"]["parts"]
+            if not parts:
+                raise RuntimeError("empty_parts")
+            return parts[0]["text"].strip()
+        except (KeyError, IndexError) as e:
+            raise RuntimeError(f"parse_error: {e}")
+
+    async def _ollama_call(self, messages: list, max_tokens: int) -> str:
         async with httpx.AsyncClient(timeout=120.0) as client:
             resp = await client.post(
                 f"{OLLAMA_URL}/api/chat",
@@ -950,30 +1058,74 @@ class LLMBackendManager:
                 },
             )
             resp.raise_for_status()
-            result = resp.json().get("message", {}).get("content", "").strip()
-            print(f"[LLM] ✓ Ollama response ({len(result)} chars)")
-            return result
+            return resp.json().get("message", {}).get("content", "").strip()
 
-    async def stream(self, messages: list, max_tokens: int = 400):
-        print(f"[LLM] Streaming via Ollama…")
+    async def call(self, messages: list, max_tokens: int = 300) -> str:
+        for _ in range(len(self._keys) or 1):
+            key = self._next_key()
+            if not key:
+                break
+            try:
+                result = await self._gemini_call(key, messages, max_tokens)
+                print(f"[LLM] ✓ Gemini {key.label}")
+                return result
+            except RuntimeError as e:
+                if "quota_exhausted" in str(e):
+                    self._rotate()
+                    continue
+                print(f"[LLM] Gemini {key.label} error: {e} — rotating")
+                self._rotate()
+                continue
+            except Exception as e:
+                print(f"[LLM] Gemini {key.label} unexpected error: {e} — rotating")
+                self._rotate()
+                continue
+        print("[LLM] All Gemini keys exhausted — falling back to Ollama")
+        return await self._ollama_call(messages, max_tokens)
+
+    async def _gemini_stream(self, key: _GeminiKey, messages: list, max_tokens: int):
+        endpoint, body = self._gemini_body(messages, max_tokens, stream=True)
+        url = f"{GEMINI_API_URL}/{GEMINI_MODEL}:{endpoint}?key={key.key}&alt=sse"
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            async with client.stream("POST", url, json=body) as resp:
+                if resp.status_code == 429:
+                    key.mark_exhausted()
+                    raise RuntimeError("quota_exhausted")
+                resp.raise_for_status()
+                async for raw_line in resp.aiter_lines():
+                    line = raw_line.strip()
+                    if not line or line in ("[DONE]", ""):
+                        continue
+                    if line.startswith("data:"):
+                        line = line[5:].strip()
+                    try:
+                        chunk = json.loads(line)
+                        text  = (chunk.get("candidates", [{}])[0]
+                                      .get("content", {})
+                                      .get("parts", [{}])[0]
+                                      .get("text", ""))
+                        if text:
+                            yield text
+                    except (json.JSONDecodeError, IndexError, KeyError):
+                        continue
+
+    async def _ollama_stream(self, messages: list, max_tokens: int):
         async with httpx.AsyncClient(timeout=120.0) as client:
             async with client.stream(
-                "POST",
-                f"{OLLAMA_URL}/api/chat",
+                "POST", f"{OLLAMA_URL}/api/chat",
                 json={
                     "model":    OLLAMA_MODEL,
                     "messages": messages,
                     "stream":   True,
-                    "options":  {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": 2048},
+                    "options":  {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": 512},
                 },
             ) as resp:
                 resp.raise_for_status()
                 async for raw_line in resp.aiter_lines():
-                    line = raw_line.strip()
-                    if not line:
+                    if not raw_line.strip():
                         continue
                     try:
-                        data  = json.loads(line)
+                        data  = json.loads(raw_line)
                         token = data.get("message", {}).get("content", "")
                         if token:
                             yield token
@@ -982,11 +1134,41 @@ class LLMBackendManager:
                     except json.JSONDecodeError:
                         continue
 
+    async def stream(self, messages: list, max_tokens: int = 400):
+        for _ in range(len(self._keys) or 1):
+            key = self._next_key()
+            if not key:
+                break
+            try:
+                print(f"[LLM] Streaming via Gemini {key.label}…")
+                collected = ""
+                async for chunk in self._gemini_stream(key, messages, max_tokens):
+                    collected += chunk
+                    yield chunk
+                print(f"[LLM] ✓ Gemini {key.label} stream complete ({len(collected)} chars)")
+                return
+            except RuntimeError as e:
+                if "quota_exhausted" in str(e):
+                    self._rotate()
+                    continue
+                print(f"[LLM] Gemini {key.label} stream error: {e} — rotating")
+                self._rotate()
+                continue
+            except Exception as e:
+                print(f"[LLM] Gemini {key.label} stream error: {e} — rotating")
+                self._rotate()
+                continue
+        print("[LLM] All Gemini keys exhausted — streaming via Ollama fallback")
+        async for chunk in self._ollama_stream(messages, max_tokens):
+            yield chunk
+
     def status(self) -> dict:
+        key = self._next_key()
         return {
-            "active_backend": "ollama",
+            "active_backend": f"gemini ({key.label})" if key else "ollama (fallback)",
+            "gemini_model":   GEMINI_MODEL,
             "ollama_model":   OLLAMA_MODEL,
-            "ollama_url":     OLLAMA_URL,
+            "keys": [{"label": k.label, "available": k.available} for k in self._keys],
         }
 
 
