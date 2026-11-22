@@ -870,8 +870,11 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
     try:
         if search_type == "property":
             full_query = (
-                f"{query} site:propertypro.ng OR site:privateproperty.com.ng OR "
-                f"site:nigeriapropertycentre.com OR site:jiji.ng Enugu Nigeria"
+                f"({query} Enugu Nigeria) "
+                f"site:nigeriapropertycentre.com OR "
+                f"site:propertypro.ng OR "
+                f"site:privateproperty.ng OR "
+                f"site:jiji.ng"
             )
         elif search_type == "knowledge":
             full_query = f"{query} EasyFind Nigeria real estate Enugu"
