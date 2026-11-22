@@ -87,7 +87,7 @@ FRED_DIR      = Path(__file__).parent.resolve()
 OLLAMA_URL    = os.environ.get("OLLAMA_URL",    "http://localhost:11434")
 OLLAMA_MODEL  = os.environ.get("OLLAMA_MODEL",  "fred")
 SEARXNG_URL   = os.environ.get("SEARXNG_URL",   "http://localhost:8080")
-GEMINI_MODEL  = os.environ.get("GEMINI_MODEL",  "gemini-2.5-flash")
+GEMINI_MODEL  = os.environ.get("GEMINI_MODEL",  "gemini-3.8-flash")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 # ── FastAPI ───────────────────────────────────────────────────────────────────
@@ -1050,9 +1050,12 @@ class LLMBackendManager:
 
     async def _gemini_call(self, key: _GeminiKey, messages: list, max_tokens: int) -> str:
         endpoint, body = self._gemini_body(messages, max_tokens, stream=False)
-        url = f"{GEMINI_API_URL}/{GEMINI_MODEL}:{endpoint}?key={key.key}"
+        url = f"{GEMINI_API_URL}/{GEMINI_MODEL}:{endpoint}"
         async with httpx.AsyncClient(timeout=60.0) as client:
-            resp = await client.post(url, json=body)
+            resp = await client.post(
+                url, json=body,
+                headers={"x-goog-api-key": key.key, "Content-Type": "application/json"}
+            )
         if resp.status_code == 429:
             key.mark_exhausted()
             raise RuntimeError("quota_exhausted")
@@ -1105,9 +1108,12 @@ class LLMBackendManager:
 
     async def _gemini_stream(self, key: _GeminiKey, messages: list, max_tokens: int):
         endpoint, body = self._gemini_body(messages, max_tokens, stream=True)
-        url = f"{GEMINI_API_URL}/{GEMINI_MODEL}:{endpoint}?key={key.key}&alt=sse"
+        url = f"{GEMINI_API_URL}/{GEMINI_MODEL}:{endpoint}?alt=sse"
         async with httpx.AsyncClient(timeout=120.0) as client:
-            async with client.stream("POST", url, json=body) as resp:
+            async with client.stream(
+                "POST", url, json=body,
+                headers={"x-goog-api-key": key.key, "Content-Type": "application/json"}
+            ) as resp:
                 if resp.status_code == 429:
                     key.mark_exhausted()
                     raise RuntimeError("quota_exhausted")
