@@ -186,7 +186,9 @@ or browse agents on EasyFind (e.g. "show me top agents", "who are the agents?", 
   post_property      — the user (an agent) wants to post, list, upload, or add a new \
 property listing on EasyFind \
 (e.g. "I want to post a property", "list my property", "add a new listing", \
-"I have a house to rent", "i wan post property", "make I list my flat")
+"I have a house to rent", "i wan post property", "make I list my flat", \
+"i want to post property on easyfind", "how do i post property", \
+"i get property i wan post", "help me post my property")
   general_chat       — anything else: greetings, jokes, off-topic questions, reactions, \
 small talk
 
