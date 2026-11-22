@@ -62,7 +62,7 @@ embedding_fn = SentenceTransformerEmbeddingFunction(
 
 chroma_client = chromadb.PersistentClient(path=DB_PATH)
 
-# Delete and recreate for a clean seed
+# ── Recreate listings collection ──────────────────────────────────────────────
 try:
     chroma_client.delete_collection("easyfind_listings")
     print("🗑   Cleared old easyfind_listings collection.")
@@ -75,13 +75,31 @@ collection = chroma_client.create_collection(
 )
 print("✅  Created fresh easyfind_listings collection.")
 
+# ── Recreate knowledge collection ─────────────────────────────────────────────
+try:
+    chroma_client.delete_collection("easyfind_knowledge")
+    print("🗑   Cleared old easyfind_knowledge collection.")
+except Exception:
+    pass
+
+knowledge_collection = chroma_client.create_collection(
+    name="easyfind_knowledge",
+    embedding_function=embedding_fn
+)
+print("✅  Created fresh easyfind_knowledge collection.")
+
 # ── Helper ────────────────────────────────────────────────────────────────────
 def make_id(text: str, prefix: str = "") -> str:
     return prefix + hashlib.md5(text.encode()).hexdigest()[:16]
 
-documents  = []
-metadatas  = []
-ids        = []
+# Separate lists for knowledge and listings
+kb_documents  = []
+kb_metadatas  = []
+kb_ids        = []
+
+listing_documents = []
+listing_metadatas = []
+listing_ids       = []
 
 # ── 1. Knowledge base ─────────────────────────────────────────────────────────
 if KNOWLEDGE_FILE.exists():
@@ -93,9 +111,9 @@ if KNOWLEDGE_FILE.exists():
         f"Company: {company.get('name', 'Easyfind Nigeria')}. "
         f"{company.get('description', '')} Country: {company.get('country', 'Nigeria')}."
     )
-    documents.append(doc)
-    metadatas.append({"type": "knowledge", "category": "company"})
-    ids.append(make_id(doc, "kb_"))
+    kb_documents.append(doc)
+    kb_metadatas.append({"type": "knowledge", "category": "company"})
+    kb_ids.append(make_id(doc, "kb_"))
 
     # Fred AI identity
     fred = knowledge.get("fred_ai", {})
@@ -104,24 +122,24 @@ if KNOWLEDGE_FILE.exists():
         f"{fred.get('description', '')} "
         f"Personality: {', '.join(fred.get('personality', []))}."
     )
-    documents.append(doc)
-    metadatas.append({"type": "knowledge", "category": "fred_ai"})
-    ids.append(make_id(doc, "kb_"))
+    kb_documents.append(doc)
+    kb_metadatas.append({"type": "knowledge", "category": "fred_ai"})
+    kb_ids.append(make_id(doc, "kb_"))
 
     # FAQ entries
     for faq in knowledge.get("faq", []):
         doc = f"Q: {faq.get('question', '')} A: {faq.get('answer', '')}"
-        documents.append(doc)
-        metadatas.append({"type": "faq", "category": "faq"})
-        ids.append(make_id(doc, "faq_"))
+        kb_documents.append(doc)
+        kb_metadatas.append({"type": "faq", "category": "faq"})
+        kb_ids.append(make_id(doc, "faq_"))
 
     # Rules
     rules = knowledge.get("rules", {})
     if rules:
         doc = "Fred rules: " + " | ".join(f"{k}: {v}" for k, v in rules.items())
-        documents.append(doc)
-        metadatas.append({"type": "knowledge", "category": "rules"})
-        ids.append(make_id(doc, "kb_"))
+        kb_documents.append(doc)
+        kb_metadatas.append({"type": "knowledge", "category": "rules"})
+        kb_ids.append(make_id(doc, "kb_"))
 
     # Agent portal — how to post property + how to become agent
     portal = knowledge.get("agent_portal", {})
@@ -133,9 +151,9 @@ if KNOWLEDGE_FILE.exists():
                 + " ".join(f"Step {i+1}: {s}" for i, s in enumerate(steps))
                 + f" Agent portal: {portal.get('portal_url', 'easyfind.com.ng/agent-loged')}."
             )
-            documents.append(doc)
-            metadatas.append({"type": "knowledge", "category": "agent_portal"})
-            ids.append(make_id(doc, "kb_"))
+            kb_documents.append(doc)
+            kb_metadatas.append({"type": "knowledge", "category": "agent_portal"})
+            kb_ids.append(make_id(doc, "kb_"))
 
         upgrade_steps = portal.get("how_to_become_agent", [])
         if upgrade_steps:
@@ -145,23 +163,37 @@ if KNOWLEDGE_FILE.exists():
                 + f" Upgrade page: {portal.get('upgrade_url', 'easyfind.com.ng/upgrade-to-agent')}."
                 + f" New agent signup: {portal.get('signup_url', 'easyfind.com.ng/signup-agent')}."
             )
-            documents.append(doc)
-            metadatas.append({"type": "knowledge", "category": "agent_upgrade"})
-            ids.append(make_id(doc, "kb_"))
+            kb_documents.append(doc)
+            kb_metadatas.append({"type": "knowledge", "category": "agent_upgrade"})
+            kb_ids.append(make_id(doc, "kb_"))
 
         if portal.get("verification"):
             doc = f"Agent verification on EasyFind: {portal['verification']}"
-            documents.append(doc)
-            metadatas.append({"type": "knowledge", "category": "agent_verification"})
-            ids.append(make_id(doc, "kb_"))
+            kb_documents.append(doc)
+            kb_metadatas.append({"type": "knowledge", "category": "agent_verification"})
+            kb_ids.append(make_id(doc, "kb_"))
 
         if portal.get("boost"):
             doc = f"Agent boost on EasyFind: {portal['boost']}"
-            documents.append(doc)
-            metadatas.append({"type": "knowledge", "category": "agent_boost"})
-            ids.append(make_id(doc, "kb_"))
+            kb_documents.append(doc)
+            kb_metadatas.append({"type": "knowledge", "category": "agent_boost"})
+            kb_ids.append(make_id(doc, "kb_"))
 
-    print(f"📚  Loaded {len(documents)} knowledge base documents.")
+    # Login/signup URLs summary
+    website = knowledge.get("website", {})
+    portal  = knowledge.get("agent_portal", {})
+    doc = (
+        f"EasyFind Nigeria website: {website.get('url', 'https://easyfind.com.ng')}. "
+        f"Agent login: {portal.get('login_url', 'https://easyfind.com.ng/login-agent')}. "
+        f"Agent signup: {portal.get('signup_url', 'https://easyfind.com.ng/signup-agent')}. "
+        f"Upgrade to agent: {portal.get('upgrade_url', 'https://easyfind.com.ng/upgrade-to-agent')}. "
+        f"Agent dashboard: {portal.get('portal_url', 'https://easyfind.com.ng/agent-loged')}."
+    )
+    kb_documents.append(doc)
+    kb_metadatas.append({"type": "knowledge", "category": "urls"})
+    kb_ids.append(make_id(doc, "kb_"))
+
+    print(f"📚  Loaded {len(kb_documents)} knowledge base documents.")
 else:
     print("⚠️   easyfind_knowledge.json not found — skipping knowledge base.")
 
@@ -231,9 +263,9 @@ try:
                 }
 
                 doc_id = "listing_" + str(doc["_id"])
-                documents.append(text)
-                metadatas.append(meta)
-                ids.append(doc_id)
+                listing_documents.append(text)
+                listing_metadatas.append(meta)
+                listing_ids.append(doc_id)
                 listing_count += 1
             except Exception as e:
                 print(f"   ⚠️  Skipped one listing: {e}")
@@ -249,17 +281,34 @@ except Exception as e:
 
 # ── 3. Embed & insert in batches ──────────────────────────────────────────────
 BATCH = 64
-total = len(documents)
-print(f"\n⚡  Embedding {total} documents in batches of {BATCH}…")
 
-for i in range(0, total, BATCH):
-    batch_docs  = documents[i:i+BATCH]
-    batch_metas = metadatas[i:i+BATCH]
-    batch_ids   = ids[i:i+BATCH]
-    collection.add(documents=batch_docs, metadatas=batch_metas, ids=batch_ids)
-    print(f"   ✓  {min(i+BATCH, total)}/{total}")
+# Insert knowledge into easyfind_knowledge collection
+if kb_documents:
+    print(f"\n⚡  Embedding {len(kb_documents)} knowledge documents…")
+    for i in range(0, len(kb_documents), BATCH):
+        knowledge_collection.add(
+            documents=kb_documents[i:i+BATCH],
+            metadatas=kb_metadatas[i:i+BATCH],
+            ids=kb_ids[i:i+BATCH]
+        )
+        print(f"   ✓  {min(i+BATCH, len(kb_documents))}/{len(kb_documents)}")
+    print(f"✅  Knowledge collection: {knowledge_collection.count()} chunks")
 
-print(f"\n🎉  Done! ChromaDB seeded with {total} documents.")
+# Insert listings into easyfind_listings collection
+if listing_documents:
+    print(f"\n⚡  Embedding {len(listing_documents)} property listings…")
+    for i in range(0, len(listing_documents), BATCH):
+        collection.add(
+            documents=listing_documents[i:i+BATCH],
+            metadatas=listing_metadatas[i:i+BATCH],
+            ids=listing_ids[i:i+BATCH]
+        )
+        print(f"   ✓  {min(i+BATCH, len(listing_documents))}/{len(listing_documents)}")
+    print(f"✅  Listings collection: {collection.count()} properties")
+
+print(f"\n🎉  Done! ChromaDB seeded.")
+print(f"    Knowledge chunks : {knowledge_collection.count()}")
+print(f"    Property listings: {collection.count()}")
 print(f"    DB path: {DB_PATH}")
 print(f"    Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 print("\nNow start Fred with:")

@@ -1428,6 +1428,10 @@ async def supervise(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 FRED_SYSTEM = (
+    "CRITICAL INSTRUCTION: You are Fred. Respond DIRECTLY as Fred. "
+    "NEVER explain what you are about to say. NEVER say 'Here is a response' or "
+    "'Here's a reply' or 'I will respond with' or any meta-commentary about your answer. "
+    "Just reply naturally as Fred would. Start your reply immediately.\n\n"
     "You are Fred, a friendly and flexible real estate assistant for EasyFind Nigeria — "
     "a property platform focused on Enugu State, Nigeria. "
     "You help people find houses, flats, apartments, rooms, land, shops, offices, shortlets, and duplexes "
@@ -1970,9 +1974,14 @@ async def generate_response(payload: ChatPayload):
             else:
                 final_reply = draft
 
-            # ── STEP 6: Stream the verified final reply ────────────────────
-            async for chunk in _stream_text(final_reply):
-                yield chunk
+            # ── STEP 6: Stream corrected reply only if supervisor changed it ──
+            # If PASS, draft was already streamed token-by-token above — don't resend.
+            # Only stream if BLOCK or WARN produced a different final_reply.
+            if final_reply != draft:
+                async for chunk in _stream_text(final_reply):
+                    yield chunk
+            else:
+                yield _sse({"done": True})
 
         # ── STEP 7: Persist assistant turn + trigger compaction ────────────
         if sid:
