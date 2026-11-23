@@ -41,6 +41,86 @@ app.set('broadcastProperty', (property) => {
     });
 });
 
+// ── Fred WebSocket handler ─────────────────────────────────────────────────
+// Each client gets a persistent WS connection. Messages from Fred stream back
+// token by token through the same connection — no HTTP timeout issues.
+wss.on('connection', (ws, req) => {
+    // Only handle Fred chat messages — other WS messages (property broadcasts) are ignored
+    ws.on('message', async (raw) => {
+        let msg;
+        try { msg = JSON.parse(raw); } catch (_) { return; }
+        if (msg.type !== 'fred_chat') return;
+
+        const { user_message, session_id, is_agent, chat_history = [] } = msg;
+        if (!user_message || typeof user_message !== 'string' || !user_message.trim()) return;
+
+        const fredUrl = (process.env.FRED_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+
+        try {
+            const controller = new AbortController();
+            // No timeout — WebSocket stays open as long as needed
+            const fredBody = {
+                user_message: user_message.trim(),
+                chat_history,
+                is_agent: !!is_agent,
+            };
+            if (session_id) fredBody.session_id = session_id;
+
+            const fredRes = await fetch(`${fredUrl}/generate`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(fredBody),
+                signal:  controller.signal,
+            });
+
+            if (!fredRes.ok) {
+                ws.send(JSON.stringify({ type: 'fred_error', message: 'Fred AI engine returned an error.' }));
+                return;
+            }
+
+            // Stream Fred's SSE tokens over WebSocket
+            const reader  = fredRes.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer    = '';
+            let fullReply = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    // Store for pending poll (refresh fallback)
+                    if (session_id && fullReply) {
+                        _pendingReplies.set(session_id, { reply: fullReply, ts: Date.now() });
+                    }
+                    if (ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({ type: 'fred_done' }));
+                    }
+                    break;
+                }
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    const t = line.trim();
+                    if (!t.startsWith('data:')) continue;
+                    try {
+                        const chunk = JSON.parse(t.slice(5).trim());
+                        if (chunk.token)  fullReply += chunk.token;
+                        if (chunk.reply)  fullReply  = chunk.reply;
+                        // Forward every SSE chunk as a WebSocket message
+                        if (ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({ type: 'fred_chunk', ...chunk }));
+                        }
+                    } catch (_) {}
+                }
+            }
+        } catch (err) {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'fred_error', message: 'Could not reach Fred. Please try again later.' }));
+            }
+        }
+    });
+});
+
 
 app.use(
   helmet({

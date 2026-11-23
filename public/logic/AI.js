@@ -923,6 +923,46 @@ function _buildChatHistory() {
     return session.messages.slice(-6).map(m => ({ role: m.role === 'bot' ? 'assistant' : m.role, content: m.content }));
 }
 
+// ── WebSocket connection to Fred ───────────────────────────────────────────
+let _ws = null;
+let _wsReady = false;
+let _wsQueue = [];   // messages queued while WS is connecting
+
+function _connectWS() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    _ws = new WebSocket(`${proto}//${location.host}`);
+
+    _ws.onopen = () => {
+        _wsReady = true;
+        // Send any queued messages
+        _wsQueue.forEach(m => _ws.send(m));
+        _wsQueue = [];
+    };
+
+    _ws.onclose = () => {
+        _wsReady = false;
+        // Auto-reconnect after 2 seconds
+        setTimeout(_connectWS, 2000);
+    };
+
+    _ws.onerror = () => {
+        _ws.close();
+    };
+
+    // Incoming messages from Fred are handled per-request via _wsHandlers
+    _ws.onmessage = (event) => {
+        try {
+            const msg = JSON.parse(event.data);
+            if (msg.type && msg.type.startsWith('fred_') && _wsCurrentHandler) {
+                _wsCurrentHandler(msg);
+            }
+        } catch (_) {}
+    };
+}
+
+let _wsCurrentHandler = null;
+_connectWS();
+
 // ── Streaming state ────────────────────────────────────────────────────────
 let _streamReader   = null;   // active ReadableStream reader
 let _streamAbort    = null;   // AbortController for the fetch
@@ -992,8 +1032,6 @@ async function showThinkingAndReply(prompt) {
     messagesWrapper.appendChild(row);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
-    // ── Pre-connect flag ──────────────────────────────────────────────────────
-    // Pill stays "Thinking…" until fetch() resolves, then live SSE statuses take over.
     let _fredConnected = false;
 
     // Save session id so we can poll for reply if user refreshes mid-stream
@@ -1001,6 +1039,158 @@ async function showThinkingAndReply(prompt) {
         localStorage.setItem('easyfind_pending_sid', currentFredSid);
     }
 
+    // ── Auto-poll fallback ────────────────────────────────────────────────────
+    // If the stream takes >90s or drops, poll every 5s for up to 3 minutes
+    let _pollInterval = null;
+    let _pollAttempts  = 0;
+    const MAX_POLL     = 36; // 36 × 5s = 3 minutes
+
+    function _startPolling() {
+        if (_pollInterval) return;
+        _setPillLabel(pill, 'Still working, please wait…');
+        _pollInterval = setInterval(async () => {
+            _pollAttempts++;
+            if (_pollAttempts > MAX_POLL) {
+                clearInterval(_pollInterval);
+                _pollInterval = null;
+                pill.style.display   = 'none';
+                bubble.style.display = '';
+                bubble.innerHTML     = '<span style="opacity:.6">⚠️ Could not reach Fred. Please try again.</span>';
+                _setStreaming(false);
+                return;
+            }
+            const sid = localStorage.getItem('easyfind_pending_sid');
+            if (!sid) return;
+            try {
+                const r    = await fetch(`/api/fred/pending?session_id=${encodeURIComponent(sid)}`);
+                const data = await r.json();
+                if (data.found && data.reply) {
+                    clearInterval(_pollInterval);
+                    _pollInterval = null;
+                    localStorage.removeItem('easyfind_pending_sid');
+                    pill.style.display   = 'none';
+                    bubble.style.display = '';
+                    bubble.innerHTML     = _formatBotReply(data.reply);
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                    saveToLocalStorage('bot', data.reply);
+                    _setStreaming(false);
+                }
+            } catch (_) {}
+        }, 5000);
+    }
+
+    // Start polling after 90 seconds if no tokens have arrived yet
+    const _pollTimeout = setTimeout(() => {
+        if (!hasTokens) _startPolling();
+    }, 90000);
+
+    let fullReply = '';
+    let stopped   = false;
+    let hasTokens = false;
+
+    function _handleChunk(chunk) {
+        if (chunk.status) {
+            if (!hasTokens) {
+                clearInterval(_dotInterval);
+                _setPillLabel(pill, _statusPillText(chunk.status));
+            }
+        } else if (chunk.correction) {
+            if (!hasTokens) {
+                clearInterval(_dotInterval);
+                _setPillLabel(pill, `✏️ ${chunk.correction}`);
+            }
+        } else if (chunk.token) {
+            if (!hasTokens) {
+                clearInterval(_dotInterval);
+                clearTimeout(_pollTimeout);
+                if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
+                pill.style.display   = 'none';
+                bubble.style.display = '';
+                hasTokens = true;
+                localStorage.removeItem('easyfind_pending_sid');
+            }
+            fullReply += chunk.token;
+            bubble.innerHTML = _formatBotReply(fullReply);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        } else if (chunk.post_form) {
+            _pendingPostDraft = chunk.post_form;
+            if (!hasTokens) {
+                pill.style.display   = 'none';
+                bubble.style.display = '';
+                hasTokens = true;
+            }
+            fullReply += '\n\n' + _renderPostConfirmCard(chunk.post_form);
+            bubble.innerHTML = _formatBotReply(fullReply);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        } else if (chunk.reply) {
+            if (!hasTokens) {
+                pill.style.display   = 'none';
+                bubble.style.display = '';
+                hasTokens = true;
+            }
+            fullReply = chunk.reply;
+            bubble.innerHTML = _formatBotReply(fullReply);
+        } else if (chunk.error) {
+            pill.style.display   = 'none';
+            bubble.style.display = '';
+            bubble.textContent   = `⚠️ ${chunk.error}`;
+            stopped = true;
+        }
+    }
+
+    function _finishReply() {
+        clearInterval(_dotInterval);
+        clearTimeout(_pollTimeout);
+        if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
+        if (fullReply && !stopped) {
+            localStorage.removeItem('easyfind_pending_sid');
+            const actions = document.createElement('div');
+            actions.className = 'message-actions';
+            actions.innerHTML = `
+                <i class="fa-regular fa-copy action-icon-small" title="Copy" onclick="copyToClipboard(this)"></i>
+                <i class="fa-solid fa-share-nodes action-icon-small" onclick="shareResponse(this)"></i>
+                <i class="fa-solid fa-rotate-right action-icon-small" onclick="retryLastResponse(this)"></i>`;
+            row.appendChild(actions);
+            saveToLocalStorage('bot', fullReply);
+        } else if (!fullReply) {
+            row.remove();
+        }
+        _wsCurrentHandler = null;
+        _setStreaming(false);
+    }
+
+    // ── Send via WebSocket (preferred — no timeout) ───────────────────────
+    if (_wsReady) {
+        _wsCurrentHandler = (msg) => {
+            if (msg.type === 'fred_chunk')  _handleChunk(msg);
+            else if (msg.type === 'fred_done') _finishReply();
+            else if (msg.type === 'fred_error') {
+                clearInterval(_dotInterval);
+                row.remove();
+                const errRow = document.createElement('div');
+                errRow.className = 'chat-row bot';
+                errRow.innerHTML = `<div class="message-content fred-error-msg">
+                    ⚠️ Could not reach Fred. Please try again later.
+                    <button class="fred-retry-btn" onclick="retryMessage(this, ${JSON.stringify(prompt)})">
+                        <i class="fa-solid fa-rotate-right"></i> Retry
+                    </button></div>`;
+                messagesWrapper.appendChild(errRow);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+                _wsCurrentHandler = null;
+                _setStreaming(false);
+            }
+        };
+        _ws.send(JSON.stringify({
+            type:         'fred_chat',
+            user_message: prompt,
+            chat_history: _buildChatHistory(),
+            session_id:   currentFredSid || undefined,
+            is_agent:     !!(currentUser?.isAgent),
+        }));
+        return; // WebSocket handles the rest
+    }
+
+    // ── Fallback: HTTP SSE (if WebSocket not ready) ───────────────────────
     try {
         const res = await fetch('/api/fred/chat', {
             method: 'POST',
@@ -1014,142 +1204,46 @@ async function showThinkingAndReply(prompt) {
             signal: _streamAbort.signal,
         });
 
-        // Fred is connected — live SSE statuses take over from here
-        _fredConnected = true;
-
-        _streamReader    = res.body.getReader();
-        const decoder    = new TextDecoder();
-        let fullReply    = '';
-        let buffer       = '';
-        let stopped      = false;
-        let hasTokens    = false;
+        _streamReader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer    = '';
 
         outer: while (true) {
             let readResult;
-            try {
-                readResult = await _streamReader.read();
-            } catch (_) {
-                stopped = true; break;
-            }
+            try { readResult = await _streamReader.read(); }
+            catch (_) { stopped = true; break; }
             const { done, value } = readResult;
             if (done) break;
-
             buffer += decoder.decode(value, { stream: true });
             const lines = buffer.split('\n');
             buffer = lines.pop();
-
             for (const line of lines) {
                 const trimmed = line.trim();
                 if (!trimmed || !trimmed.startsWith('data:')) continue;
                 const jsonStr = trimmed.slice(5).trim();
                 if (jsonStr === '[DONE]') break outer;
-                try {
-                    const chunk = JSON.parse(jsonStr);
-
-                    if (chunk.status) {
-                        // ── Live status from Fred: update pill while bubble is hidden
-                        if (!hasTokens) {
-                            clearInterval(_dotInterval);
-                            _setPillLabel(pill, _statusPillText(chunk.status));
-                        }
-
-                    } else if (chunk.correction) {
-                        // ── Understanding-layer correction note
-                        if (!hasTokens) {
-                            clearInterval(_dotInterval);
-                            _setPillLabel(pill, `✏️ ${chunk.correction}`);
-                        }
-
-                    } else if (chunk.token) {
-                        // ── First token: clear interval, hide pill, reveal bubble
-                        if (!hasTokens) {
-                            clearInterval(_dotInterval);
-                            pill.style.display    = 'none';
-                            bubble.style.display  = '';
-                            hasTokens = true;
-                            localStorage.removeItem('easyfind_pending_sid');
-                        }
-                        fullReply += chunk.token;
-                        bubble.innerHTML = _formatBotReply(fullReply);
-                        chatContainer.scrollTop = chatContainer.scrollHeight;
-
-                    } else if (chunk.done) {
-                        break outer;
-
-                    } else if (chunk.post_form) {
-                        // Fred collected all property details — show confirmation card
-                        _pendingPostDraft = chunk.post_form;
-                        if (!hasTokens) {
-                            pill.style.display   = 'none';
-                            bubble.style.display = '';
-                            hasTokens = true;
-                        }
-                        fullReply += '\n\n' + _renderPostConfirmCard(chunk.post_form);
-                        bubble.innerHTML = _formatBotReply(fullReply);
-                        chatContainer.scrollTop = chatContainer.scrollHeight;
-
-                    } else if (chunk.reply) {
-                        if (!hasTokens) {
-                            pill.style.display   = 'none';
-                            bubble.style.display = '';
-                            hasTokens = true;
-                        }
-                        fullReply = chunk.reply;
-                        bubble.innerHTML = _formatBotReply(fullReply);
-
-                    } else if (chunk.error) {
-                        pill.style.display   = 'none';
-                        bubble.style.display = '';
-                        bubble.textContent = `⚠️ ${chunk.error}`;
-                        stopped = true; break outer;
-                    }
-                } catch (_) { /* incomplete chunk — skip */ }
+                try { _handleChunk(JSON.parse(jsonStr)); } catch (_) {}
+                if (stopped) break outer;
             }
         }
-
-        // ── Add action buttons after streaming completes ──────────────────────
-        if (fullReply && !stopped) {
-            localStorage.removeItem('easyfind_pending_sid'); // reply received — no need to poll
-            const actions = document.createElement('div');
-            actions.className = 'message-actions';
-            actions.innerHTML = `
-                <i class="fa-regular fa-copy action-icon-small" title="Copy" onclick="copyToClipboard(this)"></i>
-                <i class="fa-solid fa-share-nodes action-icon-small" onclick="shareResponse(this)"></i>
-                <i class="fa-solid fa-rotate-right action-icon-small" onclick="retryLastResponse(this)"></i>`;
-            row.appendChild(actions);
-            saveToLocalStorage('bot', fullReply);
-        } else if (fullReply && stopped) {
-            bubble.innerHTML = _formatBotReply(fullReply) + ' ●';
-            const actions = document.createElement('div');
-            actions.className = 'message-actions';
-            actions.innerHTML = `<i class="fa-regular fa-copy action-icon-small" title="Copy" onclick="copyToClipboard(this)"></i>`;
-            row.appendChild(actions);
-            saveToLocalStorage('bot', fullReply);
-        } else if (!fullReply) {
-            // Nothing came through — remove the row entirely
-            row.remove();
-        }
+        _finishReply();
 
     } catch (err) {
         clearInterval(_dotInterval);
+        clearTimeout(_pollTimeout);
         row.remove();
         if (err.name !== 'AbortError') {
-            // Show error with retry button like ChatGPT
             const errRow = document.createElement('div');
             errRow.className = 'chat-row bot';
-            errRow.innerHTML = `
-                <div class="message-content fred-error-msg">
-                    ⚠️ Could not reach Fred. Please try again later.
-                    <button class="fred-retry-btn" onclick="retryMessage(this, ${JSON.stringify(prompt)})">
-                        <i class="fa-solid fa-rotate-right"></i> Retry
-                    </button>
-                </div>`;
+            errRow.innerHTML = `<div class="message-content fred-error-msg">
+                ⚠️ Could not reach Fred. Please try again later.
+                <button class="fred-retry-btn" onclick="retryMessage(this, ${JSON.stringify(prompt)})">
+                    <i class="fa-solid fa-rotate-right"></i> Retry
+                </button></div>`;
             messagesWrapper.appendChild(errRow);
             chatContainer.scrollTop = chatContainer.scrollHeight;
             console.error('[AI.js] Fred fetch error:', err);
         }
-    } finally {
-        clearInterval(_dotInterval);
         _setStreaming(false);
     }
 }
