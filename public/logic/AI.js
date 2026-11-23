@@ -968,10 +968,20 @@ async function showThinkingAndReply(prompt) {
     const row    = document.createElement('div');
     row.className = 'chat-row bot';
 
-    // Status pill — starts with "Thinking…", updates to Fred's live statuses once connected
+    // Status pill — cycles through animated dots while waiting
     const pill   = document.createElement('div');
     pill.className = 'fred-status-pill';
-    pill.innerHTML = `<span class="pill-spinner"></span><span class="pill-label">Thinking…</span>`;
+    pill.innerHTML = `<span class="pill-spinner"></span><span class="pill-label">Fred is thinking</span>`;
+
+    // Animate the label with dots while waiting for first status/token
+    let _dotCount = 0;
+    const _dotInterval = setInterval(() => {
+        const label = pill.querySelector('.pill-label');
+        if (label && pill.isConnected) {
+            _dotCount = (_dotCount + 1) % 4;
+            label.textContent = 'Fred is thinking' + '.'.repeat(_dotCount);
+        }
+    }, 400);
 
     const bubble = document.createElement('div');
     bubble.className = 'message-content';
@@ -1039,23 +1049,25 @@ async function showThinkingAndReply(prompt) {
                     if (chunk.status) {
                         // ── Live status from Fred: update pill while bubble is hidden
                         if (!hasTokens) {
+                            clearInterval(_dotInterval);
                             _setPillLabel(pill, _statusPillText(chunk.status));
                         }
 
                     } else if (chunk.correction) {
                         // ── Understanding-layer correction note
-                        // Show it as a small italic note inside the pill before tokens start
                         if (!hasTokens) {
+                            clearInterval(_dotInterval);
                             _setPillLabel(pill, `✏️ ${chunk.correction}`);
                         }
 
                     } else if (chunk.token) {
-                        // ── First token: hide pill, reveal bubble, start streaming
+                        // ── First token: clear interval, hide pill, reveal bubble
                         if (!hasTokens) {
+                            clearInterval(_dotInterval);
                             pill.style.display    = 'none';
                             bubble.style.display  = '';
                             hasTokens = true;
-                            localStorage.removeItem('easyfind_pending_sid'); // stream working — no need to poll
+                            localStorage.removeItem('easyfind_pending_sid');
                         }
                         fullReply += chunk.token;
                         bubble.innerHTML = _formatBotReply(fullReply);
@@ -1119,12 +1131,25 @@ async function showThinkingAndReply(prompt) {
         }
 
     } catch (err) {
+        clearInterval(_dotInterval);
         row.remove();
         if (err.name !== 'AbortError') {
-            appendMessageUI('bot', '⚠️ Could not reach Fred. Please ensure the AI engine is running and try again.');
+            // Show error with retry button like ChatGPT
+            const errRow = document.createElement('div');
+            errRow.className = 'chat-row bot';
+            errRow.innerHTML = `
+                <div class="message-content fred-error-msg">
+                    ⚠️ Could not reach Fred. Check your connection and try again.
+                    <button class="fred-retry-btn" onclick="retryMessage(this, ${JSON.stringify(prompt)})">
+                        <i class="fa-solid fa-rotate-right"></i> Retry
+                    </button>
+                </div>`;
+            messagesWrapper.appendChild(errRow);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
             console.error('[AI.js] Fred fetch error:', err);
         }
     } finally {
+        clearInterval(_dotInterval);
         _setStreaming(false);
     }
 }
@@ -1135,6 +1160,13 @@ function handleKeyPress(e) {
         e.preventDefault();
         sendMessage();
     }
+}
+
+function retryMessage(btn, prompt) {
+    // Remove the error row
+    btn.closest('.chat-row')?.remove();
+    // Retry sending the same message
+    showThinkingAndReply(prompt);
 }
 
 // Auto-grow textarea like ChatGPT

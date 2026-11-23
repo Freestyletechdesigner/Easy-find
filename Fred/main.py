@@ -1617,26 +1617,25 @@ async def generate_response(payload: ChatPayload):
         history = payload.chat_history
 
     async def _pipeline():
-        # ── STEP 0: Detect language + lightly clean the message ───────────
+        # ── STEP 0+1: Detect language AND route intent in parallel ────────
         yield _status("understanding")
-        detect = await detect_and_clean(user_msg, history)
-        lang       = detect.lang        # "english" | "pidgin"
-        style_hint = detect.style_hint  # e.g. "casual pidgin"
-        working_msg = detect.clean      # lightly corrected, same language
+        detect, intent = await asyncio.gather(
+            detect_and_clean(user_msg, history),
+            classify_intent(user_msg, history),
+        )
+        lang        = detect.lang
+        style_hint  = detect.style_hint
+        working_msg = detect.clean
 
         # Send correction note to the UI if something was fixed
         if detect.note:
             yield _sse({"correction": detect.note})
             print(f"[Fred] Correction note sent: {detect.note!r}")
 
-        # Save raw user turn to session store (not the cleaned version — history
-        # should read naturally when compacted later)
+        # Save raw user turn to session store
         if sid:
             _session_append(sid, "user", user_msg)
 
-        # ── STEP 1: Route ──────────────────────────────────────────────────
-        yield _status("routing")
-        intent = await classify_intent(working_msg, history)
         print(f"[Fred] Intent: {intent} | lang: {lang} | Message: {working_msg[:60]!r}")
 
         # ── STEP 2: Gather verified context ───────────────────────────────
@@ -1875,10 +1874,8 @@ async def generate_response(payload: ChatPayload):
         # ── STEP 4 + 5 + 6: Generate, supervise, stream ───────────────────
         yield _status("thinking")
 
-        # ── general_chat with no context: stream live, language-gate only ──
-        # Collect tokens but yield them immediately for low latency.
-        # Language gate still runs — if it WARNs we regenerate once.
-        if intent == "general_chat" and not context:
+        # ── general_chat: stream live immediately, skip supervisor ─────────
+        if intent == "general_chat":
             final_reply = ""
             try:
                 async for chunk in llm.stream(messages, max_tokens=400):

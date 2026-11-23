@@ -710,3 +710,30 @@ body {
 }
 .fred-link-btn:hover { opacity: 0.85; }
 .fred-link-btn i { font-size: 10px; }
+
+/* ── Fred error message + retry button ──────────────────────────────────── */
+.fred-error-msg {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+}
+
+.fred-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.fred-retry-btn:hover { background: rgba(255,255,255,0.2); }
+.fred-retry-btn i { font-size: 11px; }
