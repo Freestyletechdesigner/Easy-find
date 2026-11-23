@@ -906,7 +906,7 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
                 title   = r.get("title", "Property")
                 content = r.get("content", "")[:200]
                 url     = r.get("url", "")
-                domain  = r.get("parsed_url", {}).get("netloc", "") or url.split("/")[2] if url else ""
+                domain  = url.split("/")[2] if url and len(url.split("/")) > 2 else ""
                 lines.append(
                     f"\nOption {i}: {title}\n"
                     f"   Details: {content}\n"

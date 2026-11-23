@@ -1160,14 +1160,34 @@ function _formatBotReply(text) {
 }
 
 function _escapeAndLink(text) {
+    // First escape HTML
     const escaped = text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
-    return escaped.replace(
-        /https?:\/\/[^\s<>"]+/g,
-        url => `<a href="${url}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> View Property</a>`
+
+    // Convert markdown bold **text** to <strong>
+    let formatted = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+    // Convert markdown bullets * item or - item to list items
+    formatted = formatted.replace(/^[\*\-] (.+)$/gm, '• $1');
+
+    // Convert full URLs https://... to buttons
+    formatted = formatted.replace(
+        /https?:\/\/[^\s<>"&]+/g,
+        url => `<a href="${url}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${url.replace(/^https?:\/\//, '')}</a>`
     );
+
+    // Convert bare easyfind.com.ng/... links (without https://) to buttons
+    formatted = formatted.replace(
+        /(?<![/"'>])easyfind\.com\.ng(\/[^\s<>"&]*)?/g,
+        (match) => `<a href="https://${match}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${match}</a>`
+    );
+
+    // Convert newlines to <br>
+    formatted = formatted.replace(/\n/g, '<br>');
+
+    return formatted;
 }
 
 // ── Property posting confirmation card ────────────────────────────────────

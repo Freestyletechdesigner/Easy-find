@@ -691,3 +691,22 @@ body {
 @keyframes pillSpin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Fred link button ────────────────────────────────────────────────────── */
+.fred-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--accent, #8df7ff);
+  color: var(--brand, #103e3c) !important;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+  margin: 2px 2px;
+  transition: opacity .2s;
+  white-space: nowrap;
+}
+.fred-link-btn:hover { opacity: 0.85; }
+.fred-link-btn i { font-size: 10px; }
