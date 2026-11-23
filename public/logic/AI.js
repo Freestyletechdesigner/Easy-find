@@ -1139,7 +1139,7 @@ async function showThinkingAndReply(prompt) {
             errRow.className = 'chat-row bot';
             errRow.innerHTML = `
                 <div class="message-content fred-error-msg">
-                    ⚠️ Could not reach Fred. Check your connection and try again.
+                    ⚠️ Could not reach Fred. Please try again later.
                     <button class="fred-retry-btn" onclick="retryMessage(this, ${JSON.stringify(prompt)})">
                         <i class="fa-solid fa-rotate-right"></i> Retry
                     </button>
