@@ -473,6 +473,8 @@ async def classify_intent(message: str, history: list = []) -> str:
         return "agent_search"
     if "post_property" in raw:
         return "post_property"
+    if "general_chat" in raw:
+        return "general_chat"
     return "general_chat"
 
 
@@ -948,7 +950,7 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
 # is active.  classify_intent() (the only place that bypassed _llm_call)
 # is updated below to go through the same manager.
 
-GEMINI_QUOTA_RESET_SECS = 60   # retry exhausted key after 60 seconds
+GEMINI_QUOTA_RESET_SECS = 20   # retry exhausted key after 20 seconds
 
 
 class _GeminiKey:
@@ -1617,26 +1619,68 @@ async def generate_response(payload: ChatPayload):
         history = payload.chat_history
 
     async def _pipeline():
-        # ── STEP 0+1: Detect language AND route intent in parallel ────────
+        # ── STEP 0+1: Detect language AND route intent in ONE LLM call ───
         yield _status("understanding")
-        detect, intent = await asyncio.gather(
-            detect_and_clean(user_msg, history),
-            classify_intent(user_msg, history),
-        )
-        lang        = detect.lang
-        style_hint  = detect.style_hint
-        working_msg = detect.clean
 
-        # Send correction note to the UI if something was fixed
-        if detect.note:
-            yield _sse({"correction": detect.note})
-            print(f"[Fred] Correction note sent: {detect.note!r}")
+        _COMBINED_PROMPT = """\
+You are the brain of Fred, EasyFind Nigeria's AI assistant.
+Given the user message and conversation history, do TWO things in one JSON response:
+
+1. DETECT the language: "english" or "pidgin" (Nigerian Pidgin English)
+2. CLASSIFY the intent into exactly one of:
+   - property_search: user wants to find/rent/buy a property
+   - easyfind_knowledge: user asks about EasyFind platform (how to sign up, post, verify, URLs)
+   - post_property: user (agent) wants to post/list/upload a property on EasyFind
+   - agent_listing: user wants to see a list of agents
+   - agent_search: user wants to find a specific agent by name
+   - general_chat: greetings, jokes, off-topic, anything else
+
+CONVERSATION HISTORY (most recent last):
+{history}
+
+USER MESSAGE: {message}
+
+Reply with ONLY valid JSON, no markdown:
+{{"lang": "english"|"pidgin", "style": "2-3 word style hint", "intent": "<one of the 6 intents above>"}}"""
+
+        history_text = "\n".join(
+            f"{m.get('role','user').capitalize()}: {(m.get('content') or '').strip()}"
+            for m in (history[-4:] if history else [])
+            if m.get("content")
+        ) or "(no prior conversation)"
+
+        prompt = _COMBINED_PROMPT.format(
+            history=history_text,
+            message=user_msg.strip(),
+        )
+
+        try:
+            raw = await _llm_call([{"role": "user", "content": prompt}], max_tokens=60)
+            import re as _re
+            m = _re.search(r'\{[\s\S]*?\}', raw)
+            if m:
+                data   = json.loads(m.group(0))
+                lang   = str(data.get("lang") or "english").strip().lower()
+                style  = str(data.get("style") or "neutral English").strip()
+                intent = str(data.get("intent") or "general_chat").strip().lower()
+                if lang not in ("english", "pidgin"):
+                    lang = "pidgin" if "pidgin" in lang else "english"
+                if intent not in ("property_search","easyfind_knowledge","post_property",
+                                  "agent_listing","agent_search","general_chat"):
+                    intent = "general_chat"
+            else:
+                lang, style, intent = "english", "neutral English", "general_chat"
+        except Exception as e:
+            print(f"[Fred] Combined detect+route error: {e}")
+            lang, style, intent = "english", "neutral English", "general_chat"
+
+        style_hint  = style
+        working_msg = user_msg   # use original message
+        print(f"[Fred] Intent: {intent} | lang: {lang} | Message: {working_msg[:60]!r}")
 
         # Save raw user turn to session store
         if sid:
             _session_append(sid, "user", user_msg)
-
-        print(f"[Fred] Intent: {intent} | lang: {lang} | Message: {working_msg[:60]!r}")
 
         # ── STEP 2: Gather verified context ───────────────────────────────
         context      = ""
