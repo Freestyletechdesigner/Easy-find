@@ -1701,9 +1701,23 @@ Reply with ONLY valid JSON, no markdown:
                 context      = "Available property listings from EasyFind database:\n\n" + context_str
                 context_type = "easyfind_db"
             else:
+                # Build direct search links for Nigerian property sites
+                location_query = working_msg.strip()
+                encoded_query  = urllib.parse.quote_plus(location_query)
+                direct_links = (
+                    f"Direct search links for: {location_query}\n\n"
+                    f"Option 1: Search on Jiji.ng\n"
+                    f"   Link: https://jiji.ng/houses-apartments-for-rent?query={encoded_query}\n\n"
+                    f"Option 2: Search on Nigeria Property Centre\n"
+                    f"   Link: https://nigeriapropertycentre.com/search?q={encoded_query}\n\n"
+                    f"Option 3: Search on PropertyPro.ng\n"
+                    f"   Link: https://www.propertypro.ng/property/for-rent?search={encoded_query}\n\n"
+                )
+
+                # Also try SearXNG for additional results
                 yield _status("searching_web")
                 web_task = asyncio.create_task(
-                    asyncio.to_thread(web_search, working_msg, 5, "property")
+                    asyncio.to_thread(web_search, working_msg, 3, "property")
                 )
                 try:
                     web = await asyncio.wait_for(asyncio.shield(web_task), timeout=3.0)
@@ -1714,32 +1728,17 @@ Reply with ONLY valid JSON, no markdown:
                 if web:
                     context = (
                         "NOTE: No matching properties were found in the EasyFind database. "
-                        "The following property listings were found on external Nigerian property websites. "
-                        "Present each one as a property option with its title, details, and a clickable link. "
-                        "Tell the user these are from external sites and encourage them to also post or find "
-                        "verified agents on easyfind.com.ng.\n\n"
-                        + web
+                        "Present the following direct search links AND web results to the user. "
+                        "Tell the user these links will take them directly to search results for their location.\n\n"
+                        + direct_links + web
                     )
-                    context_type = "web_property"
-                    print(f"[Fred] Web property search returned context ({len(context)} chars)")
                 else:
-                    # No listings anywhere — send honest reply in user's language
-                    print("[Fred] No listings found anywhere — sending honest reply")
-                    if lang == "pidgin":
-                        msg = (
-                            "I don search EasyFind database and web but I no see any matching "
-                            "property for now. You fit check easyfind.com.ng directly, or come "
-                            "back later — agents dey add new properties every day."
-                        )
-                    else:
-                        msg = (
-                            "I searched the EasyFind database and the web but couldn't find "
-                            "matching properties right now. You can browse listings at "
-                            "easyfind.com.ng, or check back soon as agents add new properties daily."
-                        )
-                    async for chunk in _stream_text(msg):
-                        yield chunk
-                    return
+                    context = (
+                        "NOTE: No matching properties were found in the EasyFind database. "
+                        "Present these direct search links to the user so they can search themselves.\n\n"
+                        + direct_links
+                    )
+                context_type = "web_property"
 
         elif intent == "easyfind_knowledge":
             yield _status("searching_knowledge")

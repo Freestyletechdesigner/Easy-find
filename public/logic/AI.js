@@ -987,6 +987,10 @@ function _setStreaming(on) {
 function stopStreaming() {
     try { _streamReader?.cancel(); } catch (_) {}
     try { _streamAbort?.abort();   } catch (_) {}
+    // Also cancel any active WebSocket Fred handler
+    if (_wsCurrentHandler) {
+        _wsCurrentHandler = null;
+    }
     _setStreaming(false);
 }
 
@@ -1326,7 +1330,9 @@ function _escapeAndLink(text) {
     // Convert bare https:// URLs to buttons
     formatted = formatted.replace(
         /(?<!\(|")(https?:\/\/[^\s<>"&\)]+)/g,
-        url => {
+        raw => {
+            // Strip trailing punctuation that got captured
+            const url = raw.replace(/[.,;:!?\)\]]+$/, '');
             try {
                 const domain = new URL(url).hostname.replace('www.', '');
                 return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${domain}</a>`;
