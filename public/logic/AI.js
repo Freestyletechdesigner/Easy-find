@@ -301,7 +301,7 @@ async function handleGoogleLogin(response) {
         if (data.success) {
             currentUser = data.user;
             closeLoginModal();
-            renderUserProfile();
+            location.reload();
         } else {
             alert(data.message || 'Sign-in failed. Please try again.');
         }

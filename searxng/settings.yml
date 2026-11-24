@@ -16,6 +16,10 @@ server:
   base_url: "http://localhost:8080/"
   limiter: false          # Fred is the only client — no rate limiting needed
   image_proxy: false
+  public_instance: false
+
+result_proxy:
+  url: false              # disable redirect wrapper — return original URLs directly
 
 ui:
   static_use_hash: true

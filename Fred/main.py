@@ -907,7 +907,13 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
             for i, r in enumerate(results, 1):
                 title   = r.get("title", "Property")
                 content = r.get("content", "")[:200]
+                # Prefer the original url over SearXNG's redirect wrapper
                 url     = r.get("url", "")
+                # Strip SearXNG redirect wrapper if present
+                if "/go/v1/" in url or url.startswith("http:///"):
+                    url = r.get("parsed_url", [None, None, None])[2] if isinstance(r.get("parsed_url"), list) else ""
+                if not url or url.startswith("http:///"):
+                    continue  # skip broken links entirely
                 domain  = url.split("/")[2] if url and len(url.split("/")) > 2 else ""
                 lines.append(
                     f"\nOption {i}: {title}\n"
