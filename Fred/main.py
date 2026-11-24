@@ -1967,64 +1967,13 @@ Reply with ONLY valid JSON, no markdown:
             print(f"[Supervisor] {verdict.verdict} (layer {verdict.layer}) — {verdict.reason}")
 
             if verdict.verdict == "BLOCK":
-                print(f"[Supervisor] BLOCKED draft: {draft[:120]!r}")
-                yield _status("regenerating")
-                force_system = (
-                    system
-                    + "\n\nIMPORTANT: Only use facts from the VERIFIED CONTEXT above. "
-                    "Do not invent any details. If you cannot answer from the context, "
-                    "say so honestly and suggest the user visit easyfind.com.ng."
-                )
-                try:
-                    regenerated = await _llm_call(
-                        _build_messages(force_system, history, working_msg, lang, style_hint),
-                        max_tokens=350,
-                    )
-                    v_retry = _rule_guard(regenerated, context)
-                    final_reply = regenerated if v_retry.verdict != "BLOCK" else (
-                        "I no fit give you verified answer for that one. "
-                        "Abeg check easyfind.com.ng or contact EasyFind support."
-                        if lang == "pidgin" else
-                        "I couldn't produce a verified answer for that. "
-                        "Please visit easyfind.com.ng or contact EasyFind support directly."
-                    )
-                except Exception:
-                    final_reply = (
-                        "I no fit give you verified answer for that one. "
-                        "Abeg check easyfind.com.ng or contact EasyFind support."
-                        if lang == "pidgin" else
-                        "I couldn't produce a verified answer for that. "
-                        "Please visit easyfind.com.ng or contact EasyFind support directly."
-                    )
+                print(f"[Supervisor] BLOCKED — logging only, reply already streamed: {draft[:80]!r}")
+                # Reply already sent to user — just log, don't replace
+                final_reply = draft
 
             elif verdict.verdict == "WARN":
-                yield _status("regenerating")
-                print(f"[Supervisor] WARN — regenerating with correction hint…")
-                # Include language gate feedback in the correction hint if it fired
-                warn_note = verdict.reason
-                correction_system = (
-                    system
-                    + f"\n\nNOTE: Your previous answer had issues: {warn_note}. "
-                    "Rewrite using ONLY the exact facts in the VERIFIED CONTEXT. "
-                    "Omit any detail not present there. "
-                    f"Also make sure your reply is in {lang} ({style_hint}) to match the user."
-                )
-                try:
-                    regenerated = await _llm_call(
-                        _build_messages(correction_system, history, working_msg, lang, style_hint),
-                        max_tokens=300,
-                    )
-                    print(f"[Supervisor] Regenerated: {regenerated[:80]!r}…")
-                    v_retry = _rule_guard(regenerated, context)
-                    final_reply = regenerated if v_retry.verdict != "BLOCK" else (
-                        "I no fit give fully verified answer. "
-                        "Abeg check easyfind.com.ng for correct details."
-                        if lang == "pidgin" else
-                        "I couldn't produce a fully verified answer. "
-                        "Please check easyfind.com.ng for accurate details."
-                    )
-                except Exception:
-                    final_reply = draft
+                print(f"[Supervisor] WARN — {verdict.reason} — logging only, reply already streamed")
+                final_reply = draft
 
             else:
                 final_reply = draft
