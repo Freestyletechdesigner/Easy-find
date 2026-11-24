@@ -1302,18 +1302,43 @@ function _escapeAndLink(text) {
     // Convert markdown bold **text** to <strong>
     let formatted = escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
-    // Convert markdown bullets * item or - item to list items
+    // Convert markdown bullets * item or - item
     formatted = formatted.replace(/^[\*\-] (.+)$/gm, '• $1');
 
-    // Convert full URLs https://... to buttons
+    // Convert markdown links [text](url) to buttons showing domain name
     formatted = formatted.replace(
-        /https?:\/\/[^\s<>"&]+/g,
-        url => `<a href="${url}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${url.replace(/^https?:\/\//, '')}</a>`
+        /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+        (match, linkText, url) => {
+            try {
+                const domain = new URL(url).hostname.replace('www.', '');
+                const label  = (linkText.toLowerCase() === 'here' ||
+                                linkText.toLowerCase() === 'view details here' ||
+                                linkText.toLowerCase() === 'view listing')
+                    ? domain
+                    : linkText;
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${label}</a>`;
+            } catch (_) {
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${linkText}</a>`;
+            }
+        }
     );
 
-    // Convert bare easyfind.com.ng/... links (without https://) to buttons
+    // Convert bare https:// URLs to buttons
     formatted = formatted.replace(
-        /(?<![/"'>])easyfind\.com\.ng(\/[^\s<>"&]*)?/g,
+        /(?<!\(|")(https?:\/\/[^\s<>"&\)]+)/g,
+        url => {
+            try {
+                const domain = new URL(url).hostname.replace('www.', '');
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${domain}</a>`;
+            } catch (_) {
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${url}</a>`;
+            }
+        }
+    );
+
+    // Convert bare easyfind.com.ng/... links to buttons
+    formatted = formatted.replace(
+        /(?<![/"'>])(easyfind\.com\.ng(\/[^\s<>"&\)]*)?)/g,
         (match) => `<a href="https://${match}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${match}</a>`
     );
 
