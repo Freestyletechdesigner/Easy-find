@@ -854,33 +854,116 @@ async def _extract_post_details(message: str, history: list) -> dict:
 
 
 
-def _searxng_available() -> bool:
+def _resolve_url(r: dict) -> str:
+    """Extract the real destination URL from a SearXNG result, skipping /go/v1/ wrappers."""
+    url = ""
+    parsed = r.get("parsed_url")
+    if isinstance(parsed, list) and len(parsed) >= 3:
+        scheme = parsed[0] or "https"
+        netloc = parsed[1] or ""
+        path   = parsed[2] or ""
+        query  = parsed[4] if len(parsed) > 4 else ""
+        if netloc:
+            url = f"{scheme}://{netloc}{path}"
+            if query:
+                url += f"?{query}"
+    if not url or "/go/v1/" in url or url.startswith("http:///"):
+        raw_url = r.get("url", "")
+        if raw_url and "/go/v1/" not in raw_url and not raw_url.startswith("http:///"):
+            url = raw_url
+    if "/go/v1/" in url or url.startswith("http:///"):
+        url = ""
+    return url
+
+
+def _fetch_page_text(url: str, max_chars: int = 4000) -> str:
+    """
+    Fetch a property listing page and return its visible text content.
+    Strips scripts, styles, and navigation clutter. Returns "" on any error.
+    """
     try:
         req = urllib.request.Request(
-            f"{SEARXNG_URL}/search?q=test&format=json",
-            headers={"User-Agent": "FredAI/1.0"},
+            url,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0 Safari/537.36"
+                ),
+                "Accept": "text/html,application/xhtml+xml",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
         )
-        with urllib.request.urlopen(req, timeout=4) as r:
-            return r.status == 200
-    except Exception:
-        return False
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            raw_html = resp.read().decode("utf-8", errors="ignore")
+
+        # Strip <script>, <style>, <nav>, <footer>, <header> blocks
+        clean = re.sub(r'<(script|style|nav|footer|header|noscript)[^>]*>[\s\S]*?</\1>', ' ', raw_html, flags=re.IGNORECASE)
+        # Strip all remaining tags
+        clean = re.sub(r'<[^>]+>', ' ', clean)
+        # Collapse whitespace
+        clean = re.sub(r'\s+', ' ', clean).strip()
+        return clean[:max_chars]
+    except Exception as e:
+        print(f"[Fred] Page fetch failed for {url}: {e}")
+        return ""
+
+
+_PAGE_EXTRACT_PROMPT = """\
+You are extracting a property listing from a Nigerian real estate website page.
+
+PAGE TEXT:
+{page_text}
+
+Extract the most important listing details and return ONLY valid JSON:
+{{
+  "title":       "<property title or null>",
+  "price":       "<price as written on the page, e.g. ₦5,000,000 or null>",
+  "location":    "<area/neighbourhood in Enugu or null>",
+  "beds":        <integer or null>,
+  "baths":       <integer or null>,
+  "type":        "<house|flat|apartment|room|shop|land|office|duplex|shortlet or null>",
+  "description": "<1-2 sentence summary of the listing or null>",
+  "is_property": <true if this page is an actual property listing, false if it is a search results page or unrelated>
+}}
+
+If the page has multiple listings (search results page), set is_property to false.
+Return ONLY the JSON object, no markdown, no extra text.
+JSON:"""
+
+
+async def _extract_listing_from_page(url: str) -> dict | None:
+    """
+    Fetch a page and ask the LLM to extract listing details from it.
+    Returns a dict with listing fields, or None if extraction fails or
+    the page is not an actual property listing.
+    """
+    page_text = await asyncio.to_thread(_fetch_page_text, url)
+    if not page_text:
+        return None
+    prompt = _PAGE_EXTRACT_PROMPT.format(page_text=page_text[:3000])
+    try:
+        raw = await _llm_call([{"role": "user", "content": prompt}], max_tokens=200)
+        m   = re.search(r'\{[\s\S]*?\}', raw)
+        if m:
+            data = json.loads(m.group(0))
+            if not data.get("is_property", True):
+                return None   # search results page — skip
+            return data
+    except Exception as e:
+        print(f"[Fred] Listing extract error for {url}: {e}")
+    return None
 
 
 def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
     """
-    Search SearXNG and return top n results as a formatted string.
+    Synchronous SearXNG search — returns top n results as a formatted string.
+    Used for knowledge and general_chat paths. For property search use
+    web_search_and_fetch() which also reads each page.
     Returns empty string if SearXNG is unavailable.
     """
     try:
-        if search_type == "property":
-            full_query = (
-                f"({query} Enugu Nigeria) "
-                f"site:nigeriapropertycentre.com OR "
-                f"site:propertypro.ng OR "
-                f"site:privateproperty.ng OR "
-                f"site:jiji.ng"
-            )
-        elif search_type == "knowledge":
+        if search_type == "knowledge":
             full_query = f"{query} EasyFind Nigeria real estate Enugu"
         else:
             full_query = f"{query} Enugu Nigeria"
@@ -901,31 +984,14 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
         if not results:
             return ""
 
-        if search_type == "property":
-            # Format as property cards — no domain names, no raw URLs exposed to Fred
-            lines = [f"Property listings found on the web ({search_type}):"]
-            for i, r in enumerate(results, 1):
-                title   = r.get("title", "Property")
-                content = r.get("content", "")[:200]
-                # Prefer the original url over SearXNG's redirect wrapper
-                url     = r.get("url", "")
-                # Strip SearXNG redirect wrapper if present
-                if "/go/v1/" in url or url.startswith("http:///"):
-                    url = r.get("parsed_url", [None, None, None])[2] if isinstance(r.get("parsed_url"), list) else ""
-                if not url or url.startswith("http:///"):
-                    continue  # skip broken links entirely
-                lines.append(
-                    f"\nOption {i}: {title}\n"
-                    f"   Details: {content}\n"
-                    f"   Link: [view link]({url})"
-                )
-        else:
-            lines = [f"Web search results ({search_type}):"]
-            for i, r in enumerate(results, 1):
-                title   = r.get("title", "")
-                content = r.get("content", "")[:300]
-                url     = r.get("url", "")
-                lines.append(f"{i}. {title}\n   {content}\n   Link: [view link]({url})")
+        lines = [f"Web search results ({search_type}):"]
+        for i, r in enumerate(results, 1):
+            title   = r.get("title", "")
+            content = r.get("content", "")[:300]
+            url     = _resolve_url(r)
+            if not url:
+                continue
+            lines.append(f"{i}. {title}\n   {content}\n   Link: [view link]({url})")
 
         result_str = "\n\n".join(lines)
         print(f"[Fred] SearXNG returned {len(results)} results for {search_type!r} search")
@@ -933,6 +999,115 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
 
     except Exception as e:
         print(f"[Fred] SearXNG error: {e}")
+        return ""
+
+
+async def web_search_and_fetch(query: str, n: int = 5) -> str:
+    """
+    Full property search pipeline:
+      1. Search SearXNG across Nigerian property sites
+      2. Resolve real URLs (skip /go/v1/ wrappers)
+      3. Fetch each page concurrently and extract actual listing details via LLM
+      4. Return structured listing cards with direct page links
+
+    Returns empty string if nothing useful is found.
+    """
+    try:
+        full_query = (
+            f"({query} Enugu Nigeria) "
+            f"site:nigeriapropertycentre.com OR "
+            f"site:propertypro.ng OR "
+            f"site:privateproperty.ng OR "
+            f"site:jiji.ng"
+        )
+        params = urllib.parse.urlencode({
+            "q":          full_query,
+            "format":     "json",
+            "categories": "general",
+        })
+        req = urllib.request.Request(
+            f"{SEARXNG_URL}/search?{params}",
+            headers={"User-Agent": "FredAI/1.0"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            data = json.loads(r.read().decode())
+
+        results = data.get("results", [])[:n * 2]   # fetch extra to account for skips
+        if not results:
+            return ""
+
+        # Resolve real URLs first, drop any we can't clean
+        candidates = []
+        for r in results:
+            url = _resolve_url(r)
+            if url:
+                candidates.append({"title": r.get("title", ""), "url": url, "snippet": r.get("content", "")[:200]})
+
+        if not candidates:
+            return ""
+
+        print(f"[Fred] Fetching {len(candidates)} property pages…")
+
+        # Fetch and extract all pages concurrently
+        async def _process(item: dict) -> dict | None:
+            extracted = await _extract_listing_from_page(item["url"])
+            if extracted:
+                extracted["url"]     = item["url"]
+                extracted["snippet"] = item["snippet"]
+                # Fall back to search title if LLM didn't extract one
+                if not extracted.get("title"):
+                    extracted["title"] = item["title"]
+            else:
+                # Page fetch failed or was a search results page —
+                # still include the result using the snippet from SearXNG
+                extracted = {
+                    "title":       item["title"],
+                    "price":       None,
+                    "location":    None,
+                    "beds":        None,
+                    "baths":       None,
+                    "type":        None,
+                    "description": item["snippet"] or None,
+                    "url":         item["url"],
+                    "is_property": True,
+                }
+            return extracted
+
+        tasks   = [_process(c) for c in candidates]
+        fetched = await asyncio.gather(*tasks)
+        listings = [f for f in fetched if f][:n]
+
+        if not listings:
+            return ""
+
+        lines = ["Property listings found:"]
+        for i, lst in enumerate(listings, 1):
+            title  = lst.get("title") or "Property listing"
+            price  = lst.get("price") or "price on request"
+            loc    = lst.get("location") or ""
+            beds   = lst.get("beds")
+            baths  = lst.get("baths")
+            desc   = lst.get("description") or ""
+            url    = lst["url"]
+
+            specs = ", ".join(filter(None, [
+                f"{beds} bedroom{'s' if beds and beds > 1 else ''}" if beds else "",
+                f"{baths} bathroom{'s' if baths and baths > 1 else ''}" if baths else "",
+            ]))
+
+            card = f"\nOption {i}: {title}"
+            if loc:    card += f" in {loc}"
+            if specs:  card += f" — {specs}"
+            card += f". Price: {price}."
+            if desc:   card += f" {desc}"
+            card += f" [view link]({url})"
+            lines.append(card)
+
+        print(f"[Fred] Built {len(listings)} listing cards from web pages")
+        return "\n\n".join(lines)
+
+    except Exception as e:
+        print(f"[Fred] web_search_and_fetch error: {e}")
         return ""
 
 
@@ -1571,6 +1746,7 @@ _STATUS = {
     "routing":             "🔍 Figuring out what you need…",
     "searching_db":        "🏠 Searching EasyFind listings…",
     "searching_web":       "🌐 Nothing found locally — searching the web…",
+    "reading_pages":       "📄 Reading property pages…",
     "still_searching":     "⏳ Still searching, just a moment…",
     "searching_knowledge": "📖 Looking up EasyFind information…",
     "searching_web_kb":    "🌐 Checking the web for more info…",
@@ -1704,22 +1880,24 @@ Reply with ONLY valid JSON, no markdown:
                 )
                 context_type = "easyfind_db"
             else:
-                # No local results — silently search the web and present findings as Fred's own
+                # No local results — search the web and read each property page
                 yield _status("searching_web")
-                web_task = asyncio.create_task(
-                    asyncio.to_thread(web_search, working_msg, 5, "property")
-                )
                 try:
-                    web = await asyncio.wait_for(asyncio.shield(web_task), timeout=3.0)
+                    web = await asyncio.wait_for(web_search_and_fetch(working_msg, 5), timeout=6.0)
                 except asyncio.TimeoutError:
-                    yield _status("still_searching")
-                    web = await web_task
+                    yield _status("reading_pages")
+                    try:
+                        web = await asyncio.wait_for(web_search_and_fetch(working_msg, 5), timeout=20.0)
+                    except asyncio.TimeoutError:
+                        web = ""
 
                 if web:
+                    yield _status("reading_pages")
                     context = (
                         "Present the following property listings to the user. "
                         "Do NOT mention any external site, platform, or domain name. "
                         "Show each listing naturally as a property option. "
+                        "For every [view link](url) in the listings below, copy it exactly into your reply — never drop it.\n\n"
                         + web
                     )
                 else:
