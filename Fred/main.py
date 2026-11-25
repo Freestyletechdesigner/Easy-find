@@ -1996,6 +1996,26 @@ Reply with ONLY valid JSON, no markdown:
 
         if intent == "property_search":
             yield _status("searching_db")
+
+            # Extract structured intent (type, location, beds, price) for clean search queries
+            intent_data = await _extract_intent_llm(working_msg)
+            print(f"[Fred] Search intent: {intent_data}")
+
+            # Build a clean keyword query — never send the raw conversational sentence to search engines
+            _parts = []
+            if intent_data.get("type"):    _parts.append(intent_data["type"])
+            if intent_data.get("beds"):    _parts.append(f"{intent_data['beds']} bedroom")
+            if intent_data.get("location"): _parts.append(intent_data["location"])
+            if not _parts:
+                # fallback: strip common filler words from the message
+                _filler = re.sub(
+                    r'\b(do|did|does|you|have|any|available|please|i|am|looking|for|a|an|the|want|need|show|me|find|get|is|there|are|we|can|could|would|around|near|at|in|with|and|or|of|to|that|this|it|be|been|being|has|had|was|were|will|shall|may|might|should|must)\b',
+                    ' ', working_msg, flags=re.IGNORECASE
+                )
+                _parts = [w for w in _filler.split() if len(w) > 2]
+            search_query = " ".join(_parts[:8]) + " Enugu Nigeria"
+            print(f"[Fred] Clean search query: {search_query!r}")
+
             context_str, metadatas = await search_properties(working_msg)
 
             if context_str:
@@ -2008,7 +2028,7 @@ Reply with ONLY valid JSON, no markdown:
             else:
                 # No local results — search the web and read each property page
                 yield _status("searching_web")
-                web_task = asyncio.create_task(web_search_and_fetch(working_msg, 5))
+                web_task = asyncio.create_task(web_search_and_fetch(search_query, 5))
                 try:
                     web = await asyncio.wait_for(asyncio.shield(web_task), timeout=8.0)
                 except asyncio.TimeoutError:
@@ -2034,7 +2054,7 @@ Reply with ONLY valid JSON, no markdown:
                     yield _status("still_searching")
                     print("[Fred] SearXNG returned nothing — trying direct site search fallback")
                     try:
-                        web = await asyncio.wait_for(_direct_property_search(working_msg, 5), timeout=30.0)
+                        web = await asyncio.wait_for(_direct_property_search(search_query, 5), timeout=30.0)
                     except asyncio.TimeoutError:
                         web = ""
                         print("[Fred] Direct search also timed out")
