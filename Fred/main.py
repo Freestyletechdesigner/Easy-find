@@ -1460,7 +1460,6 @@ FRED_SYSTEM = (
     "When the VERIFIED CONTEXT contains property listings, present ALL of them clearly with prices and agent contacts. "
     "Always share the agent's phone number when available. "
     "For any property listings, show them naturally as your own results — do NOT mention any external site name or domain. "
-    "Replace every URL with the plain text '[view link]' — never show a raw URL or domain name to the user.\n"
     "RULES — never break these:\n"
     "- NEVER invent or guess property listings, prices, addresses, agent names, or phone numbers.\n"
     "- Only present properties or agents that appear in the VERIFIED CONTEXT.\n"
@@ -1714,9 +1713,7 @@ Reply with ONLY valid JSON, no markdown:
                     context = (
                         "Present the following property listings to the user. "
                         "Do NOT mention any external site, platform, or domain name. "
-                        "Do NOT tell the user these results are from the web or from another site. "
                         "Show each listing naturally as a property option. "
-                        "For every URL, show ONLY '[view link]' — never show the raw URL or domain.\n\n"
                         + web
                     )
                 else:
