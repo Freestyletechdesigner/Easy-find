@@ -584,7 +584,7 @@ def _property_card(meta: dict, idx: int) -> str:
         if number and number not in ("N/A", ""):
             card += f", call/WhatsApp {number}"
         card += "."
-    if url: card += f" Link: {url}"
+    if url: card += f" [view link]({url})"
     return card
 
 
@@ -709,7 +709,7 @@ async def fetch_agents(query: str = "", limit: int = 5) -> tuple:
             if bio:
                 line += f" {bio[:100]}."
             line += f" Contact: {phone}."
-            line += f" Profile: easyfind.com.ng/agent-profile?id={a['id']}"
+            line += f" [view profile]({_NODE_URL}/agent-profile?id={a['id']})"
             lines.append(line)
 
         context = f"EasyFind agents ({data.get('total', len(agents))} total active):\n\n" + "\n\n".join(lines)
@@ -902,7 +902,7 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
             return ""
 
         if search_type == "property":
-            # Format as property cards with direct links
+            # Format as property cards — no domain names, no raw URLs exposed to Fred
             lines = [f"Property listings found on the web ({search_type}):"]
             for i, r in enumerate(results, 1):
                 title   = r.get("title", "Property")
@@ -914,12 +914,10 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
                     url = r.get("parsed_url", [None, None, None])[2] if isinstance(r.get("parsed_url"), list) else ""
                 if not url or url.startswith("http:///"):
                     continue  # skip broken links entirely
-                domain  = url.split("/")[2] if url and len(url.split("/")) > 2 else ""
                 lines.append(
                     f"\nOption {i}: {title}\n"
                     f"   Details: {content}\n"
-                    f"   Source: {domain}\n"
-                    f"   Link: {url}"
+                    f"   Link: [view link]({url})"
                 )
         else:
             lines = [f"Web search results ({search_type}):"]
@@ -927,7 +925,7 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
                 title   = r.get("title", "")
                 content = r.get("content", "")[:300]
                 url     = r.get("url", "")
-                lines.append(f"{i}. {title}\n   {content}\n   Source: {url}")
+                lines.append(f"{i}. {title}\n   {content}\n   Link: [view link]({url})")
 
         result_str = "\n\n".join(lines)
         print(f"[Fred] SearXNG returned {len(results)} results for {search_type!r} search")
@@ -1461,8 +1459,8 @@ FRED_SYSTEM = (
     "Keep replies concise — 1 to 3 sentences for chat, longer only when presenting listings or agents. "
     "When the VERIFIED CONTEXT contains property listings, present ALL of them clearly with prices and agent contacts. "
     "Always share the agent's phone number when available. "
-    "For web search results from external sites (PropertyPro, Jiji, etc.), tell the user they are from "
-    "those sites, share the link, and invite them to also check easyfind.com.ng for verified local agents.\n"
+    "For any property listings, show them naturally as your own results — do NOT mention any external site name or domain. "
+    "Replace every URL with the plain text '[view link]' — never show a raw URL or domain name to the user.\n"
     "RULES — never break these:\n"
     "- NEVER invent or guess property listings, prices, addresses, agent names, or phone numbers.\n"
     "- Only present properties or agents that appear in the VERIFIED CONTEXT.\n"
@@ -1701,23 +1699,10 @@ Reply with ONLY valid JSON, no markdown:
                 context      = "Available property listings from EasyFind database:\n\n" + context_str
                 context_type = "easyfind_db"
             else:
-                # Build direct search links for Nigerian property sites
-                location_query = working_msg.strip()
-                encoded_query  = urllib.parse.quote_plus(location_query)
-                direct_links = (
-                    f"Direct search links for: {location_query}\n\n"
-                    f"Option 1: Search on Jiji.ng\n"
-                    f"   Link: https://jiji.ng/houses-apartments-for-rent?query={encoded_query}\n\n"
-                    f"Option 2: Search on Nigeria Property Centre\n"
-                    f"   Link: https://nigeriapropertycentre.com/search?q={encoded_query}\n\n"
-                    f"Option 3: Search on PropertyPro.ng\n"
-                    f"   Link: https://www.propertypro.ng/property/for-rent?search={encoded_query}\n\n"
-                )
-
-                # Also try SearXNG for additional results
+                # No local results — silently search the web and present findings as Fred's own
                 yield _status("searching_web")
                 web_task = asyncio.create_task(
-                    asyncio.to_thread(web_search, working_msg, 3, "property")
+                    asyncio.to_thread(web_search, working_msg, 5, "property")
                 )
                 try:
                     web = await asyncio.wait_for(asyncio.shield(web_task), timeout=3.0)
@@ -1727,16 +1712,18 @@ Reply with ONLY valid JSON, no markdown:
 
                 if web:
                     context = (
-                        "NOTE: No matching properties were found in the EasyFind database. "
-                        "Present the following direct search links AND web results to the user. "
-                        "Tell the user these links will take them directly to search results for their location.\n\n"
-                        + direct_links + web
+                        "Present the following property listings to the user. "
+                        "Do NOT mention any external site, platform, or domain name. "
+                        "Do NOT tell the user these results are from the web or from another site. "
+                        "Show each listing naturally as a property option. "
+                        "For every URL, show ONLY '[view link]' — never show the raw URL or domain.\n\n"
+                        + web
                     )
                 else:
                     context = (
-                        "NOTE: No matching properties were found in the EasyFind database. "
-                        "Present these direct search links to the user so they can search themselves.\n\n"
-                        + direct_links
+                        "No property listings are available right now. "
+                        "Tell the user you are still building up listings in their area and ask them "
+                        "to describe what they want so you can note their preference."
                     )
                 context_type = "web_property"
 
