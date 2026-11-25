@@ -876,32 +876,40 @@ def _resolve_url(r: dict) -> str:
     return url
 
 
-def _fetch_page_text(url: str, max_chars: int = 4000) -> str:
-    """
-    Fetch a property listing page and return its visible text content.
-    Strips scripts, styles, and navigation clutter. Returns "" on any error.
-    """
+def _searxng_available() -> bool:
     try:
         req = urllib.request.Request(
-            url,
-            headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/124.0 Safari/537.36"
-                ),
-                "Accept": "text/html,application/xhtml+xml",
-                "Accept-Language": "en-US,en;q=0.9",
-            },
+            f"{SEARXNG_URL}/search?q=test&format=json",
+            headers={"User-Agent": "FredAI/1.0"},
         )
-        with urllib.request.urlopen(req, timeout=8) as resp:
-            raw_html = resp.read().decode("utf-8", errors="ignore")
+        with urllib.request.urlopen(req, timeout=4) as r:
+            return r.status == 200
+    except Exception:
+        return False
 
-        # Strip <script>, <style>, <nav>, <footer>, <header> blocks
+
+async def _fetch_page_text_async(url: str, max_chars: int = 4000) -> str:
+    """
+    Async page fetcher using httpx with a hard 5s timeout per page.
+    Strips scripts/styles/nav and returns visible text. Returns "" on any error.
+    """
+    try:
+        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
+            resp = await client.get(
+                url,
+                headers={
+                    "User-Agent": (
+                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                        "AppleWebKit/537.36 (KHTML, like Gecko) "
+                        "Chrome/124.0 Safari/537.36"
+                    ),
+                    "Accept": "text/html,application/xhtml+xml",
+                    "Accept-Language": "en-US,en;q=0.9",
+                },
+            )
+        raw_html = resp.text
         clean = re.sub(r'<(script|style|nav|footer|header|noscript)[^>]*>[\s\S]*?</\1>', ' ', raw_html, flags=re.IGNORECASE)
-        # Strip all remaining tags
         clean = re.sub(r'<[^>]+>', ' ', clean)
-        # Collapse whitespace
         clean = re.sub(r'\s+', ' ', clean).strip()
         return clean[:max_chars]
     except Exception as e:
@@ -938,7 +946,7 @@ async def _extract_listing_from_page(url: str) -> dict | None:
     Returns a dict with listing fields, or None if extraction fails or
     the page is not an actual property listing.
     """
-    page_text = await asyncio.to_thread(_fetch_page_text, url)
+    page_text = await _fetch_page_text_async(url)   # async httpx, 5s timeout
     if not page_text:
         return None
     prompt = _PAGE_EXTRACT_PROMPT.format(page_text=page_text[:3000])
@@ -1005,7 +1013,7 @@ def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
 async def web_search_and_fetch(query: str, n: int = 5) -> str:
     """
     Full property search pipeline:
-      1. Search SearXNG across Nigerian property sites
+      1. Search SearXNG across Nigerian property sites (async httpx)
       2. Resolve real URLs (skip /go/v1/ wrappers)
       3. Fetch each page concurrently and extract actual listing details via LLM
       4. Return structured listing cards with direct page links
@@ -1025,15 +1033,19 @@ async def web_search_and_fetch(query: str, n: int = 5) -> str:
             "format":     "json",
             "categories": "general",
         })
-        req = urllib.request.Request(
-            f"{SEARXNG_URL}/search?{params}",
-            headers={"User-Agent": "FredAI/1.0"},
-        )
-        with urllib.request.urlopen(req, timeout=10) as r:
-            data = json.loads(r.read().decode())
+        searxng_url = f"{SEARXNG_URL}/search?{params}"
+        print(f"[Fred] web_search_and_fetch: querying SearXNG → {searxng_url[:120]}")
 
-        results = data.get("results", [])[:n * 2]   # fetch extra to account for skips
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(searxng_url, headers={"User-Agent": "FredAI/1.0"})
+        data = resp.json()
+
+        raw_results = data.get("results", [])
+        print(f"[Fred] SearXNG returned {len(raw_results)} raw results")
+
+        results = raw_results[:n * 2]   # fetch extra to account for skips
         if not results:
+            print("[Fred] web_search_and_fetch: no results from SearXNG")
             return ""
 
         # Resolve real URLs first, drop any we can't clean
@@ -1042,24 +1054,27 @@ async def web_search_and_fetch(query: str, n: int = 5) -> str:
             url = _resolve_url(r)
             if url:
                 candidates.append({"title": r.get("title", ""), "url": url, "snippet": r.get("content", "")[:200]})
+            else:
+                print(f"[Fred] Skipped unresolvable URL: {r.get('url','?')[:80]}")
 
+        print(f"[Fred] {len(candidates)} candidates with clean URLs — fetching pages…")
         if not candidates:
             return ""
 
-        print(f"[Fred] Fetching {len(candidates)} property pages…")
-
         # Fetch and extract all pages concurrently
         async def _process(item: dict) -> dict | None:
+            print(f"[Fred] Fetching page: {item['url'][:80]}")
             extracted = await _extract_listing_from_page(item["url"])
             if extracted:
                 extracted["url"]     = item["url"]
                 extracted["snippet"] = item["snippet"]
-                # Fall back to search title if LLM didn't extract one
                 if not extracted.get("title"):
                     extracted["title"] = item["title"]
+                print(f"[Fred] Extracted listing: {extracted.get('title','?')[:60]}")
             else:
                 # Page fetch failed or was a search results page —
-                # still include the result using the snippet from SearXNG
+                # still include using the snippet from SearXNG
+                print(f"[Fred] Page extract failed — using snippet for: {item['url'][:80]}")
                 extracted = {
                     "title":       item["title"],
                     "price":       None,
@@ -1078,6 +1093,7 @@ async def web_search_and_fetch(query: str, n: int = 5) -> str:
         listings = [f for f in fetched if f][:n]
 
         if not listings:
+            print("[Fred] web_search_and_fetch: all page extractions failed")
             return ""
 
         lines = ["Property listings found:"]
@@ -1882,14 +1898,17 @@ Reply with ONLY valid JSON, no markdown:
             else:
                 # No local results — search the web and read each property page
                 yield _status("searching_web")
+                web_task = asyncio.create_task(web_search_and_fetch(working_msg, 5))
                 try:
-                    web = await asyncio.wait_for(web_search_and_fetch(working_msg, 5), timeout=6.0)
+                    web = await asyncio.wait_for(asyncio.shield(web_task), timeout=8.0)
                 except asyncio.TimeoutError:
                     yield _status("reading_pages")
                     try:
-                        web = await asyncio.wait_for(web_search_and_fetch(working_msg, 5), timeout=20.0)
+                        web = await asyncio.wait_for(asyncio.shield(web_task), timeout=25.0)
                     except asyncio.TimeoutError:
+                        web_task.cancel()
                         web = ""
+                        print("[Fred] web_search_and_fetch timed out after 33s total")
 
                 if web:
                     yield _status("reading_pages")
