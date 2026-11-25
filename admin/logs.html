@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logs - Admin</title>
+    <script>
+        if (localStorage.getItem('daynight-theme') === 'carbon') {
+            document.documentElement.classList.add('carbon');
+        }
+    </script>
+    <link rel="stylesheet" href="templatemo-daynight-style.css">
+    <link rel="icon" type="image/x-icon" href="/logo/logo.JPEG">
+    <style>
+        .logs-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            height: calc(100vh - 130px);
+            min-height: 500px;
+        }
+
+        /* ── Toolbar ── */
+        .logs-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            flex-shrink: 0;
+        }
+
+        .log-tab-group {
+            display: flex;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .log-tab {
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            transition: background 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+
+        .log-tab.active {
+            background: var(--accent-color, #6366f1);
+            color: #fff;
+        }
+
+        .log-tab:not(.active):hover {
+            background: var(--bg-hover, rgba(99,102,241,0.08));
+            color: var(--text-primary);
+        }
+
+        .logs-toolbar-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 7px;
+            padding: 0.4rem 0.75rem;
+        }
+
+        .search-box svg { width: 15px; height: 15px; opacity: 0.5; flex-shrink: 0; }
+
+        .search-box input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 0.83rem;
+            color: var(--text-primary);
+            width: 180px;
+        }
+
+        .search-box input::placeholder { color: var(--text-secondary); }
+
+        .level-select {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 7px;
+            padding: 0.4rem 0.65rem;
+            font-size: 0.83rem;
+            color: var(--text-primary);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .btn-icon {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 0.85rem;
+            font-size: 0.82rem;
+            font-weight: 500;
+            border-radius: 7px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+
+        .btn-icon:hover { background: var(--bg-hover, rgba(99,102,241,0.08)); }
+        .btn-icon svg { width: 14px; height: 14px; }
+
+        .btn-icon.btn-danger { color: #ef4444; border-color: #ef4444; }
+        .btn-icon.btn-danger:hover { background: rgba(239,68,68,0.08); }
+
+        .live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.35rem 0.75rem;
+            background: rgba(16,185,129,0.1);
+            color: #10b981;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            border: 1px solid rgba(16,185,129,0.25);
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse-dot 1.4s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        .live-badge.paused { background: rgba(107,114,128,0.1); color: #6b7280; border-color: rgba(107,114,128,0.25); }
+        .live-badge.paused .live-dot { background: #6b7280; animation: none; }
+
+        /* ── Log panel ── */
+        .log-panel {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex: 1;
+            min-height: 0;
+        }
+
+        .log-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .log-panel-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .log-panel-title {
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        .log-count-badge {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 0.1rem 0.55rem;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .log-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem 0;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+        .log-scroll::-webkit-scrollbar { width: 5px; }
+        .log-scroll::-webkit-scrollbar-track { background: transparent; }
+        .log-scroll::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }
+
+        .log-line {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            padding: 0.18rem 1rem;
+            transition: background 0.1s;
+            cursor: default;
+        }
+
+        .log-line:hover { background: var(--bg-secondary); }
+
+        .log-line.hidden { display: none; }
+
+        .log-time {
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            font-size: 0.75rem;
+            min-width: 70px;
+        }
+
+        .log-src {
+            flex-shrink: 0;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 0.05rem 0.4rem;
+            border-radius: 4px;
+            min-width: 52px;
+            text-align: center;
+        }
+
+        .log-src.src-fred    { background: rgba(99,102,241,0.15); color: #818cf8; }
+        .log-src.src-easyfind { background: rgba(16,185,129,0.15); color: #10b981; }
+
+        .log-level {
+            flex-shrink: 0;
+            font-size: 0.72rem;
+            font-weight: 700;
+            min-width: 42px;
+            text-align: right;
+        }
+
+        .log-level.lvl-info  { color: #60a5fa; }
+        .log-level.lvl-warn  { color: #fbbf24; }
+        .log-level.lvl-error { color: #f87171; }
+        .log-level.lvl-debug { color: #a78bfa; }
+
+        .log-msg {
+            flex: 1;
+            color: var(--text-primary);
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+
+        /* highlight matched search term */
+        .log-msg mark {
+            background: rgba(251,191,36,0.3);
+            color: inherit;
+            border-radius: 2px;
+        }
+
+        /* ── Empty / loading states ── */
+        .log-empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .log-empty svg { width: 36px; height: 36px; opacity: 0.3; }
+
+        .log-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-color, #6366f1);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Stats bar ── */
+        .stats-bar {
+            display: flex;
+            gap: 1.5rem;
+            padding: 0.6rem 1rem;
+            border-top: 1px solid var(--border-color);
+            flex-shrink: 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 640px) {
+            .logs-toolbar { gap: 0.5rem; }
+            .search-box input { width: 120px; }
+            .logs-toolbar-right { gap: 0.4rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-menu-overlay"></div>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu">
+        <div class="mobile-menu-header">
+            <a href="/admin/dashboard" class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                </div>
+                Admin
+            </a>
+            <button class="mobile-menu-close" onclick="closeMobileMenu()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+        </div>
+        <nav class="mobile-menu-nav">
+            <a href="/admin/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+            <a href="/admin/agents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Agents</a>
+            <a href="/admin/analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</a>
+            <a href="/admin/fred-monitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Fred Monitor</a>
+            <a href="/admin/logs" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Logs</a>
+            <a href="/admin/inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>Inbox</a>
+            <a href="/admin/transactions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Transactions</a>
+        </nav>
+        <div class="mobile-menu-footer">
+            <a href="/admin/login" class="mobile-logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Logout</a>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <!-- Top Nav -->
+        <nav class="top-nav">
+            <div class="nav-container">
+                <div class="nav-left">
+                    <a href="/admin/dashboard" class="logo">
+                        <div class="logo-icon">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                        </div>
+                        Admin
+                    </a>
+                </div>
+                <div class="nav-right">
+                    <div class="theme-toggle">
+                        <button class="theme-btn theme-btn-snow active" onclick="setTheme('snow')" title="Snow Edition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                        </button>
+                        <button class="theme-btn theme-btn-carbon" onclick="setTheme('carbon')" title="Carbon Edition">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                        </button>
+                    </div>
+                    <button class="mobile-menu-trigger" onclick="openMobileMenu()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="/admin/dashboard" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></a>
+                <a href="/admin/projects" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span>Projects</span></a>
+                <a href="/admin/inbox" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg><span>Inbox</span></a>
+                <a href="/admin/analytics" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span>Analytics</span></a>
+                <a href="/admin/agents" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><span>Agents</span></a>
+                <a href="/admin/feedback" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Feedback</span></a>
+                <a href="/admin/reports" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg><span>Reports</span></a>
+                <a href="/admin/transactions" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg><span>Transactions</span></a>
+                <a href="/admin/fred-monitor" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg><span>Fred Monitor</span></a>
+                <a href="/admin/logs" class="sidebar-link active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><span>Logs</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/admin/settings" class="sidebar-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></a>
+                <a href="/admin/login" class="sidebar-link sidebar-logout"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg><span>Logout</span></a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <div>
+                    <h1 class="page-title">Logs</h1>
+                    <p class="page-subtitle">Live log stream for Fred AI and EasyFind server</p>
+                </div>
+                <div id="liveBadge" class="live-badge">
+                    <span class="live-dot"></span> Live
+                </div>
+            </div>
+
+            <div class="logs-layout">
+                <!-- Toolbar -->
+                <div class="logs-toolbar">
+                    <div class="log-tab-group">
+                        <button class="log-tab active" data-src="all"      onclick="setSource('all')">All</button>
+                        <button class="log-tab"        data-src="fred"     onclick="setSource('fred')">Fred AI</button>
+                        <button class="log-tab"        data-src="easyfind" onclick="setSource('easyfind')">EasyFind</button>
+                    </div>
+
+                    <div class="logs-toolbar-right">
+                        <div class="search-box">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="searchInput" placeholder="Filter logs…" oninput="applyFilters()">
+                        </div>
+
+                        <select class="level-select" id="levelSelect" onchange="applyFilters()">
+                            <option value="all">All levels</option>
+                            <option value="info">Info</option>
+                            <option value="warn">Warn</option>
+                            <option value="error">Error</option>
+                            <option value="debug">Debug</option>
+                        </select>
+
+                        <button class="btn-icon" onclick="togglePause()" id="pauseBtn" title="Pause / Resume live stream">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="pauseIcon"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                            <span id="pauseLabel">Pause</span>
+                        </button>
+
+                        <button class="btn-icon" onclick="downloadLogs()" title="Download visible logs as .txt">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download
+                        </button>
+
+                        <button class="btn-icon btn-danger" onclick="clearLogs()" title="Clear all logs from view">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                            Clear
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Log panel -->
+                <div class="log-panel">
+                    <div class="log-panel-header">
+                        <div class="log-panel-header-left">
+                            <span class="log-panel-title">Output</span>
+                            <span class="log-count-badge" id="countBadge">0 lines</span>
+                        </div>
+                        <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;color:var(--text-secondary);cursor:pointer;">
+                            <input type="checkbox" id="autoScrollChk" checked style="cursor:pointer;"> Auto-scroll
+                        </label>
+                    </div>
+
+                    <div class="log-scroll" id="logScroll">
+                        <div class="log-empty" id="logEmpty">
+                            <div class="log-spinner"></div>
+                            <span>Connecting to log stream…</span>
+                        </div>
+                    </div>
+
+                    <div class="stats-bar">
+                        <div class="stat-item"><span class="stat-dot" style="background:#60a5fa"></span><span id="statInfo">0 info</span></div>
+                        <div class="stat-item"><span class="stat-dot" style="background:#fbbf24"></span><span id="statWarn">0 warn</span></div>
+                        <div class="stat-item"><span class="stat-dot" style="background:#f87171"></span><span id="statError">0 error</span></div>
+                        <div class="stat-item"><span class="stat-dot" style="background:#a78bfa"></span><span id="statDebug">0 debug</span></div>
+                        <div class="stat-item" style="margin-left:auto;">
+                            <span id="statTotal" style="color:var(--text-secondary)">0 total</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="templatemo-daynight-script.js"></script>
+    <script>
+    'use strict';
+
+    // ── State ──────────────────────────────────────────────────────────────
+    let allLogs    = [];          // { ts, src, level, msg }
+    let paused     = false;
+    let activeSource = 'all';
+    let pollTimer  = null;
+    const MAX_LINES = 2000;       // keep last N lines to avoid memory growth
+
+    const logScroll  = document.getElementById('logScroll');
+    const logEmpty   = document.getElementById('logEmpty');
+    const countBadge = document.getElementById('countBadge');
+    const liveBadge  = document.getElementById('liveBadge');
+    const pauseBtn   = document.getElementById('pauseBtn');
+    const pauseIcon  = document.getElementById('pauseIcon');
+    const pauseLabel = document.getElementById('pauseLabel');
+    const autoScrollChk = document.getElementById('autoScrollChk');
+
+    // ── Level detection ────────────────────────────────────────────────────
+    function detectLevel(msg) {
+        const m = msg.toLowerCase();
+        if (m.includes('error') || m.includes('exception') || m.includes('traceback') ||
+            m.includes('failed') || m.includes('fatal') || m.includes('✗'))   return 'error';
+        if (m.includes('warn') || m.includes('warning') || m.includes('⚠'))   return 'warn';
+        if (m.includes('debug') || m.includes('verbose'))                       return 'debug';
+        return 'info';
+    }
+
+    // ── Render one log line DOM node ───────────────────────────────────────
+    function buildLine(entry, searchTerm) {
+        const el   = document.createElement('div');
+        el.className = 'log-line';
+        el.dataset.src   = entry.src;
+        el.dataset.level = entry.level;
+
+        const timeEl  = document.createElement('span');
+        timeEl.className = 'log-time';
+        timeEl.textContent = entry.ts;
+
+        const srcEl   = document.createElement('span');
+        srcEl.className = `log-src src-${entry.src}`;
+        srcEl.textContent = entry.src === 'fred' ? 'FRED' : 'SERVER';
+
+        const lvlEl   = document.createElement('span');
+        lvlEl.className = `log-level lvl-${entry.level}`;
+        lvlEl.textContent = entry.level.toUpperCase();
+
+        const msgEl   = document.createElement('span');
+        msgEl.className = 'log-msg';
+
+        // Highlight search term if present
+        if (searchTerm) {
+            const escaped = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const highlighted = entry.msg.replace(
+                new RegExp(escaped, 'gi'),
+                m => `<mark>${m}</mark>`
+            );
+            msgEl.innerHTML = highlighted;
+        } else {
+            msgEl.textContent = entry.msg;
+        }
+
+        el.appendChild(timeEl);
+        el.appendChild(srcEl);
+        el.appendChild(lvlEl);
+        el.appendChild(msgEl);
+        return el;
+    }
+
+    // ── Append new entries to the DOM ──────────────────────────────────────
+    function appendEntries(entries) {
+        if (!entries.length) return;
+
+        const searchTerm   = document.getElementById('searchInput').value.trim().toLowerCase();
+        const levelFilter  = document.getElementById('levelSelect').value;
+        const frag         = document.createDocumentFragment();
+
+        for (const entry of entries) {
+            allLogs.push(entry);
+            updateStats(entry);
+            const el = buildLine(entry, searchTerm);
+            // Apply current filters immediately
+            if (!matchesFilters(entry, activeSource, levelFilter, searchTerm)) {
+                el.classList.add('hidden');
+            }
+            frag.appendChild(el);
+        }
+
+        // Trim old lines if over cap
+        while (allLogs.length > MAX_LINES) {
+            allLogs.shift();
+            if (logScroll.firstChild && logScroll.firstChild !== logEmpty) {
+                logScroll.removeChild(logScroll.firstChild);
+            }
+        }
+
+        // Hide empty state once we have lines
+        logEmpty.style.display = 'none';
+        logScroll.appendChild(frag);
+
+        updateCountBadge();
+
+        if (autoScrollChk.checked) {
+            logScroll.scrollTop = logScroll.scrollHeight;
+        }
+    }
+
+    // ── Filter helpers ─────────────────────────────────────────────────────
+    function matchesFilters(entry, src, level, search) {
+        if (src   !== 'all' && entry.src   !== src)   return false;
+        if (level !== 'all' && entry.level !== level) return false;
+        if (search && !entry.msg.toLowerCase().includes(search)) return false;
+        return true;
+    }
+
+    function applyFilters() {
+        const search = document.getElementById('searchInput').value.trim().toLowerCase();
+        const level  = document.getElementById('levelSelect').value;
+        const lines  = logScroll.querySelectorAll('.log-line');
+        let visible  = 0;
+
+        for (const line of lines) {
+            const entry = {
+                src:   line.dataset.src,
+                level: line.dataset.level,
+                msg:   line.querySelector('.log-msg').textContent,
+            };
+            const show = matchesFilters(entry, activeSource, level, search);
+            line.classList.toggle('hidden', !show);
+            if (show) {
+                // Re-highlight search term
+                const msgEl = line.querySelector('.log-msg');
+                if (search) {
+                    const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    msgEl.innerHTML = entry.msg.replace(
+                        new RegExp(escaped, 'gi'),
+                        m => `<mark>${m}</mark>`
+                    );
+                } else {
+                    msgEl.textContent = entry.msg;
+                }
+                visible++;
+            }
+        }
+        updateCountBadge(visible);
+    }
+
+    function setSource(src) {
+        activeSource = src;
+        document.querySelectorAll('.log-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.src === src);
+        });
+        applyFilters();
+    }
+
+    // ── Stats ──────────────────────────────────────────────────────────────
+    const _counts = { info: 0, warn: 0, error: 0, debug: 0 };
+
+    function updateStats(entry) {
+        _counts[entry.level] = (_counts[entry.level] || 0) + 1;
+        document.getElementById('statInfo').textContent  = `${_counts.info} info`;
+        document.getElementById('statWarn').textContent  = `${_counts.warn} warn`;
+        document.getElementById('statError').textContent = `${_counts.error} error`;
+        document.getElementById('statDebug').textContent = `${_counts.debug} debug`;
+        document.getElementById('statTotal').textContent = `${allLogs.length} total`;
+    }
+
+    function updateCountBadge(visible) {
+        const v = visible !== undefined ? visible : logScroll.querySelectorAll('.log-line:not(.hidden)').length;
+        countBadge.textContent = `${v} line${v !== 1 ? 's' : ''}`;
+    }
+
+    // ── Pause / Resume ─────────────────────────────────────────────────────
+    function togglePause() {
+        paused = !paused;
+        liveBadge.className = `live-badge${paused ? ' paused' : ''}`;
+        liveBadge.innerHTML = paused
+            ? '<span class="live-dot"></span> Paused'
+            : '<span class="live-dot"></span> Live';
+        pauseLabel.textContent = paused ? 'Resume' : 'Pause';
+        pauseIcon.innerHTML    = paused
+            ? '<polygon points="5 3 19 12 5 21 5 3"/>'  // play icon
+            : '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';  // pause icon
+    }
+
+    // ── Download ───────────────────────────────────────────────────────────
+    function downloadLogs() {
+        const lines = logScroll.querySelectorAll('.log-line:not(.hidden)');
+        const text  = Array.from(lines).map(l => {
+            const ts  = l.querySelector('.log-time').textContent;
+            const src = l.querySelector('.log-src').textContent;
+            const lvl = l.querySelector('.log-level').textContent;
+            const msg = l.querySelector('.log-msg').textContent;
+            return `[${ts}] [${src}] [${lvl}] ${msg}`;
+        }).join('\n');
+        const blob = new Blob([text], { type: 'text/plain' });
+        const a    = Object.assign(document.createElement('a'), {
+            href:     URL.createObjectURL(blob),
+            download: `easyfind-logs-${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.txt`,
+        });
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+    // ── Clear ──────────────────────────────────────────────────────────────
+    function clearLogs() {
+        allLogs = [];
+        _counts.info = _counts.warn = _counts.error = _counts.debug = 0;
+        logScroll.innerHTML = '';
+        logScroll.appendChild(logEmpty);
+        logEmpty.style.display = 'flex';
+        logEmpty.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Log cleared</span>';
+        updateStats({ level: 'info' });
+        updateCountBadge(0);
+    }
+
+    // ── Polling ────────────────────────────────────────────────────────────
+    let _lastCursor = 0;   // server sends a cursor so we only get new lines
+
+    async function poll() {
+        if (paused) return;
+        try {
+            const res  = await fetch(`/api/admin/logs?cursor=${_lastCursor}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            if (data.cursor !== undefined) _lastCursor = data.cursor;
+            if (data.lines && data.lines.length) {
+                appendEntries(data.lines);
+            }
+        } catch (_) {}
+    }
+
+    // ── Boot ───────────────────────────────────────────────────────────────
+    poll();                              // initial fetch
+    pollTimer = setInterval(poll, 1500); // refresh every 1.5 s
+
+    // Show "connected" state after first successful poll
+    setTimeout(() => {
+        if (allLogs.length === 0) {
+            logEmpty.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                </svg>
+                <span>No log entries yet — waiting for activity…</span>`;
+        }
+    }, 3000);
+    </script>
+</body>
+</html>

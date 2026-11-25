@@ -963,7 +963,117 @@ async def _extract_listing_from_page(url: str) -> dict | None:
     return None
 
 
-def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
+async def _direct_property_search(query: str, n: int = 5) -> str:
+    """
+    Fallback when SearXNG is unavailable or returns no results.
+    Queries Nigerian property sites directly via their search pages,
+    fetches the HTML, and extracts listing cards using the LLM.
+    Returns "" if nothing useful is found.
+    """
+    # Build direct search URLs for the main Nigerian property sites
+    eq = urllib.parse.quote_plus(query)
+    direct_urls = [
+        f"https://nigeriapropertycentre.com/for-sale/shops-offices/enugu?search={eq}",
+        f"https://www.propertypro.ng/property/for-sale/enugu?search={eq}",
+        f"https://jiji.ng/enugu/commercial-property?query={eq}",
+        f"https://www.privateproperty.com.ng/commercial-for-sale/enugu/?search={eq}",
+    ]
+
+    print(f"[Fred] SearXNG fallback — trying {len(direct_urls)} direct site searches")
+
+    async def _fetch_and_extract(url: str) -> list[dict]:
+        """Fetch a search results page and extract individual listing URLs from it."""
+        page_text = await _fetch_page_text_async(url, max_chars=5000)
+        if not page_text:
+            return []
+        # Ask LLM to pull out individual listing URLs from the search page
+        extract_prompt = f"""\
+You are extracting property listing URLs from a Nigerian real estate search results page.
+
+PAGE TEXT (first 4000 chars):
+{page_text[:4000]}
+
+SOURCE URL: {url}
+
+Extract up to 3 individual property listing URLs visible on this page.
+Return ONLY valid JSON — a list of URL strings:
+["url1", "url2", "url3"]
+
+If no individual listing URLs are visible, return: []
+JSON:"""
+        try:
+            raw = await _llm_call([{"role": "user", "content": extract_prompt}], max_tokens=120)
+            m   = re.search(r'\[[\s\S]*?\]', raw)
+            if m:
+                urls = json.loads(m.group(0))
+                # Keep only absolute URLs from the same domain
+                base = "/".join(url.split("/")[:3])
+                clean = []
+                for u in urls:
+                    if isinstance(u, str) and u.strip():
+                        u = u.strip()
+                        if u.startswith("/"):
+                            u = base + u
+                        if u.startswith("http") and "/go/v1/" not in u:
+                            clean.append(u)
+                return clean[:3]
+        except Exception as e:
+            print(f"[Fred] Direct extract error for {url}: {e}")
+        return []
+
+    # Fetch all search pages concurrently
+    all_listing_urls = []
+    search_results = await asyncio.gather(*[_fetch_and_extract(u) for u in direct_urls])
+    for urls in search_results:
+        all_listing_urls.extend(urls)
+
+    if not all_listing_urls:
+        print("[Fred] Direct search: no listing URLs extracted from any site")
+        return ""
+
+    print(f"[Fred] Direct search: found {len(all_listing_urls)} listing URLs — fetching…")
+
+    # Now fetch and extract each individual listing
+    async def _process(url: str) -> dict | None:
+        extracted = await _extract_listing_from_page(url)
+        if extracted:
+            extracted["url"] = url
+            return extracted
+        return None
+
+    fetched  = await asyncio.gather(*[_process(u) for u in all_listing_urls[:n * 2]])
+    listings = [f for f in fetched if f][:n]
+
+    if not listings:
+        return ""
+
+    lines = ["Property listings found:"]
+    for i, lst in enumerate(listings, 1):
+        title = lst.get("title") or "Property listing"
+        price = lst.get("price") or "price on request"
+        loc   = lst.get("location") or ""
+        beds  = lst.get("beds")
+        baths = lst.get("baths")
+        desc  = lst.get("description") or ""
+        url   = lst["url"]
+
+        specs = ", ".join(filter(None, [
+            f"{beds} bedroom{'s' if beds and beds > 1 else ''}" if beds else "",
+            f"{baths} bathroom{'s' if baths and baths > 1 else ''}" if baths else "",
+        ]))
+
+        card = f"\nOption {i}: {title}"
+        if loc:   card += f" in {loc}"
+        if specs: card += f" — {specs}"
+        card += f". Price: {price}."
+        if desc:  card += f" {desc}"
+        card += f" [view link]({url})"
+        lines.append(card)
+
+    print(f"[Fred] Direct search: built {len(listings)} listing cards")
+    return "\n\n".join(lines)
+
+
     """
     Synchronous SearXNG search — returns top n results as a formatted string.
     Used for knowledge and general_chat paths. For property search use
@@ -1920,11 +2030,30 @@ Reply with ONLY valid JSON, no markdown:
                         + web
                     )
                 else:
-                    context = (
-                        "No property listings are available right now. "
-                        "Tell the user you are still building up listings in their area and ask them "
-                        "to describe what they want so you can note their preference."
-                    )
+                    # SearXNG failed or timed out — try direct site search
+                    yield _status("still_searching")
+                    print("[Fred] SearXNG returned nothing — trying direct site search fallback")
+                    try:
+                        web = await asyncio.wait_for(_direct_property_search(working_msg, 5), timeout=30.0)
+                    except asyncio.TimeoutError:
+                        web = ""
+                        print("[Fred] Direct search also timed out")
+
+                    if web:
+                        context = (
+                            "Present the following property listings to the user. "
+                            "Do NOT mention any external site, platform, or domain name. "
+                            "Show each listing naturally as a property option. "
+                            "For every [view link](url) in the listings below, copy it exactly into your reply — never drop it.\n\n"
+                            + web
+                        )
+                    else:
+                        context = (
+                            "No property listings could be found right now for this query. "
+                            "Tell the user you searched but couldn't find matching results at this time, "
+                            "and ask them to refine their search or check back later. "
+                            "Do NOT say there are no listings on EasyFind."
+                        )
                 context_type = "web_property"
 
         elif intent == "easyfind_knowledge":

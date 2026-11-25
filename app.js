@@ -550,7 +550,7 @@ app.get('/agent-verification', async (req, res, next) => {
 });
 
 // ── Clean admin routes (no .html) ─────────────────────
-const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'transactions', 'reports', 'fred-monitor'];
+const adminPages = ['dashboard', 'agents', 'analytics', 'inbox', 'projects', 'settings', 'feedback', 'transactions', 'reports', 'fred-monitor', 'logs'];
 adminPages.forEach(page => {
     const file = page === 'dashboard' ? 'index' : page;
     if (page === 'login') {
@@ -902,7 +902,72 @@ app.get('/api/fred/llm/status', requireAdmin, async (req, res) => {
     }
 });
 
-// Global error handler (must be before 404 handler)
+// ── Admin Logs — in-memory ring buffer ────────────────────────────────────
+// Captures stdout/stderr from both Node (EasyFind) and Fred (Python via proxy).
+// Max 2000 lines kept in RAM; older lines are dropped automatically.
+
+const LOG_BUFFER_SIZE = 2000;
+const _logBuffer = [];   // { ts, src, level, msg, cursor }
+let   _logCursor = 0;
+
+function _classifyLevel(msg) {
+    const m = msg.toLowerCase();
+    if (m.includes('error') || m.includes('exception') || m.includes('traceback') ||
+        m.includes('failed') || m.includes('fatal'))   return 'error';
+    if (m.includes('warn') || m.includes('warning'))   return 'warn';
+    if (m.includes('debug') || m.includes('verbose'))  return 'debug';
+    return 'info';
+}
+
+function pushLog(src, msg) {
+    if (!msg || !msg.trim()) return;
+    const entry = {
+        ts:     new Date().toLocaleTimeString('en-GB', { hour12: false }),
+        src,
+        level:  _classifyLevel(msg),
+        msg:    msg.trim(),
+        cursor: ++_logCursor,
+    };
+    _logBuffer.push(entry);
+    if (_logBuffer.length > LOG_BUFFER_SIZE) _logBuffer.shift();
+}
+
+// Intercept Node.js process stdout/stderr to capture EasyFind logs
+const _origStdoutWrite  = process.stdout.write.bind(process.stdout);
+const _origStderrWrite  = process.stderr.write.bind(process.stderr);
+
+process.stdout.write = (chunk, ...args) => {
+    const text = typeof chunk === 'string' ? chunk : chunk.toString('utf8');
+    text.split('\n').forEach(line => { if (line.trim()) pushLog('easyfind', line); });
+    return _origStdoutWrite(chunk, ...args);
+};
+
+process.stderr.write = (chunk, ...args) => {
+    const text = typeof chunk === 'string' ? chunk : chunk.toString('utf8');
+    text.split('\n').forEach(line => { if (line.trim()) pushLog('easyfind', line); });
+    return _origStderrWrite(chunk, ...args);
+};
+
+// API endpoint — returns lines since the given cursor
+app.get('/api/admin/logs', requireAdmin, (req, res) => {
+    const cursor = parseInt(req.query.cursor, 10) || 0;
+    const lines  = _logBuffer.filter(e => e.cursor > cursor);
+    res.json({ cursor: _logCursor, lines });
+});
+
+// Fred log forwarding — called by Fred's Python process via HTTP so its
+// stdout also appears in the log buffer (optional; works without it too)
+app.post('/api/admin/logs/fred', (req, res) => {
+    const { lines } = req.body;
+    if (Array.isArray(lines)) {
+        lines.forEach(l => pushLog('fred', String(l)));
+    } else if (typeof req.body.msg === 'string') {
+        pushLog('fred', req.body.msg);
+    }
+    res.json({ ok: true });
+});
+
+
 // ── Fred pending reply store ───────────────────────────────────────────────
 // When Fred is processing slowly, we store the reply here keyed by session_id
 // so the frontend can poll for it after a refresh or disconnect.
