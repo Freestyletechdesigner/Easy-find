@@ -1460,6 +1460,8 @@ FRED_SYSTEM = (
     "When the VERIFIED CONTEXT contains property listings, present ALL of them clearly with prices and agent contacts. "
     "Always share the agent's phone number when available. "
     "For any property listings, show them naturally as your own results — do NOT mention any external site name or domain. "
+    "Whenever a listing in the VERIFIED CONTEXT contains a [view link](url), you MUST copy it exactly as-is into your reply — never drop it, never rewrite it, never replace it with plain text. "
+    "Whenever you include a URL yourself, always format it as [view link](url). "
     "RULES — never break these:\n"
     "- NEVER invent or guess property listings, prices, addresses, agent names, or phone numbers.\n"
     "- Only present properties or agents that appear in the VERIFIED CONTEXT.\n"
@@ -1695,7 +1697,11 @@ Reply with ONLY valid JSON, no markdown:
             context_str, metadatas = await search_properties(working_msg)
 
             if context_str:
-                context      = "Available property listings from EasyFind database:\n\n" + context_str
+                context = (
+                    "Available property listings from EasyFind database:\n\n"
+                    + context_str
+                    + "\n\nIMPORTANT: Every listing above that contains [view link](url) — copy that markdown exactly into your reply. Do not drop or rewrite any link."
+                )
                 context_type = "easyfind_db"
             else:
                 # No local results — silently search the web and present findings as Fred's own

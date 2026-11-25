@@ -1173,11 +1173,18 @@ async function showThinkingAndReply(prompt) {
                 row.remove();
                 const errRow = document.createElement('div');
                 errRow.className = 'chat-row bot';
-                errRow.innerHTML = `<div class="message-content fred-error-msg">
-                    ⚠️ Could not reach Fred. Please try again later.
-                    <button class="fred-retry-btn" onclick="retryMessage(this, ${JSON.stringify(prompt)})">
-                        <i class="fa-solid fa-rotate-right"></i> Retry
-                    </button></div>`;
+                const errDiv = document.createElement('div');
+                errDiv.className = 'message-content fred-error-msg';
+                errDiv.textContent = '⚠️ Could not reach Fred. Please try again later.';
+                const retryBtn = document.createElement('button');
+                retryBtn.className = 'fred-retry-btn';
+                retryBtn.innerHTML = '<i class="fa-solid fa-rotate-right"></i> Retry';
+                retryBtn.addEventListener('click', () => {
+                    errRow.remove();
+                    showThinkingAndReply(prompt);
+                });
+                errDiv.appendChild(retryBtn);
+                errRow.appendChild(errDiv);
                 messagesWrapper.appendChild(errRow);
                 chatContainer.scrollTop = chatContainer.scrollHeight;
                 _wsCurrentHandler = null;
