@@ -57,6 +57,7 @@ from typing import Optional
 
 import httpx
 from bs4 import BeautifulSoup
+import phonenumbers
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -855,6 +856,37 @@ async def _extract_post_details(message: str, history: list) -> dict:
 
 
 
+def normalize_ng_candidates(candidates: list[str], limit: int = 2) -> list[str]:
+    """
+    Parse and validate a list of raw phone number strings as Nigerian numbers.
+    Returns up to `limit` unique E.164-formatted mobile numbers
+    (prefixes 70, 71, 80, 81, 90, 91 only).
+    """
+    seen:    set[str]  = set()
+    results: list[str] = []
+
+    for raw in candidates:
+        try:
+            parsed = phonenumbers.parse(raw, "NG")
+        except phonenumbers.NumberParseException:
+            continue
+
+        if not phonenumbers.is_valid_number_for_region(parsed, "NG"):
+            continue
+
+        e164     = phonenumbers.format_number(parsed, phonenumbers.PhoneNumberFormat.E164)
+        national = str(parsed.national_number)
+
+        # Keep only mobile prefixes
+        if national[:2] in {"70", "71", "80", "81", "90", "91"} and e164 not in seen:
+            seen.add(e164)
+            results.append(e164)
+            if len(results) >= limit:
+                break
+
+    return results
+
+
 def _resolve_url(r: dict) -> str:
     """Extract the real destination URL from a SearXNG result, skipping /go/v1/ wrappers."""
     url = ""
@@ -1052,13 +1084,10 @@ JSON:"""
         card += f". Price: {price}."
         if desc: card += f" {desc}"
         if agent: card += f" Agent: {agent}."
-        for phone in phones[:2]:
-            clean = re.sub(r'[\s\-\(\)]', '', str(phone))
-            if clean.startswith('0'):
-                clean = '234' + clean[1:]
-            elif clean.startswith('+'):
-                clean = clean[1:]
-            card += f" [whatsapp]({clean})"
+        phones_norm = normalize_ng_candidates([str(p) for p in phones], limit=2)
+        phones_norm = [p.lstrip('+') for p in phones_norm]
+        for phone in phones_norm:
+            card += f" [whatsapp]({phone})"
         card += f" [view link]({url})"
         lines.append(card)
 
@@ -1196,23 +1225,14 @@ async def web_search_and_fetch(query: str, n: int = 5) -> str:
         print(f"[Fred] Step 2+3 — fetching & parsing: {url[:80]}")
         page_text = await _fetch_page_text_async(url, max_chars=8000)
 
-        # Extract phone numbers directly from raw page text via regex — never trust the LLM for this
-        _NG_PHONE = re.compile(r'(?<!\d)(?:\+?234|0)[789]\d{8,9}(?!\d)')
-        raw_phones_found = _NG_PHONE.findall(page_text) if page_text else []
-        # Deduplicate, normalise, keep up to 2
-        seen_phones: set = set()
-        phones_clean: list = []
-        for ph in raw_phones_found:
-            norm = re.sub(r'[\s\-\(\)]', '', ph)
-            if norm.startswith('0'):
-                norm = '234' + norm[1:]
-            elif norm.startswith('+'):
-                norm = norm[1:]
-            if norm not in seen_phones:
-                seen_phones.add(norm)
-                phones_clean.append(norm)
-            if len(phones_clean) >= 2:
-                break
+        # Extract phone numbers directly from raw page text — never trust the LLM for this.
+        # Use phonenumbers library for proper Nigerian number validation.
+        _RAW_PHONE_RE = re.compile(r'(?<!\d)(\+?234[\s\-]?|0)[789]\d[\s\-]?\d{3}[\s\-]?\d{4}(?!\d)')
+        raw_candidates = [m.group(0) for m in _RAW_PHONE_RE.finditer(page_text)] if page_text else []
+        phones_clean = normalize_ng_candidates(raw_candidates, limit=2)
+        # E.164 looks like +2347064234755 — strip the leading + for the wa.me URL
+        phones_clean = [p.lstrip('+') for p in phones_clean]
+        seen_phones: set[str] = set(phones_clean)
 
         if not page_text:
             print(f"[Fred] Step 2+3 — fetch failed, using SearXNG snippet for: {url[:80]}")
@@ -1269,18 +1289,12 @@ JSON:"""
                       f"price={data.get('price','?')!r} "
                       f"is_listing={data.get('is_property_listing','?')}")
                 data["source_url"] = url
-                # Merge regex-found phones with LLM-found phones, dedup, keep ≤2
-                llm_phones = data.get("phones") or []
-                for ph in llm_phones:
-                    norm = re.sub(r'[\s\-\(\)]', '', str(ph))
-                    if norm.startswith('0'):   norm = '234' + norm[1:]
-                    elif norm.startswith('+'): norm = norm[1:]
-                    if norm not in seen_phones:
-                        seen_phones.add(norm)
-                        phones_clean.append(norm)
-                    if len(phones_clean) >= 2:
-                        break
-                data["phones"] = phones_clean
+                # Merge LLM-found phones with regex-found phones using normalize_ng_candidates
+                llm_phones_raw = data.get("phones") or []
+                all_raw = list(raw_candidates) + [str(p) for p in llm_phones_raw]
+                merged = normalize_ng_candidates(all_raw, limit=2)
+                data["phones"] = [p.lstrip('+') for p in merged]
+                seen_phones = set(data["phones"])
                 if not data.get("is_property_listing", True):
                     if not data.get("title"):
                         data["title"] = title
@@ -1336,15 +1350,9 @@ JSON:"""
         card += f". Price: {price}."
         if desc:  card += f" {desc}"
         if agent: card += f" Agent: {agent}."
-        # Append each phone as a whatsapp marker so the frontend renders a button
-        for phone in phones[:2]:           # max 2 numbers per listing
-            # Normalise to international format for WhatsApp deep link
-            clean = re.sub(r'[\s\-\(\)]', '', str(phone))
-            if clean.startswith('0'):
-                clean = '234' + clean[1:]
-            elif clean.startswith('+'):
-                clean = clean[1:]
-            card += f" [whatsapp]({clean})"
+        # Append each phone as a whatsapp marker — already normalised via normalize_ng_candidates
+        for phone in phones[:2]:
+            card += f" [whatsapp]({phone})"
         if url:   card += f" [view link]({url})"
         lines.append(card)
 
