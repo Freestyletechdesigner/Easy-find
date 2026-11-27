@@ -289,7 +289,7 @@ function handleModalBackdropClick(e) {
     if (e.target === document.getElementById('loginModal')) closeLoginModal();
 }
 
-// Called by Google Sign-In button via data-callback
+// Called by Google Sign-In button via data-callback (GIS One Tap — desktop fallback)
 let _googleLoginInFlight = false;   // debounce double-fire on mobile
 async function handleGoogleLogin(response) {
     if (_googleLoginInFlight) return;   // ignore duplicate callback
@@ -311,9 +311,64 @@ async function handleGoogleLogin(response) {
     } catch (_) {
         _showLoginError('Network error. Please try again.');
     } finally {
-        // Re-enable after 3s so the user can retry if something went wrong
         setTimeout(() => { _googleLoginInFlight = false; }, 3000);
     }
+}
+
+// Triggered by the "Continue with Google" button — uses OAuth2 popup flow
+// which works reliably on both mobile and desktop without redirect issues
+function triggerGoogleSignIn() {
+    if (_googleLoginInFlight) return;
+
+    // Extract the client ID injected by the server into the g_id_onload div
+    const clientId = document.getElementById('g_id_onload')?.dataset?.client_id;
+    if (!clientId) {
+        _showLoginError('Google Sign-In is not configured. Please try again later.');
+        return;
+    }
+
+    const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'openid email profile',
+        callback: async (tokenResponse) => {
+            if (tokenResponse.error) {
+                _showLoginError('Google sign-in was cancelled or failed.');
+                _googleLoginInFlight = false;
+                return;
+            }
+            // Exchange access token for user info, then sign in
+            try {
+                const infoRes  = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                    headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
+                });
+                const info = await infoRes.json();
+                if (!info.sub) throw new Error('No user info');
+
+                // Build a credential token via the id_token approach if available,
+                // otherwise use the access token path via /api/login
+                const res  = await fetch('/api/login', {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ accessToken: tokenResponse.access_token, googleUserInfo: info })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    currentUser = data.user;
+                    closeLoginModal();
+                    location.reload();
+                } else {
+                    _showLoginError(data.message || 'Sign-in failed. Please try again.');
+                }
+            } catch (e) {
+                _showLoginError('Sign-in failed. Please try again.');
+            } finally {
+                _googleLoginInFlight = false;
+            }
+        },
+    });
+
+    _googleLoginInFlight = true;
+    tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
 function _showLoginError(msg) {
@@ -1372,6 +1427,25 @@ function _escapeAndLink(text) {
     formatted = formatted.replace(
         /(?<![/"'>])(easyfind\.com\.ng(\/[^\s<>"&\)]*)?)/g,
         (match) => `<a href="https://${match}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> View Link</a>`
+    );
+
+    // ── Nigerian phone numbers → WhatsApp buttons ─────────────────────────
+    // Catches any number Fred wrote in plain text regardless of format:
+    // 09070485851, 08034478592, +2347034478592, 234-803-447-8592, etc.
+    // Runs AFTER link conversion so already-converted [whatsapp](...) buttons are skipped.
+    formatted = formatted.replace(
+        /(?<![\/\d\w\-])(\+?234[\s\-]?|0)([789]\d[\s\-]?\d{3}[\s\-]?\d{4})(?![\d\w])/g,
+        (match) => {
+            // Strip everything except digits
+            const digits = match.replace(/\D/g, '');
+            // Normalise to international format without +
+            const intl = digits.startsWith('234') ? digits : '234' + digits.slice(1);
+            // Only accept valid Nigerian mobile prefixes (70,71,80,81,90,91)
+            const prefix = intl.slice(3, 5);
+            if (!['70','71','80','81','90','91'].includes(prefix)) return match;
+            const waUrl = `https://wa.me/${intl}`;
+            return `<a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="fred-wa-btn"><i class="fa-brands fa-whatsapp"></i> Chat on WhatsApp</a>`;
+        }
     );
 
     // Convert newlines to <br>

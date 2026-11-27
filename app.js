@@ -155,6 +155,8 @@ app.use(
           "https://cdn.smileidentity.com",
           "https://unpkg.com",
           "https://accounts.google.com",
+          "https://oauth2.googleapis.com",
+          "https://www.googleapis.com",
           "https://*.tile.openstreetmap.org"
         ], 
         imgSrc: [

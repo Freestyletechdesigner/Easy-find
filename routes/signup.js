@@ -143,8 +143,59 @@ module.exports = function(app) {
     // ── Login ────────────────────────────────────────────────────────────
     app.post('/api/login', authLimiter, async (req, res) => {
         try {
-            const { email, password, googleToken } = req.body;
+            const { email, password, googleToken, accessToken, googleUserInfo } = req.body;
             let targetEmail = '';
+
+            // ── OAuth2 access token path (mobile popup flow) ──────────────
+            if (accessToken && googleUserInfo) {
+                try {
+                    // Verify the access token is valid by calling Google's tokeninfo endpoint
+                    const axios = require('axios');
+                    const tokenInfoRes = await axios.get(
+                        `https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${accessToken}`
+                    );
+                    const tokenInfo = tokenInfoRes.data;
+                    if (!tokenInfo.sub || tokenInfo.aud !== process.env.GOOGLE_CLIENT_ID) {
+                        return res.status(401).json({ success: false, message: 'Invalid Google token' });
+                    }
+                    targetEmail = (googleUserInfo.email || '').trim().toLowerCase();
+                    if (!targetEmail) return res.status(400).json({ success: false, message: 'No email from Google' });
+
+                    let user = await User.findOne({ email: targetEmail });
+                    if (!user) {
+                        const randomPassword = crypto.randomBytes(16).toString('hex') + 'Aa1!';
+                        user = new User({
+                            name:            (googleUserInfo.name || '').trim(),
+                            email:           targetEmail,
+                            password:        randomPassword,
+                            googleId:        googleUserInfo.sub,
+                            profilePicture:  googleUserInfo.picture || null,
+                            status:          'active',
+                            registrationDate: new Date(),
+                            loginCount:      0,
+                            ipAddress:       req.ip || req.socket?.remoteAddress
+                        });
+                        await user.save();
+                    } else if (!user.googleId) {
+                        user.googleId = googleUserInfo.sub;
+                        await user.save();
+                    }
+
+                    req.session.userId = user._id;
+                    user.lastLogin  = new Date();
+                    user.loginCount = (user.loginCount || 0) + 1;
+                    await user.save();
+
+                    return res.json({
+                        success: true,
+                        message: 'Welcome back!',
+                        user: { id: user._id, name: user.name, email: user.email, profilePicture: user.profilePicture }
+                    });
+                } catch (e) {
+                    console.error('Access token login error:', e.message);
+                    return res.status(401).json({ success: false, message: 'Google authentication failed' });
+                }
+            }
 
             if (googleToken) {
                 try {
