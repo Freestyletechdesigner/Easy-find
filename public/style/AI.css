@@ -660,9 +660,6 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 999px;
   padding: 6px 14px;
   font-size: 13px;
   color: var(--general-text);
@@ -710,6 +707,27 @@ body {
 }
 .fred-link-btn:hover { opacity: 0.85; }
 .fred-link-btn i { font-size: 10px; }
+
+/* ── Fred WhatsApp contact button ───────────────────────────────────────── */
+.fred-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #25D366;
+  color: #fff !important;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 13px;
+  border-radius: 999px;
+  text-decoration: none;
+  margin: 2px 2px;
+  transition: background .2s, transform .15s;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(37,211,102,0.35);
+}
+.fred-wa-btn:hover  { background: #1ebe5d; transform: translateY(-1px); }
+.fred-wa-btn:active { transform: scale(.97); }
+.fred-wa-btn i { font-size: 13px; }
 
 /* ── Fred error message + retry button ──────────────────────────────────── */
 .fred-error-msg {

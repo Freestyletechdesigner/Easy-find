@@ -1320,10 +1320,18 @@ function _escapeAndLink(text) {
 
     // Convert markdown links [text](url) to buttons
     // If the link text is "view link" (or similar), always show "View Link" — never expose domain
+    // If the link text is "whatsapp", render a WhatsApp contact button
     formatted = formatted.replace(
-        /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g,
+        /\[([^\]]+)\]\(([\w\d\+\:\/\.\-\?\=\&\%]+)\)/g,
         (match, linkText, url) => {
-            const isViewLink = /^view\s*link$/i.test(linkText.trim());
+            const isViewLink  = /^view\s*link$/i.test(linkText.trim());
+            const isWhatsApp  = /^whatsapp$/i.test(linkText.trim());
+
+            if (isWhatsApp) {
+                // url is the normalised international number e.g. 2347064234755
+                const waUrl = `https://wa.me/${url}`;
+                return `<a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="fred-wa-btn"><i class="fa-brands fa-whatsapp"></i> Chat on WhatsApp</a>`;
+            }
             const label = isViewLink ? 'View Link' : linkText;
             return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="fred-link-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${label}</a>`;
         }

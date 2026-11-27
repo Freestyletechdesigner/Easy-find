@@ -936,22 +936,26 @@ async def _fetch_page_text_async(url: str, max_chars: int = 8000) -> str:
         return ""
 
 
-async def _direct_property_search(query: str, n: int = 5) -> str:
+async def _direct_property_search(query: str, n: int = 5, purpose: str = "rent") -> str:
     """
-    Fallback when SearXNG is unavailable or returns no results.
-    Fetches Nigerian property site search pages directly, reads their HTML,
-    and builds listing cards from whatever the LLM can extract.
+    Fallback when SearXNG returns no results.
+    Fetches Jiji.ng and Facebook Marketplace Nigeria directly,
+    extracts listings from the page HTML via BeautifulSoup + LLM.
     Returns "" if nothing useful is found.
     """
     eq = urllib.parse.quote_plus(query)
-    # Direct search URLs — these are search results pages, not individual listings.
-    # We fetch the page, let the LLM extract what it can, and always include
-    # the search URL as a [view link] so the user can browse from there.
+
+    # Choose the right Jiji path based on purpose
+    if purpose == "sale":
+        jiji_path = "houses-apartments"
+    elif purpose == "shortlet":
+        jiji_path = "short-lets"
+    else:
+        jiji_path = "houses-apartments-for-rent"
+
     direct_searches = [
-        ("Nigeria Property Centre", f"https://nigeriapropertycentre.com/for-sale/enugu?search={eq}"),
-        ("PropertyPro",             f"https://www.propertypro.ng/property/for-sale/enugu?search={eq}"),
-        ("Jiji Nigeria",            f"https://jiji.ng/enugu/property?query={eq}"),
-        ("Private Property",        f"https://www.privateproperty.com.ng/for-sale/enugu/?search={eq}"),
+        ("Jiji Nigeria",         f"https://jiji.ng/enugu/{jiji_path}?query={eq}"),
+        ("Facebook Marketplace", f"https://www.facebook.com/marketplace/enugu/propertyrentals/?query={eq}"),
     ]
 
     print(f"[Fred] Direct property search for: {query!r}")
@@ -972,9 +976,13 @@ Extract up to 3 property listings visible on this page.
 Return ONLY valid JSON — a list of objects:
 [
   {{"title": "<listing title>", "price": "<price or null>", "location": "<area in Enugu or null>",
-    "beds": <int or null>, "description": "<1 sentence or null>", "url": "<direct listing URL or null>"}}
+    "beds": <int or null>, "description": "<1 sentence or null>",
+    "phones": ["<Nigerian phone number>", ...],
+    "agent_name": "<agent or company name or null>",
+    "url": "<direct listing URL or null>"}}
 ]
 
+For "phones": include every Nigerian phone number visible (starting with 0 or +234).
 If no listings are visible, return: []
 JSON:"""
         try:
@@ -1029,18 +1037,28 @@ JSON:"""
 
     lines = ["Property listings found:"]
     for i, lst in enumerate(listings, 1):
-        title = lst.get("title") or "Property listing"
-        price = lst.get("price") or "price on request"
-        loc   = lst.get("location") or ""
-        beds  = lst.get("beds")
-        desc  = lst.get("description") or ""
-        url   = lst["url"]
+        title  = lst.get("title") or "Property listing"
+        price  = lst.get("price") or "price on request"
+        loc    = lst.get("location") or ""
+        beds   = lst.get("beds")
+        desc   = lst.get("description") or ""
+        url    = lst["url"]
+        phones = lst.get("phones") or []
+        agent  = lst.get("agent_name") or ""
 
         card = f"\nOption {i}: {title}"
         if loc:  card += f" in {loc}"
         if beds: card += f" — {beds} bedroom{'s' if beds > 1 else ''}"
         card += f". Price: {price}."
         if desc: card += f" {desc}"
+        if agent: card += f" Agent: {agent}."
+        for phone in phones[:2]:
+            clean = re.sub(r'[\s\-\(\)]', '', str(phone))
+            if clean.startswith('0'):
+                clean = '234' + clean[1:]
+            elif clean.startswith('+'):
+                clean = clean[1:]
+            card += f" [whatsapp]({clean})"
         card += f" [view link]({url})"
         lines.append(card)
 
@@ -1118,9 +1136,10 @@ async def web_search_and_fetch(query: str, n: int = 5) -> str:
 
     Returns formatted listing cards with [view link](url), or "" if nothing found.
     """
-    # ── Step 1: SearXNG search ─────────────────────────────────────────────
+    # ── Step 1: SearXNG search — restricted to Jiji.ng and Facebook only ─────
     try:
-        search_term = f"{query} property Nigeria"
+        # Force results from only Jiji Nigeria and Facebook Marketplace Nigeria
+        search_term = f"{query} site:jiji.ng OR site:facebook.com"
         params = urllib.parse.urlencode({
             "q":          search_term,
             "format":     "json",
@@ -1139,19 +1158,25 @@ async def web_search_and_fetch(query: str, n: int = 5) -> str:
         if not raw_results:
             return ""
 
-        # Resolve clean URLs from results
+        # Keep only results from jiji.ng or facebook.com — drop everything else
+        ALLOWED_DOMAINS = ("jiji.ng", "facebook.com", "web.facebook.com", "m.facebook.com")
+
         candidates = []
-        for r in raw_results[:n * 2]:
+        for r in raw_results[:n * 3]:
             url = _resolve_url(r)
-            if url:
-                candidates.append({
-                    "title":   r.get("title", ""),
-                    "url":     url,
-                    "snippet": r.get("content", "")[:300],
-                })
-                print(f"[Fred] Step 1 — candidate: {url[:80]}")
-            else:
+            if not url:
                 print(f"[Fred] Step 1 — skipped (bad URL): {r.get('url','?')[:80]}")
+                continue
+            domain = url.split("/")[2].lower().replace("www.", "")
+            if not any(domain.endswith(d) for d in ALLOWED_DOMAINS):
+                print(f"[Fred] Step 1 — skipped (not Jiji/FB): {domain}")
+                continue
+            candidates.append({
+                "title":   r.get("title", ""),
+                "url":     url,
+                "snippet": r.get("content", "")[:300],
+            })
+            print(f"[Fred] Step 1 — accepted: {url[:80]}")
 
         if not candidates:
             print("[Fred] Step 1 — no clean URLs resolved")
@@ -1206,8 +1231,13 @@ Do NOT invent missing information — use null for any field not clearly stated 
   "baths":       <integer number of bathrooms or null>,
   "purpose":     "<rent|sale|shortlet or null>",
   "description": "<1-2 sentence summary of the property or null>",
+  "phones":      ["<Nigerian phone number>", ...] or [],
+  "agent_name":  "<agent or company name, or null>",
   "is_property_listing": <true if this page is a single property listing, false if search results page>
 }}
+
+For "phones": extract every Nigerian phone number visible on the page (starting with 0 or +234).
+Return them exactly as written — do not reformat.
 
 JSON:"""
 
@@ -1254,13 +1284,15 @@ JSON:"""
     # ── Format listing cards ───────────────────────────────────────────────
     lines = ["Property listings found:"]
     for i, lst in enumerate(listings, 1):
-        title = lst.get("title") or "Property listing"
-        price = lst.get("price") or "price on request"
-        loc   = lst.get("location") or ""
-        beds  = lst.get("beds")
-        baths = lst.get("baths")
-        desc  = lst.get("description") or ""
-        url   = lst.get("source_url", "")
+        title  = lst.get("title") or "Property listing"
+        price  = lst.get("price") or "price on request"
+        loc    = lst.get("location") or ""
+        beds   = lst.get("beds")
+        baths  = lst.get("baths")
+        desc   = lst.get("description") or ""
+        url    = lst.get("source_url", "")
+        phones = lst.get("phones") or []
+        agent  = lst.get("agent_name") or ""
 
         specs = ", ".join(filter(None, [
             f"{beds} bedroom{'s' if beds and beds > 1 else ''}"    if beds  else "",
@@ -1272,6 +1304,16 @@ JSON:"""
         if specs: card += f" — {specs}"
         card += f". Price: {price}."
         if desc:  card += f" {desc}"
+        if agent: card += f" Agent: {agent}."
+        # Append each phone as a whatsapp marker so the frontend renders a button
+        for phone in phones[:2]:           # max 2 numbers per listing
+            # Normalise to international format for WhatsApp deep link
+            clean = re.sub(r'[\s\-\(\)]', '', str(phone))
+            if clean.startswith('0'):
+                clean = '234' + clean[1:]
+            elif clean.startswith('+'):
+                clean = clean[1:]
+            card += f" [whatsapp]({clean})"
         if url:   card += f" [view link]({url})"
         lines.append(card)
 
@@ -1804,6 +1846,7 @@ FRED_SYSTEM = (
     "Always share the agent's phone number when available. "
     "For any property listings, show them naturally as your own results — do NOT mention any external site name or domain. "
     "Whenever a listing in the VERIFIED CONTEXT contains a [view link](url), you MUST copy it exactly as-is into your reply — never drop it, never rewrite it, never replace it with plain text. "
+    "Whenever a listing contains a [whatsapp](number), you MUST also copy it exactly as-is into your reply — this renders as a WhatsApp contact button for the user. "
     "Whenever you include a URL yourself, always format it as [view link](url). "
     "RULES — never break these:\n"
     "- NEVER invent or guess property listings, prices, addresses, agent names, or phone numbers.\n"
@@ -2043,10 +2086,21 @@ Reply with ONLY valid JSON, no markdown:
             intent_data = await _extract_intent_llm(working_msg)
             print(f"[Fred] Search intent: {intent_data}")
 
+            # Detect purpose (rent / sale / shortlet) from the user message
+            _msg_lower = working_msg.lower()
+            if any(w in _msg_lower for w in ("rent", "renting", "lease", "dey find", "i wan rent", "for rent")):
+                _purpose = "rent"
+            elif any(w in _msg_lower for w in ("buy", "purchase", "buying", "sale", "for sale", "sell")):
+                _purpose = "sale"
+            elif any(w in _msg_lower for w in ("shortlet", "short let", "short-let", "airbnb")):
+                _purpose = "shortlet"
+            else:
+                _purpose = "rent"   # default to rent for ambiguous queries
+
             # Build a clean keyword query — never send the raw conversational sentence to search engines
             _parts = []
-            if intent_data.get("type"):    _parts.append(intent_data["type"])
             if intent_data.get("beds"):    _parts.append(f"{intent_data['beds']} bedroom")
+            if intent_data.get("type"):    _parts.append(intent_data["type"])
             if intent_data.get("location"): _parts.append(intent_data["location"])
             if not _parts:
                 # fallback: strip common filler words from the message
@@ -2055,8 +2109,8 @@ Reply with ONLY valid JSON, no markdown:
                     ' ', working_msg, flags=re.IGNORECASE
                 )
                 _parts = [w for w in _filler.split() if len(w) > 2]
-            search_query = " ".join(_parts[:8]) + " Enugu Nigeria"
-            print(f"[Fred] Clean search query: {search_query!r}")
+            search_query = " ".join(_parts[:6]) + f" {_purpose} Enugu"
+            print(f"[Fred] Clean search query: {search_query!r} | purpose: {_purpose}")
 
             context_str, metadatas = await search_properties(working_msg)
 
@@ -2096,7 +2150,7 @@ Reply with ONLY valid JSON, no markdown:
                     yield _status("still_searching")
                     print("[Fred] SearXNG returned nothing — trying direct site search fallback")
                     try:
-                        web = await asyncio.wait_for(_direct_property_search(search_query, 5), timeout=30.0)
+                        web = await asyncio.wait_for(_direct_property_search(search_query, 5, _purpose), timeout=30.0)
                     except asyncio.TimeoutError:
                         web = ""
                         print("[Fred] Direct search also timed out")
