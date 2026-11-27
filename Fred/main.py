@@ -56,6 +56,7 @@ from pathlib import Path
 from typing import Optional
 
 import httpx
+from bs4 import BeautifulSoup
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -888,163 +889,142 @@ def _searxng_available() -> bool:
         return False
 
 
-async def _fetch_page_text_async(url: str, max_chars: int = 4000) -> str:
+async def _fetch_page_text_async(url: str, max_chars: int = 8000) -> str:
     """
-    Async page fetcher using httpx with a hard 5s timeout per page.
-    Strips scripts/styles/nav and returns visible text. Returns "" on any error.
+    Step 2+3 of the web pipeline: HTTPX fetches the page, BeautifulSoup extracts clean text.
+
+    - Removes script, style, nav, footer, header, aside, form elements
+    - Uses lxml parser for speed; falls back to html.parser
+    - Returns up to max_chars of clean visible text, or "" on any error
     """
     try:
-        async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
-            resp = await client.get(
-                url,
-                headers={
-                    "User-Agent": (
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) "
-                        "Chrome/124.0 Safari/537.36"
-                    ),
-                    "Accept": "text/html,application/xhtml+xml",
-                    "Accept-Language": "en-US,en;q=0.9",
-                },
-            )
-        raw_html = resp.text
-        clean = re.sub(r'<(script|style|nav|footer|header|noscript)[^>]*>[\s\S]*?</\1>', ' ', raw_html, flags=re.IGNORECASE)
-        clean = re.sub(r'<[^>]+>', ' ', clean)
-        clean = re.sub(r'\s+', ' ', clean).strip()
-        return clean[:max_chars]
+        async with httpx.AsyncClient(
+            timeout=15.0,
+            follow_redirects=True,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0 Safari/537.36"
+                ),
+                "Accept":          "text/html,application/xhtml+xml",
+                "Accept-Language": "en-US,en;q=0.9",
+            },
+        ) as client:
+            resp = await client.get(url)
+            resp.raise_for_status()
+            html = resp.text
+
+        # Step 3 — BeautifulSoup extraction
+        try:
+            soup = BeautifulSoup(html, "lxml")
+        except Exception:
+            soup = BeautifulSoup(html, "html.parser")
+
+        # Remove noise elements
+        for tag in soup(["script", "style", "nav", "footer", "header",
+                          "aside", "form", "noscript", "iframe", "svg"]):
+            tag.decompose()
+
+        text = soup.get_text(separator=" ", strip=True)
+        # Collapse repeated whitespace
+        text = re.sub(r' {2,}', ' ', text).strip()
+        return text[:max_chars]
+
     except Exception as e:
-        print(f"[Fred] Page fetch failed for {url}: {e}")
+        print(f"[Fred] Page fetch failed for {url[:80]}: {e}")
         return ""
-
-
-_PAGE_EXTRACT_PROMPT = """\
-You are extracting a property listing from a Nigerian real estate website page.
-
-PAGE TEXT:
-{page_text}
-
-Extract the most important listing details and return ONLY valid JSON:
-{{
-  "title":       "<property title or null>",
-  "price":       "<price as written on the page, e.g. ₦5,000,000 or null>",
-  "location":    "<area/neighbourhood in Enugu or null>",
-  "beds":        <integer or null>,
-  "baths":       <integer or null>,
-  "type":        "<house|flat|apartment|room|shop|land|office|duplex|shortlet or null>",
-  "description": "<1-2 sentence summary of the listing or null>",
-  "is_property": <true if this page is an actual property listing, false if it is a search results page or unrelated>
-}}
-
-If the page has multiple listings (search results page), set is_property to false.
-Return ONLY the JSON object, no markdown, no extra text.
-JSON:"""
-
-
-async def _extract_listing_from_page(url: str) -> dict | None:
-    """
-    Fetch a page and ask the LLM to extract listing details from it.
-    Returns a dict with listing fields, or None if extraction fails or
-    the page is not an actual property listing.
-    """
-    page_text = await _fetch_page_text_async(url)   # async httpx, 5s timeout
-    if not page_text:
-        return None
-    prompt = _PAGE_EXTRACT_PROMPT.format(page_text=page_text[:3000])
-    try:
-        raw = await _llm_call([{"role": "user", "content": prompt}], max_tokens=200)
-        m   = re.search(r'\{[\s\S]*?\}', raw)
-        if m:
-            data = json.loads(m.group(0))
-            if not data.get("is_property", True):
-                return None   # search results page — skip
-            return data
-    except Exception as e:
-        print(f"[Fred] Listing extract error for {url}: {e}")
-    return None
 
 
 async def _direct_property_search(query: str, n: int = 5) -> str:
     """
     Fallback when SearXNG is unavailable or returns no results.
-    Queries Nigerian property sites directly via their search pages,
-    fetches the HTML, and extracts listing cards using the LLM.
+    Fetches Nigerian property site search pages directly, reads their HTML,
+    and builds listing cards from whatever the LLM can extract.
     Returns "" if nothing useful is found.
     """
-    # Build direct search URLs for the main Nigerian property sites
     eq = urllib.parse.quote_plus(query)
-    direct_urls = [
-        f"https://nigeriapropertycentre.com/for-sale/shops-offices/enugu?search={eq}",
-        f"https://www.propertypro.ng/property/for-sale/enugu?search={eq}",
-        f"https://jiji.ng/enugu/commercial-property?query={eq}",
-        f"https://www.privateproperty.com.ng/commercial-for-sale/enugu/?search={eq}",
+    # Direct search URLs — these are search results pages, not individual listings.
+    # We fetch the page, let the LLM extract what it can, and always include
+    # the search URL as a [view link] so the user can browse from there.
+    direct_searches = [
+        ("Nigeria Property Centre", f"https://nigeriapropertycentre.com/for-sale/enugu?search={eq}"),
+        ("PropertyPro",             f"https://www.propertypro.ng/property/for-sale/enugu?search={eq}"),
+        ("Jiji Nigeria",            f"https://jiji.ng/enugu/property?query={eq}"),
+        ("Private Property",        f"https://www.privateproperty.com.ng/for-sale/enugu/?search={eq}"),
     ]
 
-    print(f"[Fred] SearXNG fallback — trying {len(direct_urls)} direct site searches")
+    print(f"[Fred] Direct property search for: {query!r}")
 
-    async def _fetch_and_extract(url: str) -> list[dict]:
-        """Fetch a search results page and extract individual listing URLs from it."""
+    async def _fetch_site(label: str, url: str) -> dict | None:
         page_text = await _fetch_page_text_async(url, max_chars=5000)
         if not page_text:
-            return []
-        # Ask LLM to pull out individual listing URLs from the search page
-        extract_prompt = f"""\
-You are extracting property listing URLs from a Nigerian real estate search results page.
+            print(f"[Fred] Direct fetch failed: {label}")
+            return None
 
-PAGE TEXT (first 4000 chars):
+        prompt = f"""\
+You are reading a Nigerian real estate search results page.
+
+PAGE TEXT:
 {page_text[:4000]}
 
-SOURCE URL: {url}
+Extract up to 3 property listings visible on this page.
+Return ONLY valid JSON — a list of objects:
+[
+  {{"title": "<listing title>", "price": "<price or null>", "location": "<area in Enugu or null>",
+    "beds": <int or null>, "description": "<1 sentence or null>", "url": "<direct listing URL or null>"}}
+]
 
-Extract up to 3 individual property listing URLs visible on this page.
-Return ONLY valid JSON — a list of URL strings:
-["url1", "url2", "url3"]
-
-If no individual listing URLs are visible, return: []
+If no listings are visible, return: []
 JSON:"""
         try:
-            raw = await _llm_call([{"role": "user", "content": extract_prompt}], max_tokens=120)
+            raw = await _llm_call([{"role": "user", "content": prompt}], max_tokens=350)
             m   = re.search(r'\[[\s\S]*?\]', raw)
             if m:
-                urls = json.loads(m.group(0))
-                # Keep only absolute URLs from the same domain
-                base = "/".join(url.split("/")[:3])
-                clean = []
-                for u in urls:
-                    if isinstance(u, str) and u.strip():
-                        u = u.strip()
-                        if u.startswith("/"):
-                            u = base + u
-                        if u.startswith("http") and "/go/v1/" not in u:
-                            clean.append(u)
-                return clean[:3]
+                items = json.loads(m.group(0))
+                results = []
+                for item in items[:3]:
+                    if not isinstance(item, dict):
+                        continue
+                    # Use listing URL if valid, otherwise fall back to the search page URL
+                    listing_url = item.get("url") or ""
+                    if isinstance(listing_url, str) and listing_url.startswith("http") and "/go/v1/" not in listing_url:
+                        final_url = listing_url
+                    else:
+                        # Build absolute URL from path if needed
+                        base = "/".join(url.split("/")[:3])
+                        if isinstance(listing_url, str) and listing_url.startswith("/"):
+                            final_url = base + listing_url
+                        else:
+                            final_url = url  # fall back to search page
+                    results.append({
+                        "title":       item.get("title"),
+                        "price":       item.get("price"),
+                        "location":    item.get("location"),
+                        "beds":        item.get("beds"),
+                        "description": item.get("description"),
+                        "url":         final_url,
+                    })
+                print(f"[Fred] Direct: {label} → {len(results)} listings extracted")
+                return results if results else None
         except Exception as e:
-            print(f"[Fred] Direct extract error for {url}: {e}")
-        return []
+            print(f"[Fred] Direct extract error ({label}): {e}")
+        # Even if extraction fails, return the search page itself as a fallback card
+        return [{"title": f"Properties on {label}", "price": None, "location": "Enugu",
+                 "beds": None, "description": f"Browse available listings matching your search.",
+                 "url": url}]
 
-    # Fetch all search pages concurrently
-    all_listing_urls = []
-    search_results = await asyncio.gather(*[_fetch_and_extract(u) for u in direct_urls])
-    for urls in search_results:
-        all_listing_urls.extend(urls)
+    tasks   = [_fetch_site(label, url) for label, url in direct_searches]
+    results = await asyncio.gather(*tasks)
 
-    if not all_listing_urls:
-        print("[Fred] Direct search: no listing URLs extracted from any site")
-        return ""
+    all_listings = []
+    for r in results:
+        if r:
+            all_listings.extend(r)
 
-    print(f"[Fred] Direct search: found {len(all_listing_urls)} listing URLs — fetching…")
-
-    # Now fetch and extract each individual listing
-    async def _process(url: str) -> dict | None:
-        extracted = await _extract_listing_from_page(url)
-        if extracted:
-            extracted["url"] = url
-            return extracted
-        return None
-
-    fetched  = await asyncio.gather(*[_process(u) for u in all_listing_urls[:n * 2]])
-    listings = [f for f in fetched if f][:n]
-
+    listings = all_listings[:n]
     if not listings:
+        print("[Fred] Direct search: no listings found across all sites")
         return ""
 
     lines = ["Property listings found:"]
@@ -1053,26 +1033,19 @@ JSON:"""
         price = lst.get("price") or "price on request"
         loc   = lst.get("location") or ""
         beds  = lst.get("beds")
-        baths = lst.get("baths")
         desc  = lst.get("description") or ""
         url   = lst["url"]
 
-        specs = ", ".join(filter(None, [
-            f"{beds} bedroom{'s' if beds and beds > 1 else ''}" if beds else "",
-            f"{baths} bathroom{'s' if baths and baths > 1 else ''}" if baths else "",
-        ]))
-
         card = f"\nOption {i}: {title}"
-        if loc:   card += f" in {loc}"
-        if specs: card += f" — {specs}"
+        if loc:  card += f" in {loc}"
+        if beds: card += f" — {beds} bedroom{'s' if beds > 1 else ''}"
         card += f". Price: {price}."
-        if desc:  card += f" {desc}"
+        if desc: card += f" {desc}"
         card += f" [view link]({url})"
         lines.append(card)
 
     print(f"[Fred] Direct search: built {len(listings)} listing cards")
     return "\n\n".join(lines)
-
 
     """
     Synchronous SearXNG search — returns top n results as a formatted string.
@@ -1122,119 +1095,186 @@ JSON:"""
 
 async def web_search_and_fetch(query: str, n: int = 5) -> str:
     """
-    Full property search pipeline:
-      1. Search SearXNG across Nigerian property sites (async httpx)
-      2. Resolve real URLs (skip /go/v1/ wrappers)
-      3. Fetch each page concurrently and extract actual listing details via LLM
-      4. Return structured listing cards with direct page links
+    4-step property search pipeline:
 
-    Returns empty string if nothing useful is found.
+      Step 1 — SearXNG (Finder)
+               Queries SearXNG with the clean property search term.
+               Returns result titles, URLs, and snippets as JSON.
+
+      Step 2 — HTTPX (Fetcher)
+               Visits each listing URL returned by SearXNG.
+               Retrieves the full HTML of the property page.
+
+      Step 3 — BeautifulSoup (Extractor)
+               Strips scripts, nav, footer, ads from the HTML.
+               Returns clean visible page text.
+
+      Step 4 — Fred AI (Understander)
+               Reads the clean text and extracts structured property data:
+               title, price, location, beds, baths, description.
+               Never invents missing fields — uses null if not stated.
+
+    Returns formatted listing cards with [view link](url), or "" if nothing found.
     """
+    # ── Step 1: SearXNG search ─────────────────────────────────────────────
     try:
-        full_query = (
-            f"({query} Enugu Nigeria) "
-            f"site:nigeriapropertycentre.com OR "
-            f"site:propertypro.ng OR "
-            f"site:privateproperty.ng OR "
-            f"site:jiji.ng"
-        )
+        search_term = f"{query} property Nigeria"
         params = urllib.parse.urlencode({
-            "q":          full_query,
+            "q":          search_term,
             "format":     "json",
             "categories": "general",
         })
         searxng_url = f"{SEARXNG_URL}/search?{params}"
-        print(f"[Fred] web_search_and_fetch: querying SearXNG → {searxng_url[:120]}")
+        print(f"[Fred] Step 1 — SearXNG query: {search_term!r}")
 
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(searxng_url, headers={"User-Agent": "FredAI/1.0"})
         data = resp.json()
 
         raw_results = data.get("results", [])
-        print(f"[Fred] SearXNG returned {len(raw_results)} raw results")
+        print(f"[Fred] Step 1 — SearXNG returned {len(raw_results)} results")
 
-        results = raw_results[:n * 2]   # fetch extra to account for skips
-        if not results:
-            print("[Fred] web_search_and_fetch: no results from SearXNG")
+        if not raw_results:
             return ""
 
-        # Resolve real URLs first, drop any we can't clean
+        # Resolve clean URLs from results
         candidates = []
-        for r in results:
+        for r in raw_results[:n * 2]:
             url = _resolve_url(r)
             if url:
-                candidates.append({"title": r.get("title", ""), "url": url, "snippet": r.get("content", "")[:200]})
+                candidates.append({
+                    "title":   r.get("title", ""),
+                    "url":     url,
+                    "snippet": r.get("content", "")[:300],
+                })
+                print(f"[Fred] Step 1 — candidate: {url[:80]}")
             else:
-                print(f"[Fred] Skipped unresolvable URL: {r.get('url','?')[:80]}")
+                print(f"[Fred] Step 1 — skipped (bad URL): {r.get('url','?')[:80]}")
 
-        print(f"[Fred] {len(candidates)} candidates with clean URLs — fetching pages…")
         if not candidates:
+            print("[Fred] Step 1 — no clean URLs resolved")
             return ""
-
-        # Fetch and extract all pages concurrently
-        async def _process(item: dict) -> dict | None:
-            print(f"[Fred] Fetching page: {item['url'][:80]}")
-            extracted = await _extract_listing_from_page(item["url"])
-            if extracted:
-                extracted["url"]     = item["url"]
-                extracted["snippet"] = item["snippet"]
-                if not extracted.get("title"):
-                    extracted["title"] = item["title"]
-                print(f"[Fred] Extracted listing: {extracted.get('title','?')[:60]}")
-            else:
-                # Page fetch failed or was a search results page —
-                # still include using the snippet from SearXNG
-                print(f"[Fred] Page extract failed — using snippet for: {item['url'][:80]}")
-                extracted = {
-                    "title":       item["title"],
-                    "price":       None,
-                    "location":    None,
-                    "beds":        None,
-                    "baths":       None,
-                    "type":        None,
-                    "description": item["snippet"] or None,
-                    "url":         item["url"],
-                    "is_property": True,
-                }
-            return extracted
-
-        tasks   = [_process(c) for c in candidates]
-        fetched = await asyncio.gather(*tasks)
-        listings = [f for f in fetched if f][:n]
-
-        if not listings:
-            print("[Fred] web_search_and_fetch: all page extractions failed")
-            return ""
-
-        lines = ["Property listings found:"]
-        for i, lst in enumerate(listings, 1):
-            title  = lst.get("title") or "Property listing"
-            price  = lst.get("price") or "price on request"
-            loc    = lst.get("location") or ""
-            beds   = lst.get("beds")
-            baths  = lst.get("baths")
-            desc   = lst.get("description") or ""
-            url    = lst["url"]
-
-            specs = ", ".join(filter(None, [
-                f"{beds} bedroom{'s' if beds and beds > 1 else ''}" if beds else "",
-                f"{baths} bathroom{'s' if baths and baths > 1 else ''}" if baths else "",
-            ]))
-
-            card = f"\nOption {i}: {title}"
-            if loc:    card += f" in {loc}"
-            if specs:  card += f" — {specs}"
-            card += f". Price: {price}."
-            if desc:   card += f" {desc}"
-            card += f" [view link]({url})"
-            lines.append(card)
-
-        print(f"[Fred] Built {len(listings)} listing cards from web pages")
-        return "\n\n".join(lines)
 
     except Exception as e:
-        print(f"[Fred] web_search_and_fetch error: {e}")
+        print(f"[Fred] Step 1 — SearXNG error: {e}")
         return ""
+
+    # ── Steps 2+3+4: Fetch → Extract → Structure (concurrent) ─────────────
+    async def _process_candidate(item: dict) -> dict | None:
+        url     = item["url"]
+        title   = item["title"]
+        snippet = item["snippet"]
+
+        # Step 2+3: HTTPX fetch + BeautifulSoup clean
+        print(f"[Fred] Step 2+3 — fetching & parsing: {url[:80]}")
+        page_text = await _fetch_page_text_async(url, max_chars=8000)
+
+        if not page_text:
+            print(f"[Fred] Step 2+3 — fetch failed, using SearXNG snippet for: {url[:80]}")
+            # Fallback: use SearXNG snippet so we still have something to show
+            return {
+                "title":       title,
+                "price":       None,
+                "location":    None,
+                "beds":        None,
+                "baths":       None,
+                "purpose":     None,
+                "description": snippet or None,
+                "source_url":  url,
+            }
+
+        # Step 4: AI extracts structured property data from clean page text
+        print(f"[Fred] Step 4 — AI extracting from {len(page_text)} chars of page text")
+        prompt = f"""\
+You are extracting property listing information from a Nigerian real estate webpage.
+
+PAGE TEXT:
+{page_text[:6000]}
+
+SOURCE URL: {url}
+
+Extract the property details and return ONLY valid JSON.
+Do NOT invent missing information — use null for any field not clearly stated on the page.
+
+{{
+  "title":       "<property title or null>",
+  "price":       "<price exactly as written, e.g. ₦5,000,000 per year, or null>",
+  "location":    "<area/neighbourhood in Enugu, Nigeria, or null>",
+  "beds":        <integer number of bedrooms or null>,
+  "baths":       <integer number of bathrooms or null>,
+  "purpose":     "<rent|sale|shortlet or null>",
+  "description": "<1-2 sentence summary of the property or null>",
+  "is_property_listing": <true if this page is a single property listing, false if search results page>
+}}
+
+JSON:"""
+
+        try:
+            raw = await _llm_call([{"role": "user", "content": prompt}], max_tokens=250)
+            m   = re.search(r'\{[\s\S]*?\}', raw)
+            if m:
+                data = json.loads(m.group(0))
+                print(f"[Fred] Step 4 — extracted: title={data.get('title','?')!r} "
+                      f"price={data.get('price','?')!r} "
+                      f"is_listing={data.get('is_property_listing','?')}")
+                data["source_url"] = url
+                # If it's a search results page with no individual listing info,
+                # still return it with the snippet so the user gets a [view link]
+                if not data.get("is_property_listing", True):
+                    if not data.get("title"):
+                        data["title"] = title
+                    if not data.get("description"):
+                        data["description"] = snippet or None
+                return data
+        except Exception as e:
+            print(f"[Fred] Step 4 — parse error for {url[:80]}: {e}")
+
+        # AI parse failed — fall back to snippet
+        return {
+            "title":       title,
+            "price":       None,
+            "location":    None,
+            "beds":        None,
+            "baths":       None,
+            "purpose":     None,
+            "description": snippet or None,
+            "source_url":  url,
+        }
+
+    tasks   = [_process_candidate(c) for c in candidates]
+    fetched = await asyncio.gather(*tasks)
+    listings = [f for f in fetched if f][:n]
+
+    if not listings:
+        print("[Fred] Pipeline complete — no listings to present")
+        return ""
+
+    # ── Format listing cards ───────────────────────────────────────────────
+    lines = ["Property listings found:"]
+    for i, lst in enumerate(listings, 1):
+        title = lst.get("title") or "Property listing"
+        price = lst.get("price") or "price on request"
+        loc   = lst.get("location") or ""
+        beds  = lst.get("beds")
+        baths = lst.get("baths")
+        desc  = lst.get("description") or ""
+        url   = lst.get("source_url", "")
+
+        specs = ", ".join(filter(None, [
+            f"{beds} bedroom{'s' if beds and beds > 1 else ''}"    if beds  else "",
+            f"{baths} bathroom{'s' if baths and baths > 1 else ''}" if baths else "",
+        ]))
+
+        card = f"\nOption {i}: {title}"
+        if loc:   card += f" in {loc}"
+        if specs: card += f" — {specs}"
+        card += f". Price: {price}."
+        if desc:  card += f" {desc}"
+        if url:   card += f" [view link]({url})"
+        lines.append(card)
+
+    print(f"[Fred] Pipeline complete — {len(listings)} listing cards built")
+    return "\n\n".join(lines)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
