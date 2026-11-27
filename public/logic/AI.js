@@ -290,7 +290,10 @@ function handleModalBackdropClick(e) {
 }
 
 // Called by Google Sign-In button via data-callback
+let _googleLoginInFlight = false;   // debounce double-fire on mobile
 async function handleGoogleLogin(response) {
+    if (_googleLoginInFlight) return;   // ignore duplicate callback
+    _googleLoginInFlight = true;
     try {
         const res  = await fetch('/api/signup', {
             method:  'POST',
@@ -303,11 +306,30 @@ async function handleGoogleLogin(response) {
             closeLoginModal();
             location.reload();
         } else {
-            alert(data.message || 'Sign-in failed. Please try again.');
+            _showLoginError(data.message || 'Sign-in failed. Please try again.');
         }
     } catch (_) {
-        alert('Network error. Please try again.');
+        _showLoginError('Network error. Please try again.');
+    } finally {
+        // Re-enable after 3s so the user can retry if something went wrong
+        setTimeout(() => { _googleLoginInFlight = false; }, 3000);
     }
+}
+
+function _showLoginError(msg) {
+    const modal = document.getElementById('loginModal');
+    if (!modal) return;
+    let errEl = modal.querySelector('.login-error-msg');
+    if (!errEl) {
+        errEl = document.createElement('p');
+        errEl.className = 'login-error-msg';
+        errEl.style.cssText = 'color:#ef4444;font-size:13px;margin-top:10px;text-align:center;';
+        const terms = modal.querySelector('.modal-terms');
+        if (terms) terms.before(errEl);
+        else modal.querySelector('.login-modal')?.appendChild(errEl);
+    }
+    errEl.textContent = msg;
+    setTimeout(() => { errEl.textContent = ''; }, 5000);
 }
 
 async function logout() {

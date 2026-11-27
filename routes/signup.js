@@ -119,7 +119,23 @@ module.exports = function(app) {
 
         } catch (error) {
             console.error('Signup error:', error);
-            if (error.code === 11000) return res.status(400).json({ success: false, message: 'Account already exists' });
+            if (error.code === 11000) {
+                // Duplicate key — user already exists, just log them in
+                try {
+                    const existing = await User.findOne({ email: googleData?.email });
+                    if (existing) {
+                        req.session.userId = existing._id;
+                        existing.lastLogin  = new Date();
+                        existing.loginCount = (existing.loginCount || 0) + 1;
+                        await existing.save();
+                        return res.json({
+                            success: true,
+                            message: 'Welcome back!',
+                            user: { id: existing._id, name: existing.name, email: existing.email, profilePicture: existing.profilePicture }
+                        });
+                    }
+                } catch (_) {}
+            }
             res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
         }
     });
