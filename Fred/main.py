@@ -1196,9 +1196,26 @@ async def web_search_and_fetch(query: str, n: int = 5) -> str:
         print(f"[Fred] Step 2+3 — fetching & parsing: {url[:80]}")
         page_text = await _fetch_page_text_async(url, max_chars=8000)
 
+        # Extract phone numbers directly from raw page text via regex — never trust the LLM for this
+        _NG_PHONE = re.compile(r'(?<!\d)(?:\+?234|0)[789]\d{8,9}(?!\d)')
+        raw_phones_found = _NG_PHONE.findall(page_text) if page_text else []
+        # Deduplicate, normalise, keep up to 2
+        seen_phones: set = set()
+        phones_clean: list = []
+        for ph in raw_phones_found:
+            norm = re.sub(r'[\s\-\(\)]', '', ph)
+            if norm.startswith('0'):
+                norm = '234' + norm[1:]
+            elif norm.startswith('+'):
+                norm = norm[1:]
+            if norm not in seen_phones:
+                seen_phones.add(norm)
+                phones_clean.append(norm)
+            if len(phones_clean) >= 2:
+                break
+
         if not page_text:
             print(f"[Fred] Step 2+3 — fetch failed, using SearXNG snippet for: {url[:80]}")
-            # Fallback: use SearXNG snippet so we still have something to show
             return {
                 "title":       title,
                 "price":       None,
@@ -1208,6 +1225,8 @@ async def web_search_and_fetch(query: str, n: int = 5) -> str:
                 "purpose":     None,
                 "description": snippet or None,
                 "source_url":  url,
+                "phones":      phones_clean,
+                "agent_name":  None,
             }
 
         # Step 4: AI extracts structured property data from clean page text
@@ -1250,8 +1269,18 @@ JSON:"""
                       f"price={data.get('price','?')!r} "
                       f"is_listing={data.get('is_property_listing','?')}")
                 data["source_url"] = url
-                # If it's a search results page with no individual listing info,
-                # still return it with the snippet so the user gets a [view link]
+                # Merge regex-found phones with LLM-found phones, dedup, keep ≤2
+                llm_phones = data.get("phones") or []
+                for ph in llm_phones:
+                    norm = re.sub(r'[\s\-\(\)]', '', str(ph))
+                    if norm.startswith('0'):   norm = '234' + norm[1:]
+                    elif norm.startswith('+'): norm = norm[1:]
+                    if norm not in seen_phones:
+                        seen_phones.add(norm)
+                        phones_clean.append(norm)
+                    if len(phones_clean) >= 2:
+                        break
+                data["phones"] = phones_clean
                 if not data.get("is_property_listing", True):
                     if not data.get("title"):
                         data["title"] = title
@@ -1261,7 +1290,7 @@ JSON:"""
         except Exception as e:
             print(f"[Fred] Step 4 — parse error for {url[:80]}: {e}")
 
-        # AI parse failed — fall back to snippet
+        # AI parse failed — fall back to snippet but keep regex phones
         return {
             "title":       title,
             "price":       None,
@@ -1271,6 +1300,8 @@ JSON:"""
             "purpose":     None,
             "description": snippet or None,
             "source_url":  url,
+            "phones":      phones_clean,
+            "agent_name":  None,
         }
 
     tasks   = [_process_candidate(c) for c in candidates]
@@ -1468,7 +1499,7 @@ class LLMBackendManager:
                     "model":    OLLAMA_MODEL,
                     "messages": messages,
                     "stream":   False,
-                    "options":  {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": 512},
+                    "options":  {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": 2048},
                 },
             )
             resp.raise_for_status()
@@ -1534,7 +1565,7 @@ class LLMBackendManager:
                     "model":    OLLAMA_MODEL,
                     "messages": messages,
                     "stream":   True,
-                    "options":  {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": 512},
+                    "options":  {"temperature": 0.3, "num_predict": max_tokens, "num_ctx": 2048},
                 },
             ) as resp:
                 resp.raise_for_status()
@@ -2343,6 +2374,72 @@ Reply with ONLY valid JSON, no markdown:
 
         print(f"[Fred] Context type: {context_type} | Context length: {len(context)} chars")
 
+        # ── Contact index — built from web listings so we can re-inject after LLM ──
+        # Maps "option N" (lowercase) → list of normalised WhatsApp numbers
+        # This is populated when context_type is web_property and listings have phones.
+        _contact_index: dict[str, list[str]] = {}
+        if context_type == "web_property" and context:
+            # Parse [whatsapp](number) markers already embedded in the context cards
+            for match in re.finditer(r'Option\s+(\d+).*?(?=Option\s+\d+|$)', context, re.DOTALL | re.IGNORECASE):
+                opt_num  = match.group(1)
+                wa_nums  = re.findall(r'\[whatsapp\]\((\d+)\)', match.group(0))
+                view_lnk = re.findall(r'\[view link\]\((https?://[^\)]+)\)', match.group(0))
+                if wa_nums or view_lnk:
+                    _contact_index[f"option {opt_num}"] = {
+                        "phones": wa_nums,
+                        "url":    view_lnk[0] if view_lnk else None,
+                    }
+
+        def _inject_contacts(reply: str) -> str:
+            """
+            Post-process Fred's reply: for each Option N that has known contacts
+            in _contact_index, ensure the [whatsapp] and [view link] markers are
+            present. If Fred dropped them, append them at the end of that option's
+            paragraph. Returns the augmented reply.
+            """
+            if not _contact_index:
+                return reply
+
+            lines = reply.split("\n")
+            result = []
+            i = 0
+            while i < len(lines):
+                line = lines[i]
+                # Check if this line references an Option number
+                opt_match = re.search(r'\bOption\s+(\d+)\b', line, re.IGNORECASE)
+                if opt_match:
+                    opt_key = f"option {opt_match.group(1)}"
+                    info    = _contact_index.get(opt_key, {})
+                    phones  = info.get("phones", [])
+                    url     = info.get("url")
+
+                    # Collect all consecutive lines belonging to this option
+                    block = [line]
+                    j = i + 1
+                    while j < len(lines) and not re.search(r'\bOption\s+\d+\b', lines[j], re.IGNORECASE):
+                        block.append(lines[j])
+                        j += 1
+                    block_text = "\n".join(block)
+
+                    # Inject missing [whatsapp] markers
+                    for phone in phones:
+                        marker = f"[whatsapp]({phone})"
+                        if marker not in block_text:
+                            block_text = block_text.rstrip() + f" {marker}"
+                            print(f"[Fred] Injected {marker} for {opt_key}")
+
+                    # Inject missing [view link] marker
+                    if url and "[view link]" not in block_text:
+                        block_text = block_text.rstrip() + f" [view link]({url})"
+                        print(f"[Fred] Injected view link for {opt_key}")
+
+                    result.append(block_text)
+                    i = j
+                else:
+                    result.append(line)
+                    i += 1
+            return "\n".join(result)
+
         # ── STEP 3: Build system prompt (language-aware) ───────────────────
         system = FRED_SYSTEM + (
             f"\n\nVERIFIED CONTEXT:\n{context}"
@@ -2359,7 +2456,7 @@ Reply with ONLY valid JSON, no markdown:
         if intent == "general_chat":
             final_reply = ""
             try:
-                async for chunk in llm.stream(messages, max_tokens=400):
+                async for chunk in llm.stream(messages, max_tokens=600):
                     final_reply += chunk
                     yield _sse({"token": chunk})
                 yield _sse({"done": True})
@@ -2369,10 +2466,12 @@ Reply with ONLY valid JSON, no markdown:
                 return
 
             # Run language gate in the background after streaming completes.
-            # If it fails we can't unsend tokens, but we log it so patterns are visible.
             lv = await _language_gate(final_reply, lang, style_hint)
             if lv.verdict == "WARN":
                 print(f"[Supervisor L3 post-stream] WARN — {lv.reason} (already sent, logged only)")
+
+            # Inject any missing contacts/links the LLM dropped (general_chat path)
+            final_reply = _inject_contacts(final_reply)
 
         else:
             # ── supervised path: collect draft, run all 3 supervisor layers,
@@ -2380,7 +2479,7 @@ Reply with ONLY valid JSON, no markdown:
             try:
                 draft = ""
                 # Stream tokens to user immediately while collecting
-                async for chunk in llm.stream(messages, max_tokens=400):
+                async for chunk in llm.stream(messages, max_tokens=1200):
                     draft += chunk
                     yield _sse({"token": chunk})
             except Exception as e:
@@ -2409,10 +2508,17 @@ Reply with ONLY valid JSON, no markdown:
             else:
                 final_reply = draft
 
+            # Inject any missing contacts/links the LLM dropped (supervised path)
+            injected = _inject_contacts(final_reply)
+
             # ── STEP 6: Stream corrected reply only if supervisor changed it ──
-            # If PASS, draft was already streamed token-by-token above — don't resend.
-            # Only stream if BLOCK or WARN produced a different final_reply.
-            if final_reply != draft:
+            if injected != draft:
+                # Either supervisor rewrote it, or we injected missing contacts —
+                # either way, stream the corrected version as a patch
+                async for chunk in _stream_text(injected):
+                    yield chunk
+                final_reply = injected
+            elif final_reply != draft:
                 async for chunk in _stream_text(final_reply):
                     yield chunk
             else:
