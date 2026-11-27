@@ -1047,6 +1047,8 @@ JSON:"""
     print(f"[Fred] Direct search: built {len(listings)} listing cards")
     return "\n\n".join(lines)
 
+
+def web_search(query: str, n: int = 5, search_type: str = "general") -> str:
     """
     Synchronous SearXNG search — returns top n results as a formatted string.
     Used for knowledge and general_chat paths. For property search use
